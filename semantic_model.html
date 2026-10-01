@@ -1,0 +1,691 @@
+<title>Flood Delivery Robot Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a field manual — narrow reading column, sticky section rail, gauge strip under the masthead */
+:root {
+  --bg: #f3f6f7;
+  --surface: #ffffff;
+  --ink: #14232b;
+  --muted: #55666f;
+  --line: #d3dde1;
+  --accent: #0b5f78;
+  --accent-soft: #dcecf1;
+  --caution: #b26b00;
+  --danger: #b3261e;
+  --code-bg: #e8eff2;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e171c; --surface: #15222a; --ink: #e2ecef; --muted: #9db0b8; --line: #2a3b44;
+  --accent: #6cc4de; --accent-soft: #173543; --caution: #f0a83a; --danger: #ff7b72; --code-bg: #1c2d36;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e171c; --surface: #15222a; --ink: #e2ecef; --muted: #9db0b8; --line: #2a3b44;
+  --accent: #6cc4de; --accent-soft: #173543; --caution: #f0a83a; --danger: #ff7b72; --code-bg: #1c2d36;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 17px/1.6 var(--body); padding-inline: 16px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px; }
+
+header.mast { display: grid; gap: 14px; padding-block: 8px 28px; border-bottom: 2px solid var(--ink); }
+.eyebrow { font: 600 12px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 800 clamp(34px, 6vw, 60px)/1.02 var(--display); font-stretch: 78%; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.lede { max-width: 62ch; color: var(--muted); margin: 0; }
+
+.gauge { margin-top: 10px; display: grid; gap: 6px; max-width: 640px; }
+.gauge-bar { position: relative; height: 26px; border-radius: 4px; overflow: hidden; display: grid;
+  grid-template-columns: 3fr 4fr 1fr 2fr; border: 1px solid var(--line); }
+.gauge-bar span { display: block }
+.g-ok { background: var(--accent-soft) }
+.g-caution { background: color-mix(in srgb, var(--caution) 28%, transparent) }
+.g-margin { background: color-mix(in srgb, var(--caution) 55%, transparent) }
+.g-stop { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--danger) 45%, transparent) 0 6px, transparent 6px 12px) }
+.gauge-scale { display: grid; grid-template-columns: 3fr 4fr 1fr 2fr; font: 500 12px/1.3 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.gauge-scale div { border-left: 1px solid var(--line); padding-left: 6px; min-width: 0 }
+@media (max-width: 640px) { .gauge-scale { grid-template-columns: 1fr 1fr; row-gap: 8px } }
+.gauge-scale b { display: block; color: var(--ink); font-weight: 600 }
+
+.layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 48px; margin-top: 32px; }
+nav.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; display: grid; gap: 2px; }
+nav.rail a { font: 600 14px/1 var(--display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+  text-decoration: none; padding: 9px 10px; border-left: 2px solid var(--line); }
+nav.rail a:hover, nav.rail a:focus-visible { color: var(--accent); border-left-color: var(--accent); outline: none; }
+
+main { min-width: 0 }
+main > * { max-width: 72ch }
+main > .cards, main > .scroll { max-width: none }
+h2 { font: 800 30px/1.1 var(--display); font-stretch: 85%; margin: 56px 0 16px; padding-top: 12px; border-top: 1px solid var(--line);
+  scroll-margin-top: 20px; text-wrap: balance; }
+h2:first-child { margin-top: 0 }
+h3 { font: 700 19px/1.25 var(--display); margin: 28px 0 8px; scroll-margin-top: 20px; text-wrap: balance }
+p, ul, ol { margin: 0 0 14px }
+ul, ol { padding-left: 1.3em }
+li { margin-bottom: 6px }
+li::marker { color: var(--muted) }
+strong { font-weight: 600 }
+a { color: var(--accent) }
+code { font: 0.84em/1.4 var(--mono); background: var(--code-bg); padding: .08em .35em; border-radius: 3px; overflow-wrap: anywhere }
+blockquote { margin: 12px 0 16px; padding: 10px 16px; background: var(--accent-soft); border-radius: 6px; color: var(--ink) }
+blockquote p { margin: 0 }
+
+.scroll { overflow-x: auto; margin: 0 0 18px; }
+table { border-collapse: collapse; font: 14px/1.45 var(--body); min-width: 100%; }
+th { font: 700 12px/1.2 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); text-align: left; }
+th, td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; font-variant-numeric: tabular-nums }
+tbody tr:hover { background: var(--accent-soft) }
+pre { font: 13px/1.35 var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin: 0; width: max-content; min-width: 100% }
+pre code { background: none; padding: 0; font-size: inherit }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 14px; margin-bottom: 18px }
+.cards article { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 18px 10px; min-width: 0; font-size: 15px }
+.cards article h3 { margin-top: 14px; color: var(--accent) }
+.cards article ul { padding-left: 0; list-style: none }
+.cards article blockquote { font-size: 14px }
+.actions article h3 { font-family: var(--mono); font-size: 15px; font-weight: 600 }
+
+
+footer { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px }
+
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 16px }
+  nav.rail { position: static; display: flex; flex-wrap: wrap; gap: 4px }
+  nav.rail a { border-left: 0; border-bottom: 2px solid var(--line) }
+  body { font-size: 16px }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth } }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="eyebrow">Semantic model · ARCH6956-1</div>
+    <h1>Delivery Robot on a Retail Street During a Flood</h1>
+    <p class="lede">Entities, relationships, rules and actions an agent uses to decide whether a sidewalk delivery robot should continue, reroute, wait, shelter, hand off or abort during a flash flood.</p>
+    <div class="gauge" role="img" aria-label="Water depth thresholds: under 3 cm full speed; 3 to 7 cm speed capped at 0.5 metres per second; 7 to 8 cm safety margin, routes must not be planned into it; over 8 cm impassable.">
+      <div class="gauge-bar" aria-hidden="true"><span class="g-ok"></span><span class="g-caution"></span><span class="g-margin"></span><span class="g-stop"></span></div>
+      <div class="gauge-scale" aria-hidden="true">
+        <div><b>0–3 cm</b>full speed</div>
+        <div><b>3–7 cm</b>≤ 0.5 m/s · Rule 2</div>
+        <div><b>7–8 cm</b>margin · Rule 7</div>
+        <div><b>&gt; 8 cm</b>no entry · Rule 1</div>
+      </div>
+    </div>
+  </header>
+  <div class="layout">
+    <nav class="rail" aria-label="Sections"><a href="#overview">Overview</a><a href="#entities">Entities</a><a href="#relationships">Relationships</a><a href="#rules">Rules</a><a href="#actions">Actions</a><a href="#scenario">Scenario</a></nav>
+    <main>
+<h2 id="overview">Overview</h2>
+<p>This model describes a <strong>retail street</strong> (shops, restaurants, sidewalks, crossings)
+where an autonomous <strong>sidewalk delivery robot</strong> carries food orders from restaurants
+to customers. A <strong>flash flood</strong> hits the street: water rises unevenly, drains may
+overflow, debris appears, and people move to higher ground. The agent's job is to
+reason about the space and decide what the robot should do: continue, reroute,
+wait, shelter, hand off, or abort the delivery, while keeping the robot, the food,
+and people safe.</p>
+<p><strong>Units:</strong> distance in meters (m), water depth in centimeters (cm), speed in m/s,
+time in minutes (min), battery in percent (%).</p>
+
+<h2 id="entities">Entities</h2>
+<div class="cards"><article><h3 id="retailstreet">RetailStreet</h3>
+<p>The whole environment.
+- ↳ <code>name</code>: string (e.g., "Maple Street")
+- ↳ <code>segments</code>: list of StreetSegment
+- ↳ <code>floodAlertLevel</code>: <code>none</code> | <code>advisory</code> | <code>warning</code> | <code>emergency</code>
+- ↳ <code>timeOfDay</code>: HH:MM
+- ↳ <code>isOpenToRobots</code>: boolean (the city can close the street to robots)</p>
+</article><article><h3 id="streetsegment">StreetSegment</h3>
+<p>A walkable/drivable piece of the street, the node-to-node "edge" of the map.
+- ↳ <code>id</code>: string (e.g., "SEG-03")
+- ↳ <code>type</code>: <code>sidewalk</code> | <code>crosswalk</code> | <code>road</code> | <code>plaza</code> | <code>alley</code>
+- ↳ <code>length</code>: m
+- ↳ <code>width</code>: m
+- ↳ <code>elevation</code>: m above street baseline (low spots flood first)
+- ↳ <code>slope</code>: % (water flows downhill)
+- ↳ <code>surface</code>: <code>concrete</code> | <code>asphalt</code> | <code>brick</code> | <code>grate</code>
+- ↳ <code>waterDepth</code>: cm (current)
+- ↳ <code>waterFlowSpeed</code>: m/s (current)
+- ↳ <code>isBlocked</code>: boolean
+- ↳ <code>pedestrianDensity</code>: <code>low</code> | <code>medium</code> | <code>high</code></p>
+</article><article><h3 id="intersection">Intersection</h3>
+<p>Where segments meet; the "nodes" of the map.
+- ↳ <code>id</code>: string (e.g., "INT-B")
+- ↳ <code>connectedSegments</code>: list of StreetSegment ids
+- ↳ <code>hasTrafficSignal</code>: boolean
+- ↳ <code>signalWorking</code>: boolean (power may fail in a flood)
+- ↳ <code>hasCurbRamp</code>: boolean</p>
+</article><article><h3 id="shop">Shop</h3>
+<p>Any store on the street (clothing, pharmacy, convenience store...).
+- ↳ <code>id</code>, <code>name</code>
+- ↳ <code>category</code>: <code>retail</code> | <code>pharmacy</code> | <code>grocery</code> | <code>service</code>
+- ↳ <code>entranceSegment</code>: StreetSegment id
+- ↳ <code>entranceElevation</code>: m (raised entrances stay dry longer)
+- ↳ <code>isOpen</code>: boolean (the premises are open to the public and staffed, so the shop can hold a handed-off order)
+- ↳ <code>hasAwning</code>: boolean (can shelter a robot from rain)
+- ↳ <code>acceptsRobotShelter</code>: boolean</p>
+</article><article><h3 id="restaurant-a-kind-of-shop">Restaurant (a kind of Shop)</h3>
+<p>Where orders originate.
+- ↳ all Shop attributes
+- ↳ <code>pickupPoint</code>: location on a StreetSegment
+- ↳ <code>ordersReady</code>: list of Order ids
+- ↳ <code>isOperating</code>: boolean (the kitchen is preparing and releasing delivery orders; may stop during the flood)</p>
+<blockquote>
+<p><code>isOpen</code> vs <code>isOperating</code>: a restaurant can be closed to walk-in guests (<code>isOpen = false</code>)
+while its kitchen still releases already-paid orders (<code>isOperating = true</code>), or the reverse.
+Pickups depend on <code>isOperating</code> (Rule 21); holding a handed-off order depends on <code>isOpen</code>.</p>
+</blockquote>
+</article><article><h3 id="deliveryrobot">DeliveryRobot</h3>
+<p>The agent's body in the world.
+- ↳ <code>id</code>: string (e.g., "BOT-7")
+- ↳ <code>position</code>: StreetSegment id + offset (m)
+- ↳ <code>status</code>: <code>idle</code> | <code>to_pickup</code> | <code>delivering</code> | <code>waiting</code> | <code>sheltering</code> | <code>returning</code> | <code>stuck</code> | <code>offline</code>
+- ↳ <code>battery</code>: % (0–100)
+- ↳ <code>maxSafeWaterDepth</code>: cm (e.g., 8 cm — above this, water reaches electronics/wheels lose grip)
+- ↳ <code>groundClearance</code>: cm (e.g., 10 cm)
+- ↳ <code>waterproofRating</code>: e.g., IP65
+- ↳ <code>speed</code>: m/s (normal max 1.5, reduced in water)
+- ↳ <code>energyUse</code>: % per 100 m (e.g., 1.0 on dry ground, 2.0 in water)
+- ↳ <code>cargo</code>: Order id or <code>empty</code>
+- ↳ <code>cargoTemperature</code>: °C
+- ↳ <code>sensors</code>: list (<code>camera</code>, <code>lidar</code>, <code>ultrasonic</code>, <code>waterSensor</code>, <code>GPS</code>, <code>IMU</code>)
+- ↳ <code>connectivity</code>: <code>good</code> | <code>weak</code> | <code>lost</code></p>
+</article><article><h3 id="order">Order</h3>
+<p>The package the robot carries.
+- ↳ <code>id</code>: string (e.g., "ORD-1024")
+- ↳ <code>restaurant</code>: Restaurant id
+- ↳ <code>customer</code>: Customer id
+- ↳ <code>items</code>: list of strings
+- ↳ <code>isPerishable</code>: boolean
+- ↳ <code>priority</code>: <code>normal</code> | <code>urgent</code> | <code>essential</code> (e.g., medicine from a pharmacy)
+- ↳ <code>deadline</code>: HH:MM
+- ↳ <code>status</code>: <code>placed</code> | <code>ready</code> | <code>picked_up</code> | <code>in_transit</code> | <code>delivered</code> | <code>handed_off</code> | <code>cancelled</code> | <code>returned</code></p>
+</article><article><h3 id="customer">Customer</h3>
+<p>The recipient.
+- ↳ <code>id</code>, <code>name</code>
+- ↳ <code>dropoffLocation</code>: StreetSegment id or Shop id / building entrance
+- ↳ <code>canMeetRobot</code>: boolean (customer may come to a dry point)
+- ↳ <code>contactable</code>: boolean</p>
+</article><article><h3 id="pedestrian">Pedestrian</h3>
+<p>People on the street; they have right of way.
+- ↳ <code>id</code>
+- ↳ <code>position</code>: StreetSegment id
+- ↳ <code>movingDirection</code>: toward higher ground / toward shelter / random
+- ↳ <code>isVulnerable</code>: boolean (child, elderly, wheelchair user)</p>
+</article><article><h3 id="obstacle">Obstacle</h3>
+<p>Anything blocking or endangering movement.
+- ↳ <code>id</code>
+- ↳ <code>type</code>: <code>debris</code> | <code>floating_object</code> | <code>fallen_sign</code> | <code>parked_vehicle</code> | <code>sandbag_barrier</code> | <code>open_manhole</code> | <code>downed_power_line</code>
+- ↳ <code>position</code>: StreetSegment id
+- ↳ <code>isMoving</code>: boolean (floating objects drift)
+- ↳ <code>isHazardous</code>: boolean
+- ↳ <code>passable</code>: boolean</p>
+</article><article><h3 id="drainageinlet">DrainageInlet</h3>
+<p>Storm drains and manholes; they control how water rises.
+- ↳ <code>id</code>
+- ↳ <code>position</code>: StreetSegment id
+- ↳ <code>capacity</code>: <code>normal</code> | <code>overflowing</code> | <code>clogged</code>
+- ↳ <code>coverPresent</code>: boolean (a missing cover is invisible under water and very dangerous)</p>
+</article><article><h3 id="floodevent">FloodEvent</h3>
+<p>The disaster itself.
+- ↳ <code>severity</code>: <code>minor</code> | <code>moderate</code> | <code>severe</code>
+- ↳ <code>rainfallRate</code>: mm/h
+- ↳ <code>waterRiseRate</code>: cm/min (baseline rate on affected segments)
+- ↳ <code>affectedSegments</code>: list of StreetSegment ids (segments that are taking on water; others stay at their current depth)
+- ↳ <code>startTime</code>, <code>expectedPeakTime</code>: HH:MM
+- ↳ <code>trend</code>: <code>rising</code> | <code>stable</code> | <code>receding</code></p>
+</article><article><h3 id="safezone">SafeZone</h3>
+<p>Places the robot can go to wait out the flood.
+- ↳ <code>id</code>
+- ↳ <code>type</code>: <code>charging_station</code> | <code>shop_awning</code> | <code>raised_plaza</code> | <code>parking_garage_upper_level</code> | <code>robot_depot</code>
+- ↳ <code>position</code>: StreetSegment id
+- ↳ <code>elevation</code>: m
+- ↳ <code>capacity</code>: number of robots
+- ↳ <code>occupied</code>: number of robots
+- ↳ <code>hasCharger</code>: boolean</p>
+</article><article><h3 id="operatorcenter">OperatorCenter</h3>
+<p>The remote human/fleet system supervising the robot.
+- ↳ <code>canTeleoperate</code>: boolean
+- ↳ <code>messages</code>: list of alerts/instructions sent to the robot
+- ↳ <code>canNotifyCustomer</code>: boolean</p>
+</article><article><h3 id="emergencyvehicle">EmergencyVehicle</h3>
+<p>Fire trucks, ambulances, rescue boats.
+- ↳ <code>id</code>
+- ↳ <code>type</code>: <code>fire</code> | <code>ambulance</code> | <code>police</code> | <code>rescue_boat</code>
+- ↳ <code>position</code>: StreetSegment id
+- ↳ <code>isActive</code>: boolean (sirens on)</p>
+
+</article></div><h2 id="relationships">Relationships</h2>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Subject</th>
+<th>Relationship</th>
+<th>Object</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RetailStreet</td>
+<td><strong>consists of</strong></td>
+<td>StreetSegment, Intersection</td>
+</tr>
+<tr>
+<td>StreetSegment</td>
+<td><strong>connects</strong></td>
+<td>Intersection ↔ Intersection</td>
+</tr>
+<tr>
+<td>StreetSegment</td>
+<td><strong>adjacent to</strong></td>
+<td>StreetSegment</td>
+</tr>
+<tr>
+<td>Shop / Restaurant</td>
+<td><strong>located on</strong></td>
+<td>StreetSegment</td>
+</tr>
+<tr>
+<td>DrainageInlet</td>
+<td><strong>located on</strong></td>
+<td>StreetSegment</td>
+</tr>
+<tr>
+<td>FloodEvent</td>
+<td><strong>affects</strong></td>
+<td>StreetSegment (raises <code>waterDepth</code>)</td>
+</tr>
+<tr>
+<td>FloodEvent</td>
+<td><strong>closes</strong></td>
+<td>Restaurant / Shop (may set <code>isOpen = false</code> and/or <code>isOperating = false</code>)</td>
+</tr>
+<tr>
+<td>DrainageInlet (clogged/overflowing)</td>
+<td><strong>worsens flooding on</strong></td>
+<td>StreetSegment (local rise rate ≥ 2 × <code>waterRiseRate</code>)</td>
+</tr>
+<tr>
+<td>StreetSegment (higher <code>elevation</code>)</td>
+<td><strong>drains into</strong></td>
+<td>adjacent StreetSegment (lower <code>elevation</code>)</td>
+</tr>
+<tr>
+<td>Obstacle</td>
+<td><strong>blocks</strong></td>
+<td>StreetSegment</td>
+</tr>
+<tr>
+<td>Obstacle (floating)</td>
+<td><strong>drifts along</strong></td>
+<td>water flow direction</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>is on</strong></td>
+<td>StreetSegment</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>carries</strong></td>
+<td>Order</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>picks up from</strong></td>
+<td>Restaurant</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>delivers to</strong></td>
+<td>Customer</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>shelters at</strong></td>
+<td>SafeZone</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>yields to</strong></td>
+<td>Pedestrian, EmergencyVehicle</td>
+</tr>
+<tr>
+<td>DeliveryRobot</td>
+<td><strong>reports to / receives commands from</strong></td>
+<td>OperatorCenter</td>
+</tr>
+<tr>
+<td>Order</td>
+<td><strong>originates at</strong></td>
+<td>Restaurant</td>
+</tr>
+<tr>
+<td>Order</td>
+<td><strong>is ordered by</strong></td>
+<td>Customer</td>
+</tr>
+<tr>
+<td>OperatorCenter</td>
+<td><strong>notifies</strong></td>
+<td>Customer</td>
+</tr>
+<tr>
+<td>Pedestrian</td>
+<td><strong>moves toward</strong></td>
+<td>higher-elevation StreetSegment / SafeZone</td>
+</tr>
+<tr>
+<td>EmergencyVehicle</td>
+<td><strong>has priority on</strong></td>
+<td>StreetSegment (road, crosswalk)</td>
+</tr>
+</tbody>
+</table></div>
+
+<h2 id="rules">Rules (Constraints)</h2>
+<h3 id="water-and-terrain">Water and terrain</h3>
+<ol>
+<li><strong>Depth limit:</strong> The robot must NOT enter a segment where <code>waterDepth &gt; robot.maxSafeWaterDepth</code> (default 8 cm).</li>
+<li><strong>Caution band:</strong> If 3 cm ≤ <code>waterDepth</code> ≤ <code>maxSafeWaterDepth</code>, the robot's speed is capped at 0.5 m/s. Below 3 cm the normal max speed applies.</li>
+<li><strong>Flowing water:</strong> The robot must NOT enter a segment with <code>waterFlowSpeed &gt; 0.5 m/s</code>, even if shallow (it can be swept away).</li>
+<li><strong>Unknown depth = unsafe:</strong> If depth cannot be measured (murky water, sensor failure), treat the segment as impassable.</li>
+<li><strong>Hidden hazards:</strong> Any segment containing a DrainageInlet with <code>coverPresent = false</code> or <code>capacity = overflowing</code> is impassable when <code>waterDepth &gt; 0</code> (the robot cannot see an open hole or a suction point under water).</li>
+<li><strong>Low spots first:</strong> When the flood <code>trend</code> is <code>rising</code>, segments with lower <code>elevation</code> should be expected to exceed limits sooner; plan routes along higher elevation.</li>
+<li><strong>Predictive check:</strong> A route is valid only if, for every segment on it, the depth <em>predicted for the moment the robot leaves that segment</em> stays within the limit with a 1 cm safety margin:
+   <code>predictedDepth = currentDepth + localRiseRate × timeUntilExit ≤ maxSafeWaterDepth − 1 cm</code>
+   - <code>localRiseRate = waterRiseRate</code> for segments in <code>affectedSegments</code>, <code>0</code> for segments not in it.
+   - <code>localRiseRate = 2 × waterRiseRate</code> (at least) on segments with a <code>clogged</code> or <code>overflowing</code> DrainageInlet.
+   - <code>timeUntilExit</code> includes waiting/yielding time and the slower caution-band speed (Rule 2) once the predicted depth reaches 3 cm.</li>
+<li><strong>Electrical danger:</strong> A segment with a <code>downed_power_line</code> obstacle is impassable and must be reported immediately.</li>
+</ol>
+<h3 id="people-and-priority">People and priority</h3>
+<ol start="9">
+<li><strong>Pedestrians first:</strong> The robot must yield to all pedestrians and never block a path people are using to escape the water.</li>
+<li><strong>Vulnerable people:</strong> Keep at least 1.5 m from pedestrians where <code>isVulnerable = true</code>.</li>
+<li><strong>Emergency vehicles:</strong> When an EmergencyVehicle is active nearby, the robot must pull fully out of its path and stop.</li>
+<li><strong>Crowding:</strong> Robots must not park or stop to yield on narrow sidewalks (<code>width &lt; 2 m</code>) during evacuation; on those segments the robot backs out to the nearest wider spot instead.</li>
+<li><strong>Human life &gt; robot &gt; food:</strong> Safety of people always outranks robot safety, and robot safety outranks delivering the order.</li>
+</ol>
+<h3 id="robot-state">Robot state</h3>
+<ol start="14">
+<li><strong>Battery reserve:</strong> At every point on its route the robot must keep enough battery to reach the nearest SafeZone with free capacity, plus 15 percentage points; otherwise it must stop delivering and go to a SafeZone.</li>
+<li><strong>Connectivity:</strong> If <code>connectivity = lost</code> for more than 2 min, the robot must go to the nearest reachable SafeZone and wait.</li>
+<li><strong>Stuck:</strong> If the robot has not moved for 3 min while trying to move, <code>status = stuck</code> and it must alert the OperatorCenter.</li>
+<li><strong>SafeZone capacity:</strong> A robot can only shelter at a SafeZone where <code>occupied &lt; capacity</code>.</li>
+</ol>
+<h3 id="orders">Orders</h3>
+<ol start="18">
+<li><strong>Alert levels:</strong><ul>
+<li><code>advisory</code>: continue deliveries, reroute around wet segments.</li>
+<li><code>warning</code>: finish only the current order; accept no new orders; once the cargo is empty, go to the nearest SafeZone and wait.</li>
+<li><code>emergency</code>: stop all deliveries, go to the nearest SafeZone.</li>
+</ul>
+</li>
+<li><strong>Essential orders:</strong> Orders with <code>priority = essential</code> (e.g., medicine) may continue under <code>warning</code> if a fully safe route exists.</li>
+<li><strong>Perishables:</strong> If a perishable order will miss its deadline by more than 30 min, it should be returned or cancelled rather than delivered late.</li>
+<li><strong>Closed pickup:</strong> The robot cannot pick up from a Restaurant where <code>isOperating = false</code>.</li>
+<li><strong>Handoff location:</strong> An order can be delivered only at a dry point (<code>waterDepth = 0</code>, or a raised shop entrance whose <code>entranceElevation</code> keeps it above the water) that the customer can reach safely.</li>
+</ol>
+
+<h2 id="actions">Actions (State Changes)</h2>
+<p>Each action lists <strong>preconditions</strong> → <strong>effects</strong>.</p>
+<div class="cards actions"><article><h3 id="move-robot-segment"><code>move(robot, segment)</code></h3>
+<ul>
+<li><strong>Pre:</strong> segment is adjacent; segment passes Rules 1–8; robot not <code>offline</code>.</li>
+<li><strong>Effect:</strong> <code>robot.position = segment</code>; <code>robot.battery</code> decreases by <code>energyUse × length / 100</code> (water rate if <code>waterDepth &gt; 0</code>); speed set by Rule 2; if carrying cargo, <code>order.status = in_transit</code>.</li>
+</ul>
+</article><article><h3 id="plan-route-robot-destination"><code>plan_route(robot, destination)</code></h3>
+<ul>
+<li><strong>Pre:</strong> a map of segments with current <code>waterDepth</code> and <code>isBlocked</code>.</li>
+<li><strong>Effect:</strong> returns the shortest route that satisfies all Rules; prefers higher elevation; returns <code>none</code> if no safe route exists.</li>
+</ul>
+</article><article><h3 id="reroute-robot"><code>reroute(robot)</code></h3>
+<ul>
+<li><strong>Pre:</strong> a segment on the current route becomes unsafe (depth rise, new obstacle, crowd).</li>
+<li><strong>Effect:</strong> new route via <code>plan_route</code>; OperatorCenter and Customer notified of new ETA.</li>
+</ul>
+</article><article><h3 id="sense-water-robot"><code>sense_water(robot)</code></h3>
+<ul>
+<li><strong>Pre:</strong> robot has <code>waterSensor</code> or camera/lidar.</li>
+<li><strong>Effect:</strong> updates <code>waterDepth</code> and <code>waterFlowSpeed</code> of the current and next segment.</li>
+</ul>
+</article><article><h3 id="pick-up-robot-order"><code>pick_up(robot, order)</code></h3>
+<ul>
+<li><strong>Pre:</strong> robot at Restaurant <code>pickupPoint</code>; <code>restaurant.isOperating = true</code>; <code>order.status = ready</code>; <code>robot.cargo = empty</code>; alert level allows it.</li>
+<li><strong>Effect:</strong> <code>robot.cargo = order</code>; <code>order.status = picked_up</code>; <code>robot.status = delivering</code>.</li>
+</ul>
+</article><article><h3 id="deliver-robot-order"><code>deliver(robot, order)</code></h3>
+<ul>
+<li><strong>Pre:</strong> robot at <code>customer.dropoffLocation</code> (or agreed alternative); location dry; customer present.</li>
+<li><strong>Effect:</strong> <code>order.status = delivered</code>; <code>robot.cargo = empty</code>; <code>robot.status = idle</code> or <code>returning</code>.</li>
+</ul>
+</article><article><h3 id="propose-alternative-dropoff-robot-customer-point"><code>propose_alternative_dropoff(robot, customer, point)</code></h3>
+<ul>
+<li><strong>Pre:</strong> original dropoff is flooded; <code>customer.contactable = true</code>.</li>
+<li><strong>Effect:</strong> customer is asked to meet at a nearby dry point (e.g., a raised shop entrance); if accepted, <code>dropoffLocation = point</code>.</li>
+</ul>
+</article><article><h3 id="hand-off-robot-order-shop"><code>hand_off(robot, order, shop)</code></h3>
+<ul>
+<li><strong>Pre:</strong> delivery cannot finish safely; shop <code>isOpen</code> and willing to hold the order.</li>
+<li><strong>Effect:</strong> <code>order.status = handed_off</code>; customer notified where to collect it; <code>robot.cargo = empty</code>.</li>
+</ul>
+</article><article><h3 id="wait-robot-minutes"><code>wait(robot, minutes)</code></h3>
+<ul>
+<li><strong>Pre:</strong> robot is at a safe spot (dry, not blocking people).</li>
+<li><strong>Effect:</strong> <code>robot.status = waiting</code>; re-check water after the wait (useful when <code>trend = receding</code>).</li>
+</ul>
+</article><article><h3 id="seek-shelter-robot"><code>seek_shelter(robot)</code></h3>
+<ul>
+<li><strong>Pre:</strong> alert level = <code>emergency</code>, OR alert level = <code>warning</code> and <code>robot.cargo = empty</code>, OR Rule 14/15 triggered, OR no safe route exists.</li>
+<li><strong>Effect:</strong> robot moves to the nearest reachable SafeZone with free capacity; <code>robot.status = sheltering</code>; <code>safeZone.occupied += 1</code>.</li>
+</ul>
+</article><article><h3 id="charge-robot"><code>charge(robot)</code></h3>
+<ul>
+<li><strong>Pre:</strong> robot at a SafeZone with <code>hasCharger = true</code>.</li>
+<li><strong>Effect:</strong> <code>robot.battery</code> increases over time.</li>
+</ul>
+</article><article><h3 id="yield-robot"><code>yield(robot)</code></h3>
+<ul>
+<li><strong>Pre:</strong> pedestrian or active EmergencyVehicle nearby.</li>
+<li><strong>Effect:</strong> robot moves aside to a non-blocking spot and stops until clear.</li>
+</ul>
+</article><article><h3 id="report-hazard-robot-hazard"><code>report_hazard(robot, hazard)</code></h3>
+<ul>
+<li><strong>Pre:</strong> robot detects an Obstacle, open manhole, clogged or overflowing drain, or downed power line.</li>
+<li><strong>Effect:</strong> hazard added to shared map; segment marked <code>isBlocked = true</code>; OperatorCenter alerted (can forward to city/emergency services).</li>
+</ul>
+</article><article><h3 id="cancel-or-return-robot-order"><code>cancel_or_return(robot, order)</code></h3>
+<ul>
+<li><strong>Pre:</strong> Rule 18 (<code>emergency</code>) or Rule 20 applies.</li>
+<li><strong>Effect:</strong> <code>order.status = cancelled</code> or <code>returned</code>; customer notified and refunded by the OperatorCenter.</li>
+</ul>
+</article><article><h3 id="request-teleop-robot"><code>request_teleop(robot)</code></h3>
+<ul>
+<li><strong>Pre:</strong> <code>robot.status = stuck</code> or the situation is ambiguous; connectivity not <code>lost</code>.</li>
+<li><strong>Effect:</strong> a human operator takes control.</li>
+</ul>
+</article><article><h3 id="environment-actions-not-controlled-by-the-robot">Environment actions (not controlled by the robot)</h3>
+<ul>
+<li><code>flood_rise(segment)</code>: <code>waterDepth += waterRiseRate × Δt</code>, faster at low elevation and near clogged drains.</li>
+<li><code>flood_recede(segment)</code>: <code>waterDepth</code> decreases; <code>FloodEvent.trend = receding</code>.</li>
+<li><code>spawn_obstacle(segment)</code>: debris or floating object appears and may drift downhill.</li>
+<li><code>close_shop(shop)</code>: <code>isOpen = false</code> (owners leave).</li>
+<li><code>raise_alert(level)</code>: <code>RetailStreet.floodAlertLevel</code> changes.</li>
+<li><code>power_outage(intersection)</code>: <code>signalWorking = false</code>.</li>
+</ul>
+
+</article></div><h2 id="scenario">Example Scenario (for testing the agent)</h2>
+<h3 id="map">Map</h3>
+<div class="scroll"><pre><code>     SEG-05 alley (280 m, elev 1.1 m)
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │                                                                           │
+ INT-A ── SEG-01 ── INT-B ── SEG-02 ── INT-C ── SEG-03 ── INT-D ── SEG-04 ── INT-E
+ (SZ-2)   60 m               80 m, low          80 m               60 m      (SZ-1)
+       Noodle House                                               Bookstore
+</code></pre></div>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>Segment</th>
+<th>Type</th>
+<th>Length</th>
+<th>Width</th>
+<th>Elev.</th>
+<th>Depth now</th>
+<th>Flow</th>
+<th>In <code>affectedSegments</code></th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SEG-01</td>
+<td>sidewalk</td>
+<td>60 m</td>
+<td>3.5 m</td>
+<td>1.2 m</td>
+<td>0 cm</td>
+<td>0 m/s</td>
+<td>no</td>
+<td>Noodle House pickup 20 m from INT-A</td>
+</tr>
+<tr>
+<td>SEG-02</td>
+<td>sidewalk</td>
+<td>80 m</td>
+<td>3.0 m</td>
+<td>0.4 m</td>
+<td>6 cm</td>
+<td>0.3 m/s</td>
+<td>yes</td>
+<td>low spot; drain <code>DI-1</code> is <code>clogged</code>, cover present</td>
+</tr>
+<tr>
+<td>SEG-03</td>
+<td>sidewalk</td>
+<td>80 m</td>
+<td>3.0 m</td>
+<td>0.8 m</td>
+<td>2 cm</td>
+<td>0.2 m/s</td>
+<td>yes</td>
+<td></td>
+</tr>
+<tr>
+<td>SEG-04</td>
+<td>sidewalk</td>
+<td>60 m</td>
+<td>3.0 m</td>
+<td>1.0 m</td>
+<td>0 cm</td>
+<td>0 m/s</td>
+<td>no</td>
+<td>Bookstore 10 m from INT-E, <code>entranceElevation</code> 1.25 m</td>
+</tr>
+<tr>
+<td>SEG-05</td>
+<td>alley</td>
+<td>280 m</td>
+<td>2.5 m</td>
+<td>1.1 m</td>
+<td>1 cm</td>
+<td>0.1 m/s</td>
+<td>yes</td>
+<td>links INT-A to INT-E around the back</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Time:</strong> 18:40. <strong>Alert level:</strong> <code>warning</code>. Robots allowed on the street.</li>
+<li><strong>Flood:</strong> <code>moderate</code>, <code>rising</code>, <code>waterRiseRate = 0.5 cm/min</code>.</li>
+<li><strong>Robot:</strong> <code>BOT-7</code> at the Noodle House pickup point (SEG-01), battery 45%, <code>maxSafeWaterDepth = 8 cm</code>,
+  normal speed 1.5 m/s, <code>energyUse</code> 1.0 %/100 m dry and 2.0 %/100 m wet, connectivity <code>good</code>.</li>
+<li><strong>Order:</strong> <code>ORD-1024</code>, hot ramen, perishable, <code>priority = normal</code>, deadline 19:05 (25 min), status <code>picked_up</code>.</li>
+<li><strong>Customer:</strong> waiting at the Bookstore on SEG-04; <code>contactable = true</code>, <code>canMeetRobot = true</code>.</li>
+<li><strong>SafeZones:</strong> <code>SZ-1</code> charging station at INT-E (elev 1.3 m, capacity 4, occupied 2, charger);
+  <code>SZ-2</code> raised plaza at INT-A (elev 1.3 m, capacity 2, occupied 2, no charger) — <strong>full</strong>.</li>
+<li><strong>Pedestrians:</strong> about 15 people entering SEG-01 from INT-B and walking toward INT-A (higher ground),
+  including one wheelchair user (<code>isVulnerable = true</code>). They need about 2 min to pass the robot.</li>
+</ul>
+<h3 id="expected-reasoning">Expected reasoning</h3>
+<p><strong>1. Reject the direct route (SEG-01 → SEG-02 → SEG-03 → SEG-04, 250 m).</strong>
+- The robot would drive <em>against</em> the evacuating crowd on SEG-01 (Rule 9).
+- Rule 5 does <strong>not</strong> apply: <code>DI-1</code> is <code>clogged</code>, not <code>overflowing</code>, and its cover is present.
+- Rule 7 does: SEG-02 has a clogged drain, so its local rise rate is 2 × 0.5 = 1.0 cm/min.
+  The robot would reach INT-B at about 0.4 min. SEG-02 is already in the caution band, so it would
+  cross at 0.5 m/s (80 m takes 2.7 min) and leave at about 3.1 min.
+  Predicted depth: 6 + 1.0 × 3.1 ≈ <strong>9.1 cm</strong>. That is above the 7 cm planning limit (8 − 1 margin)
+  and above the 8 cm hard limit (Rule 1).
+- Even at the baseline 0.5 cm/min, the result would be 7.6 cm &gt; 7 cm, so the route is invalid either way.
+- Action: <code>report_hazard(BOT-7, DI-1 clogged on SEG-02)</code>, so SEG-02 is marked <code>isBlocked = true</code> and the OperatorCenter is alerted.</p>
+<p><strong>2. Plan the alley route (SEG-01 → SEG-05 → SEG-04, 310 m) and check it (Rule 6, Rule 7).</strong></p>
+<div class="scroll"><table>
+<thead>
+<tr>
+<th>t (min)</th>
+<th>Event</th>
+<th>Depth / check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.0 – 2.0</td>
+<td><code>yield</code>: pull to the building side of SEG-01 (3.5 m wide, so stopping is allowed under Rule 12), stay ≥ 1.5 m from the wheelchair user (Rule 10), wait for the crowd to pass</td>
+<td>SEG-01 stays 0 cm</td>
+</tr>
+<tr>
+<td>2.0 – 2.2</td>
+<td>follow behind the crowd 20 m to INT-A at 1.5 m/s</td>
+<td>0 cm</td>
+</tr>
+<tr>
+<td>2.2</td>
+<td>enter SEG-05</td>
+<td>1 + 0.5 × 2.2 = 2.1 cm, below 3 cm, so full speed is allowed (Rule 2)</td>
+</tr>
+<tr>
+<td>4.0</td>
+<td>SEG-05 reaches 3 cm after 162 m, so <code>sense_water</code> confirms it and speed drops to 0.5 m/s (Rule 2)</td>
+<td>3.0 cm</td>
+</tr>
+<tr>
+<td>7.9</td>
+<td>leave SEG-05 after the remaining 118 m at 0.5 m/s</td>
+<td>1 + 0.5 × 7.9 ≈ <strong>5.0 cm ≤ 7 cm</strong> ✓, flow 0.1 m/s ≤ 0.5 ✓ (Rule 3)</td>
+</tr>
+<tr>
+<td>8.0</td>
+<td>10 m along SEG-04 to the Bookstore</td>
+<td>SEG-04 is not affected, so it stays 0 cm ✓</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Speed cap:</strong> the 0.5 m/s cap applies only to the last 118 m of the alley, once the water reaches 3 cm.
+  It does not apply on the first part of the alley (1–3 cm), where the robot can drive at 1.5 m/s.</li>
+<li><strong>Deadline (Rule 20):</strong> arrival at about 18:48, 17 min before the 19:05 deadline ✓.</li>
+<li><strong>Battery (Rule 14):</strong> the route costs 0.2% + 5.6% + 0.1% ≈ 5.9%, so the robot arrives with about 39%.
+  SZ-2 is full (Rule 17), so the nearest usable SafeZone is SZ-1.</li>
+<li>At the start: getting to SZ-1 costs about 5.8%, plus the 15-point margin = 20.8% ≤ 45% ✓.</li>
+<li>At the Bookstore: it costs about 0.1% + 15 = 15.1% ≤ 39% ✓.</li>
+<li><strong>Alert level (Rule 18):</strong> <code>warning</code> allows finishing the current order ✓.</li>
+</ul>
+<p>Action: <code>reroute(BOT-7)</code> → the OperatorCenter notifies the customer of the new ETA (18:48).</p>
+<p><strong>3. Deliver (Rule 22).</strong> The Bookstore entrance is on a dry segment, and its raised 1.25 m
+entrance gives extra margin. The customer meets the robot there: <code>deliver(BOT-7, ORD-1024)</code>,
+which sets <code>order.status = delivered</code> and <code>robot.cargo = empty</code>.</p>
+<p><strong>Fallbacks</strong>
+- If SEG-04 has started to flood or the customer cannot come out: <code>propose_alternative_dropoff</code>
+  at the raised Bookstore entrance or at SZ-1.
+- If the customer cannot be reached: <code>hand_off</code> to the Bookstore if it <code>isOpen</code>.
+- If SEG-05 is predicted to exceed 7 cm before the exit (for example, the rise rate increases):
+  <code>wait</code> at INT-A only if it is dry and not blocking people. Otherwise <code>seek_shelter</code>.</p>
+<p><strong>4. After delivery.</strong> The alert level is <code>warning</code> and the cargo is empty, so the robot accepts no new orders.
+It runs <code>seek_shelter(BOT-7)</code> → SZ-1 (10 m away; <code>occupied</code> 2 → 3), sets <code>status = sheltering</code>, and runs <code>charge(BOT-7)</code>.</p>
+      <footer>Units: m, cm (water depth), m/s, min, %. Source: <code>semantic_model.md</code> in the course repository.</footer>
+    </main>
+  </div>
+</div>
