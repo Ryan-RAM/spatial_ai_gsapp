@@ -57,7 +57,7 @@ Any store on the street (clothing, pharmacy, convenience store...).
 - ↳ `category`: `retail` | `pharmacy` | `grocery` | `service`
 - ↳ `entranceSegment`: StreetSegment id
 - ↳ `entranceElevation`: m (raised entrances stay dry longer)
-- ↳ `isOpen`: boolean
+- ↳ `isOpen`: boolean (the premises are open to the public and staffed, so the shop can hold a handed-off order)
 - ↳ `hasAwning`: boolean (can shelter a robot from rain)
 - ↳ `acceptsRobotShelter`: boolean
 
@@ -66,7 +66,11 @@ Where orders originate.
 - ↳ all Shop attributes
 - ↳ `pickupPoint`: location on a StreetSegment
 - ↳ `ordersReady`: list of Order ids
-- ↳ `isOperating`: boolean (may close during the flood)
+- ↳ `isOperating`: boolean (the kitchen is preparing and releasing delivery orders; may stop during the flood)
+
+> `isOpen` vs `isOperating`: a restaurant can be closed to walk-in guests (`isOpen = false`)
+> while its kitchen still releases already-paid orders (`isOperating = true`), or the reverse.
+> Pickups depend on `isOperating` (Rule 21); holding a handed-off order depends on `isOpen`.
 
 ### DeliveryRobot
 The agent's body in the world.
@@ -78,6 +82,7 @@ The agent's body in the world.
 - ↳ `groundClearance`: cm (e.g., 10 cm)
 - ↳ `waterproofRating`: e.g., IP65
 - ↳ `speed`: m/s (normal max 1.5, reduced in water)
+- ↳ `energyUse`: % per 100 m (e.g., 1.0 on dry ground, 2.0 in water)
 - ↳ `cargo`: Order id or `empty`
 - ↳ `cargoTemperature`: °C
 - ↳ `sensors`: list (`camera`, `lidar`, `ultrasonic`, `waterSensor`, `GPS`, `IMU`)
@@ -128,8 +133,8 @@ Storm drains and manholes; they control how water rises.
 The disaster itself.
 - ↳ `severity`: `minor` | `moderate` | `severe`
 - ↳ `rainfallRate`: mm/h
-- ↳ `waterRiseRate`: cm/min
-- ↳ `affectedSegments`: list of StreetSegment ids
+- ↳ `waterRiseRate`: cm/min (baseline rate on affected segments)
+- ↳ `affectedSegments`: list of StreetSegment ids (segments that are taking on water; others stay at their current depth)
 - ↳ `startTime`, `expectedPeakTime`: HH:MM
 - ↳ `trend`: `rising` | `stable` | `receding`
 
@@ -168,9 +173,9 @@ Fire trucks, ambulances, rescue boats.
 | Shop / Restaurant | **located on** | StreetSegment |
 | DrainageInlet | **located on** | StreetSegment |
 | FloodEvent | **affects** | StreetSegment (raises `waterDepth`) |
-| FloodEvent | **closes** | Restaurant / Shop (may set `isOpen = false`) |
-| DrainageInlet (clogged/overflowing) | **worsens flooding on** | StreetSegment |
-| Water | **flows from** higher `elevation` **to** lower | StreetSegment → StreetSegment |
+| FloodEvent | **closes** | Restaurant / Shop (may set `isOpen = false` and/or `isOperating = false`) |
+| DrainageInlet (clogged/overflowing) | **worsens flooding on** | StreetSegment (local rise rate ≥ 2 × `waterRiseRate`) |
+| StreetSegment (higher `elevation`) | **drains into** | adjacent StreetSegment (lower `elevation`) |
 | Obstacle | **blocks** | StreetSegment |
 | Obstacle (floating) | **drifts along** | water flow direction |
 | DeliveryRobot | **is on** | StreetSegment |
@@ -192,23 +197,27 @@ Fire trucks, ambulances, rescue boats.
 
 ### Water and terrain
 1. **Depth limit:** The robot must NOT enter a segment where `waterDepth > robot.maxSafeWaterDepth` (default 8 cm).
-2. **Caution band:** If `waterDepth` is between 3 cm and `maxSafeWaterDepth`, the robot's speed is capped at 0.5 m/s.
+2. **Caution band:** If 3 cm ≤ `waterDepth` ≤ `maxSafeWaterDepth`, the robot's speed is capped at 0.5 m/s. Below 3 cm the normal max speed applies.
 3. **Flowing water:** The robot must NOT enter a segment with `waterFlowSpeed > 0.5 m/s`, even if shallow (it can be swept away).
 4. **Unknown depth = unsafe:** If depth cannot be measured (murky water, sensor failure), treat the segment as impassable.
-5. **Hidden hazards:** Any segment containing a DrainageInlet with `coverPresent = false` or `capacity = overflowing` is impassable when `waterDepth > 0`.
+5. **Hidden hazards:** Any segment containing a DrainageInlet with `coverPresent = false` or `capacity = overflowing` is impassable when `waterDepth > 0` (the robot cannot see an open hole or a suction point under water).
 6. **Low spots first:** When the flood `trend` is `rising`, segments with lower `elevation` should be expected to exceed limits sooner; plan routes along higher elevation.
-7. **Predictive check:** A route is valid only if every segment will stay under the depth limit for the *estimated time the robot reaches it* (`current depth + waterRiseRate × travel time`).
+7. **Predictive check:** A route is valid only if, for every segment on it, the depth *predicted for the moment the robot leaves that segment* stays within the limit with a 1 cm safety margin:
+   `predictedDepth = currentDepth + localRiseRate × timeUntilExit ≤ maxSafeWaterDepth − 1 cm`
+   - `localRiseRate = waterRiseRate` for segments in `affectedSegments`, `0` for segments not in it.
+   - `localRiseRate = 2 × waterRiseRate` (at least) on segments with a `clogged` or `overflowing` DrainageInlet.
+   - `timeUntilExit` includes waiting/yielding time and the slower caution-band speed (Rule 2) once the predicted depth reaches 3 cm.
 8. **Electrical danger:** A segment with a `downed_power_line` obstacle is impassable and must be reported immediately.
 
 ### People and priority
 9. **Pedestrians first:** The robot must yield to all pedestrians and never block a path people are using to escape the water.
 10. **Vulnerable people:** Keep at least 1.5 m from pedestrians where `isVulnerable = true`.
 11. **Emergency vehicles:** When an EmergencyVehicle is active nearby, the robot must pull fully out of its path and stop.
-12. **Crowding:** Robots must not park on narrow sidewalks (`width < 2 m`) during evacuation.
+12. **Crowding:** Robots must not park or stop to yield on narrow sidewalks (`width < 2 m`) during evacuation; on those segments the robot backs out to the nearest wider spot instead.
 13. **Human life > robot > food:** Safety of people always outranks robot safety, and robot safety outranks delivering the order.
 
 ### Robot state
-14. **Battery reserve:** The robot must always keep enough battery to reach the nearest SafeZone plus a 15% margin; otherwise it must stop delivering and go to a SafeZone.
+14. **Battery reserve:** At every point on its route the robot must keep enough battery to reach the nearest SafeZone with free capacity, plus 15 percentage points; otherwise it must stop delivering and go to a SafeZone.
 15. **Connectivity:** If `connectivity = lost` for more than 2 min, the robot must go to the nearest reachable SafeZone and wait.
 16. **Stuck:** If the robot has not moved for 3 min while trying to move, `status = stuck` and it must alert the OperatorCenter.
 17. **SafeZone capacity:** A robot can only shelter at a SafeZone where `occupied < capacity`.
@@ -216,12 +225,12 @@ Fire trucks, ambulances, rescue boats.
 ### Orders
 18. **Alert levels:**
     - `advisory`: continue deliveries, reroute around wet segments.
-    - `warning`: finish only the current order; accept no new orders.
+    - `warning`: finish only the current order; accept no new orders; once the cargo is empty, go to the nearest SafeZone and wait.
     - `emergency`: stop all deliveries, go to the nearest SafeZone.
 19. **Essential orders:** Orders with `priority = essential` (e.g., medicine) may continue under `warning` if a fully safe route exists.
 20. **Perishables:** If a perishable order will miss its deadline by more than 30 min, it should be returned or cancelled rather than delivered late.
 21. **Closed pickup:** The robot cannot pick up from a Restaurant where `isOperating = false`.
-22. **Handoff location:** An order can be delivered only at a dry point (`waterDepth = 0`) the customer can reach safely.
+22. **Handoff location:** An order can be delivered only at a dry point (`waterDepth = 0`, or a raised shop entrance whose `entranceElevation` keeps it above the water) that the customer can reach safely.
 
 ---
 
@@ -231,7 +240,7 @@ Each action lists **preconditions** → **effects**.
 
 ### `move(robot, segment)`
 - **Pre:** segment is adjacent; segment passes Rules 1–8; robot not `offline`.
-- **Effect:** `robot.position = segment`; `robot.battery` decreases (more in water); speed set by Rule 2.
+- **Effect:** `robot.position = segment`; `robot.battery` decreases by `energyUse × length / 100` (water rate if `waterDepth > 0`); speed set by Rule 2; if carrying cargo, `order.status = in_transit`.
 
 ### `plan_route(robot, destination)`
 - **Pre:** a map of segments with current `waterDepth` and `isBlocked`.
@@ -266,7 +275,7 @@ Each action lists **preconditions** → **effects**.
 - **Effect:** `robot.status = waiting`; re-check water after the wait (useful when `trend = receding`).
 
 ### `seek_shelter(robot)`
-- **Pre:** alert level = `emergency`, OR Rule 14/15 triggered, OR no safe route exists.
+- **Pre:** alert level = `emergency`, OR alert level = `warning` and `robot.cargo = empty`, OR Rule 14/15 triggered, OR no safe route exists.
 - **Effect:** robot moves to the nearest reachable SafeZone with free capacity; `robot.status = sheltering`; `safeZone.occupied += 1`.
 
 ### `charge(robot)`
@@ -278,7 +287,7 @@ Each action lists **preconditions** → **effects**.
 - **Effect:** robot moves aside to a non-blocking spot and stops until clear.
 
 ### `report_hazard(robot, hazard)`
-- **Pre:** robot detects an Obstacle, open manhole, overflowing drain, or downed power line.
+- **Pre:** robot detects an Obstacle, open manhole, clogged or overflowing drain, or downed power line.
 - **Effect:** hazard added to shared map; segment marked `isBlocked = true`; OperatorCenter alerted (can forward to city/emergency services).
 
 ### `cancel_or_return(robot, order)`
@@ -301,10 +310,81 @@ Each action lists **preconditions** → **effects**.
 
 ## Example Scenario (for testing the agent)
 
-- **Street:** Maple Street, 4 segments in a line: `SEG-01` (elev 1.2 m) → `SEG-02` (elev 0.4 m, low spot, has a clogged drain) → `SEG-03` (elev 0.8 m) → `SEG-04` (elev 1.0 m). Alley `SEG-05` (elev 1.1 m) links `SEG-01` to `SEG-04` around the back.
-- **Flood:** `moderate`, `rising`, `waterRiseRate = 0.5 cm/min`. Current depths: SEG-01 = 0 cm, SEG-02 = 6 cm, SEG-03 = 2 cm, SEG-04 = 0 cm, SEG-05 = 1 cm.
-- **Alert level:** `warning`.
-- **Robot:** `BOT-7` at Noodle House (SEG-01), battery 45%, `maxSafeWaterDepth = 8 cm`, carrying `ORD-1024` (hot ramen, perishable, deadline in 25 min) for a customer at the bookstore on SEG-04.
-- **Pedestrians:** a crowd moving from SEG-02 toward SEG-01.
+### Map
 
-**Expected reasoning:** SEG-02 is at 6 cm and rising 0.5 cm/min, so it will pass 8 cm in about 4 min and has a clogged drain. Rule 5 makes it impassable already. The robot should `reroute` through the alley SEG-05 (higher, 1 cm), `yield` to the crowd, keep speed ≤ 0.5 m/s in the caution band, and `deliver` at the bookstore entrance if it is dry. If not, it should `propose_alternative_dropoff`. Because the alert level is `warning`, it accepts no new orders afterward and goes to the nearest SafeZone.
+```
+     SEG-05 alley (280 m, elev 1.1 m)
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │                                                                           │
+ INT-A ── SEG-01 ── INT-B ── SEG-02 ── INT-C ── SEG-03 ── INT-D ── SEG-04 ── INT-E
+ (SZ-2)   60 m               80 m, low          80 m               60 m      (SZ-1)
+       Noodle House                                               Bookstore
+```
+
+| Segment | Type | Length | Width | Elev. | Depth now | Flow | In `affectedSegments` | Notes |
+|---|---|---|---|---|---|---|---|---|
+| SEG-01 | sidewalk | 60 m | 3.5 m | 1.2 m | 0 cm | 0 m/s | no | Noodle House pickup 20 m from INT-A |
+| SEG-02 | sidewalk | 80 m | 3.0 m | 0.4 m | 6 cm | 0.3 m/s | yes | low spot; drain `DI-1` is `clogged`, cover present |
+| SEG-03 | sidewalk | 80 m | 3.0 m | 0.8 m | 2 cm | 0.2 m/s | yes | |
+| SEG-04 | sidewalk | 60 m | 3.0 m | 1.0 m | 0 cm | 0 m/s | no | Bookstore 10 m from INT-E, `entranceElevation` 1.25 m |
+| SEG-05 | alley | 280 m | 2.5 m | 1.1 m | 1 cm | 0.1 m/s | yes | links INT-A to INT-E around the back |
+
+- **Time:** 18:40. **Alert level:** `warning`. Robots allowed on the street.
+- **Flood:** `moderate`, `rising`, `waterRiseRate = 0.5 cm/min`.
+- **Robot:** `BOT-7` at the Noodle House pickup point (SEG-01), battery 45%, `maxSafeWaterDepth = 8 cm`,
+  normal speed 1.5 m/s, `energyUse` 1.0 %/100 m dry and 2.0 %/100 m wet, connectivity `good`.
+- **Order:** `ORD-1024`, hot ramen, perishable, `priority = normal`, deadline 19:05 (25 min), status `picked_up`.
+- **Customer:** waiting at the Bookstore on SEG-04; `contactable = true`, `canMeetRobot = true`.
+- **SafeZones:** `SZ-1` charging station at INT-E (elev 1.3 m, capacity 4, occupied 2, charger);
+  `SZ-2` raised plaza at INT-A (elev 1.3 m, capacity 2, occupied 2, no charger) — **full**.
+- **Pedestrians:** about 15 people entering SEG-01 from INT-B and walking toward INT-A (higher ground),
+  including one wheelchair user (`isVulnerable = true`). They need about 2 min to pass the robot.
+
+### Expected reasoning
+
+**1. Reject the direct route (SEG-01 → SEG-02 → SEG-03 → SEG-04, 250 m).**
+- The robot would drive *against* the evacuating crowd on SEG-01 (Rule 9).
+- Rule 5 does **not** apply: `DI-1` is `clogged`, not `overflowing`, and its cover is present.
+- Rule 7 does: SEG-02 has a clogged drain, so its local rise rate is 2 × 0.5 = 1.0 cm/min.
+  The robot would reach INT-B at about 0.4 min. SEG-02 is already in the caution band, so it would
+  cross at 0.5 m/s (80 m takes 2.7 min) and leave at about 3.1 min.
+  Predicted depth: 6 + 1.0 × 3.1 ≈ **9.1 cm**. That is above the 7 cm planning limit (8 − 1 margin)
+  and above the 8 cm hard limit (Rule 1).
+- Even at the baseline 0.5 cm/min, the result would be 7.6 cm > 7 cm, so the route is invalid either way.
+- Action: `report_hazard(BOT-7, DI-1 clogged on SEG-02)`, so SEG-02 is marked `isBlocked = true` and the OperatorCenter is alerted.
+
+**2. Plan the alley route (SEG-01 → SEG-05 → SEG-04, 310 m) and check it (Rule 6, Rule 7).**
+
+| t (min) | Event | Depth / check |
+|---|---|---|
+| 0.0 – 2.0 | `yield`: pull to the building side of SEG-01 (3.5 m wide, so stopping is allowed under Rule 12), stay ≥ 1.5 m from the wheelchair user (Rule 10), wait for the crowd to pass | SEG-01 stays 0 cm |
+| 2.0 – 2.2 | follow behind the crowd 20 m to INT-A at 1.5 m/s | 0 cm |
+| 2.2 | enter SEG-05 | 1 + 0.5 × 2.2 = 2.1 cm, below 3 cm, so full speed is allowed (Rule 2) |
+| 4.0 | SEG-05 reaches 3 cm after 162 m, so `sense_water` confirms it and speed drops to 0.5 m/s (Rule 2) | 3.0 cm |
+| 7.9 | leave SEG-05 after the remaining 118 m at 0.5 m/s | 1 + 0.5 × 7.9 ≈ **5.0 cm ≤ 7 cm** ✓, flow 0.1 m/s ≤ 0.5 ✓ (Rule 3) |
+| 8.0 | 10 m along SEG-04 to the Bookstore | SEG-04 is not affected, so it stays 0 cm ✓ |
+
+- **Speed cap:** the 0.5 m/s cap applies only to the last 118 m of the alley, once the water reaches 3 cm.
+  It does not apply on the first part of the alley (1–3 cm), where the robot can drive at 1.5 m/s.
+- **Deadline (Rule 20):** arrival at about 18:48, 17 min before the 19:05 deadline ✓.
+- **Battery (Rule 14):** the route costs 0.2% + 5.6% + 0.1% ≈ 5.9%, so the robot arrives with about 39%.
+  SZ-2 is full (Rule 17), so the nearest usable SafeZone is SZ-1.
+  - At the start: getting to SZ-1 costs about 5.8%, plus the 15-point margin = 20.8% ≤ 45% ✓.
+  - At the Bookstore: it costs about 0.1% + 15 = 15.1% ≤ 39% ✓.
+- **Alert level (Rule 18):** `warning` allows finishing the current order ✓.
+
+Action: `reroute(BOT-7)` → the OperatorCenter notifies the customer of the new ETA (18:48).
+
+**3. Deliver (Rule 22).** The Bookstore entrance is on a dry segment, and its raised 1.25 m
+entrance gives extra margin. The customer meets the robot there: `deliver(BOT-7, ORD-1024)`,
+which sets `order.status = delivered` and `robot.cargo = empty`.
+
+**Fallbacks**
+- If SEG-04 has started to flood or the customer cannot come out: `propose_alternative_dropoff`
+  at the raised Bookstore entrance or at SZ-1.
+- If the customer cannot be reached: `hand_off` to the Bookstore if it `isOpen`.
+- If SEG-05 is predicted to exceed 7 cm before the exit (for example, the rise rate increases):
+  `wait` at INT-A only if it is dry and not blocking people. Otherwise `seek_shelter`.
+
+**4. After delivery.** The alert level is `warning` and the cargo is empty, so the robot accepts no new orders.
+It runs `seek_shelter(BOT-7)` → SZ-1 (10 m away; `occupied` 2 → 3), sets `status = sheltering`, and runs `charge(BOT-7)`.
