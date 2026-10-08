@@ -26,6 +26,7 @@ ENT armchair : in living [NW] (15 cm gap under)
 ENT lamp_floor : in living [NE]
 ENT basket_cat : in living [SW]
 ENT ring_gold : worn_by ana (aliases: ring, Ana's ring)
+ENT phone : held_by tom
 AGT ana : on sofa facing N | holds: — | wears: ring_gold
 AGT tom : in living [E] facing W | holds: phone | wears: —
 AGT mio : in basket_cat facing N | holds: — | wears: —
@@ -36,11 +37,7 @@ BEL tom : mio -> in basket_cat (seen t1)
 [/STATE]
 ```
 
-`ana`、`mio` 坐/卧在沙发和猫窝里，都是嵌套位置，按新规则不写格子。手机 `phone` 是 §3 现场补的细节，下一行登记：
-
-```
-Δ ENT phone : held_by tom
-```
+`ana`、`mio` 坐/卧在沙发和猫窝里，都是嵌套位置，按新规则不写格子。
 
 ---
 
