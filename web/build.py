@@ -3,11 +3,11 @@ import html, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXAMPLES = [
-    ("trial_01_kitchen.md", "试跑 01 · 厨房与门厅"),
-    ("trial_02_lost.md", "试跑 02 · 停电后丢东西"),
-    ("trial_04_adjacent_rooms.md", "试跑 04 · 厨房与客厅（相邻、楼上）"),
-    ("trial_05_floors_car.md", "试跑 05 · 两层楼加车库"),
-    ("trial_07_rumour_spill.md", "试跑 07 · 假消息与洒水"),
+    ("trial_01_kitchen.md", "Trial 01 · Kitchen and hallway"),
+    ("trial_02_lost.md", "Trial 02 · Lost in a blackout"),
+    ("trial_04_adjacent_rooms.md", "Trial 04 · Kitchen, living room, upstairs"),
+    ("trial_05_floors_car.md", "Trial 05 · Two floors and a garage"),
+    ("trial_07_rumour_spill.md", "Trial 07 · A rumour and a spill"),
 ]
 
 
