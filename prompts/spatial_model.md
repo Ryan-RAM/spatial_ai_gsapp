@@ -38,6 +38,12 @@ UNK <id> (last seen: <relation> <location>, t=<turn>)
   `LOC coat_pocket < coat`.
 - Every 10 turns, or whenever the scene changes, write a FULL state.
   Otherwise write only the lines that changed, prefixed with Δ.
+- To remove a line, write a Δ line whose body is `∅`, with the reason:
+  `Δ ENT coin : ∅  (destroyed: melted down)`. When an entity's location
+  is lost, replace its ENT line with a UNK line in the same block:
+  `Δ ENT key : ∅` followed by `Δ UNK key (last seen: on table, t=4)`.
+  Removing a line never means the entity was unestablished; once a line
+  has existed, the id stays reserved.
 
 ## 2. Invariants (check before writing STATE)
 
@@ -77,7 +83,11 @@ To convert, do not reason freely. Follow these steps:
    room; if they're in different rooms, go via the doorway or wall that
    connects them).
 2. Take the absolute direction from anchor to target. Cell differences
-   give it; for example, anchor at C and target at NE gives NE.
+   give it; for example, anchor at C and target at NE gives NE. Count
+   columns east (+) / west (−) and rows north (+) / south (−). If both
+   differences are non-zero and equal in size, the direction is the
+   diagonal. If one is larger, the larger one wins and gives a cardinal
+   direction (anchor NW, target S: 1 east, 2 south → S).
 3. Look it up in this table (rows: anchor facing; cells: what that
    absolute direction becomes):
 
@@ -89,10 +99,14 @@ To convert, do not reason freely. Follow these steps:
    | W      | W     | N     | E      | S    |
 
    For diagonals, combine the two (anchor facing E, target NE gives
-   front-left). For a diagonal facing, rotate the target 45° toward the
-   nearest cardinal facing and use that row.
-4. Distance: same cell = right there; adjacent cell = a few steps; across
-   the room = far side; another room = name the route.
+   front-left). For a diagonal facing, always rotate counter-clockwise
+   to a cardinal row: NE→N, SE→E, SW→S, NW→W. Rotate the target the
+   same 45° counter-clockwise, then use that row (facing NE, target E:
+   rotate to facing N, target NE → front-right).
+4. Distance, by the larger of the two cell differences:
+   0 (same cell) = right there; 1 (adjacent, including diagonally) =
+   a few steps; 2 = far side (across the room); another room = name
+   the route.
 5. Visibility: check whether a tall entity (shelf, sofa back, wall) lies
    in a cell between them.
 
