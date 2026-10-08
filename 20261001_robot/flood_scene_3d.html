@@ -1,0 +1,486 @@
+<title>Maple Street Flood Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: full-bleed 3D street at dusk in the rain; mission panel top-left, timeline dock along the bottom. Single dark look by choice (storm at 18:40). */
+:root {
+  --night: #0b1418;
+  --panel: rgba(13, 24, 30, 0.86);
+  --ink: #e4eef1;
+  --muted: #93a8b1;
+  --line: rgba(147, 168, 177, 0.25);
+  --water: #5fb8d9;
+  --ok: #6fd3a8;
+  --caution: #f2b134;
+  --margin: #f08a3c;
+  --stop: #ff6b5e;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--night); color: var(--ink); font: 14px/1.45 var(--display); overflow: hidden; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; }
+#labels { position: fixed; inset: 0; pointer-events: none; }
+
+.tag { font: 600 11px/1.2 var(--mono); color: var(--ink); background: rgba(11, 20, 24, 0.78); border: 1px solid var(--line);
+  padding: 3px 6px; border-radius: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag small { display: block; font-weight: 400; color: var(--muted); font-size: 10px; }
+.tag.ok { border-color: color-mix(in srgb, var(--ok) 60%, transparent) }
+.tag.caution { border-color: var(--caution) }
+.tag.margin { border-color: var(--margin) }
+.tag.stop { border-color: var(--stop); color: var(--stop) }
+.tag.place { background: rgba(228, 238, 241, 0.92); color: #11222a; border: 0 }
+.tag.reject { color: var(--stop); border-color: var(--stop) }
+
+.panel { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 16px); left: 16px; width: min(360px, calc(100% - 32px));
+  max-height: calc(100% - 140px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px; display: grid; gap: 14px; backdrop-filter: blur(6px); }
+.eyebrow { font: 600 11px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--water); }
+h1 { font: 800 26px/1.05 var(--display); font-stretch: 80%; margin: 4px 0 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
+
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+.stat { display: grid; gap: 2px; min-width: 0 }
+.stat span { font: 600 10px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stat b { font: 600 15px/1.2 var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere }
+
+.depths { display: grid; gap: 5px; }
+.depth { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 8px; font: 12px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 8px; background: rgba(147, 168, 177, 0.15); border-radius: 2px; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--water); }
+.bar::before, .bar::after { content: ""; position: absolute; top: 0; bottom: 0; width: 1px; background: var(--ink); opacity: .45; z-index: 1 }
+.bar::before { left: 30% } .bar::after { left: 70% }
+.chip { justify-self: end; white-space: nowrap; font: 600 10px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 3px 6px; border-radius: 3px; }
+.chip.ok { color: var(--ok) } .chip.caution { color: #1a1206; background: var(--caution) }
+.chip.margin { color: #1a0d03; background: var(--margin) } .chip.stop { color: #1b0504; background: var(--stop) }
+.legend { font-size: 11px; color: var(--muted); }
+
+ol.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+ol.log li { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; padding: 6px 8px; border-radius: 6px; color: var(--muted); font-size: 12.5px; }
+ol.log li time { font: 600 11px/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+ol.log li.on { background: rgba(95, 184, 217, 0.14); color: var(--ink); }
+ol.log li.on time { color: var(--water) }
+ol.log li.done { opacity: .75 }
+
+.dock { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); display: flex; flex-wrap: wrap;
+  align-items: center; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; backdrop-filter: blur(6px); }
+.dock button { font: 600 13px/1 var(--display); letter-spacing: .04em; color: var(--night); background: var(--water); border: 0; border-radius: 6px;
+  padding: 9px 14px; cursor: pointer; }
+.dock button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.dock button:focus-visible, .dock input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dock label { font: 600 11px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+#t { flex: 1 1 220px; min-width: 0; accent-color: var(--water); }
+#clock { font: 600 15px/1 var(--mono); font-variant-numeric: tabular-nums; min-width: 132px; }
+
+.err { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .panel { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 104px); padding: 12px; gap: 10px; }
+  h1 { font-size: 21px } .sub { display: none }
+  .log-wrap, .legend { display: none }
+  .panel { max-height: 34% }
+  .dock { gap: 8px 10px; padding: 8px 10px }
+  .dock label { display: none }
+  #clock { min-width: 0 }
+}
+</style>
+
+<div id="stage" aria-label="3D model of Maple Street during a flash flood with the delivery robot route"></div>
+<div id="labels"></div>
+
+<section class="panel" aria-label="Mission status">
+  <div>
+    <div class="eyebrow">BOT-7 · ORD-1024 · alert: warning</div>
+    <h1>Maple Street Flood Run</h1>
+    <p class="sub">Hot ramen from Noodle House to the Bookstore, deadline 19:05. Drag to orbit, scroll to zoom, scrub the timeline.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><span>Status</span><b id="sStatus">waiting</b></div>
+    <div class="stat"><span>Speed</span><b id="sSpeed">0.0 m/s</b></div>
+    <div class="stat"><span>Battery</span><b id="sBatt">45.0%</b></div>
+    <div class="stat"><span>Cargo</span><b id="sCargo">ramen</b></div>
+  </div>
+  <div class="depths" id="depths" aria-label="Water depth by segment"></div>
+  <div class="legend">Ticks at 3 cm (slow to 0.5 m/s, Rule 2) and 7 cm (planning limit, Rule 7). Above 8 cm: no entry (Rule 1).</div>
+  <div class="log-wrap"><ol class="log" id="log"></ol></div>
+</section>
+
+<div class="dock" role="group" aria-label="Timeline">
+  <button id="play" type="button">Play</button>
+  <label for="t">Minute</label>
+  <input id="t" type="range" min="0" max="10" step="0.01" value="0">
+  <span id="clock">18:40 · t 0.0</span>
+  <button id="view" type="button" class="ghost">Reset view</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/renderers/CSS2DRenderer.js"></script>
+<script>
+(function () {
+  if (!window.THREE || !THREE.OrbitControls || !THREE.CSS2DRenderer) {
+    document.body.insertAdjacentHTML('beforeend', '<div class="err">The 3D library did not load. Reload the page to try again.</div>');
+    return;
+  }
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- Scenario data (from semantic_model.md) ----------
+  // Horizontal: 1 unit = 4 m (schematic; alley drawn shorter than 280 m).
+  // Vertical: elevation x5, water depth x0.3 units per cm (exaggerated so cm are visible).
+  const H = 0.25, ELEV = 5, DEPTH = 0.3;
+  const SEGS = [
+    { id: 'SEG-01', x0: 0,  x1: 15, elev: 1.2, d0: 0, rate: 0 },
+    { id: 'SEG-02', x0: 15, x1: 35, elev: 0.4, d0: 6, rate: 1.0, note: 'clogged drain DI-1 (2x rise)' },
+    { id: 'SEG-03', x0: 35, x1: 55, elev: 0.8, d0: 2, rate: 0.5 },
+    { id: 'SEG-04', x0: 55, x1: 70, elev: 1.0, d0: 0, rate: 0 },
+  ];
+  const ALLEY = { id: 'SEG-05', elev: 1.1, d0: 1, rate: 0.5, z: -14 };
+  const depthAt = (s, t) => s.d0 + s.rate * t;
+  const band = d => d > 8 ? 'stop' : d > 7 ? 'margin' : d >= 3 ? 'caution' : 'ok';
+  const bandLabel = { ok: 'ok', caution: 'slow', margin: 'margin', stop: 'no entry' };
+
+  // Street profile with short ramps between segments.
+  const prof = [[-8, 6], [13.5, 6], [16.5, 2], [33.5, 2], [36.5, 4], [53.5, 4], [56.5, 5], [78, 5]];
+  function groundY(x) {
+    if (x <= prof[0][0]) return prof[0][1];
+    for (let i = 1; i < prof.length; i++) {
+      if (x <= prof[i][0]) { const [xa, ya] = prof[i - 1], [xb, yb] = prof[i]; return ya + (yb - ya) * (x - xa) / (xb - xa); }
+    }
+    return prof[prof.length - 1][1];
+  }
+  const ALLEY_Y = ALLEY.elev * ELEV;
+
+  // ---------- Renderer, scene, camera ----------
+  const stage = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  stage.appendChild(renderer.domElement);
+  const labelRenderer = new THREE.CSS2DRenderer();
+  document.getElementById('labels').appendChild(labelRenderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b1418);
+  scene.fog = new THREE.Fog(0x0b1418, 90, 190);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 500);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.48;
+  controls.minDistance = 15; controls.maxDistance = 170;
+  function resetView() {
+    const narrow = innerWidth < 720;
+    camera.position.set(narrow ? 35 : 38, narrow ? 120 : 78, narrow ? 70 : 52);
+    controls.target.set(35, 2, -5);
+    controls.update();
+  }
+
+  scene.add(new THREE.HemisphereLight(0x9fc4d6, 0x1a2328, 0.75));
+  const sun = new THREE.DirectionalLight(0xdfe9ff, 0.7);
+  sun.position.set(40, 80, 50); sun.castShadow = true;
+  Object.assign(sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60 });
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.target.position.set(35, 0, -6);
+  scene.add(sun, sun.target);
+
+  const mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 });
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), mat(0x111c21));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+  function label(html, cls, pos) {
+    const el = document.createElement('div'); el.className = 'tag ' + (cls || ''); el.innerHTML = html;
+    const o = new THREE.CSS2DObject(el); o.position.copy(pos); scene.add(o); return { el, o };
+  }
+
+  // Street (extruded profile, z from -2 to +2)
+  const shape = new THREE.Shape();
+  shape.moveTo(-8, 0);
+  for (let x = -8; x <= 78; x += 0.5) shape.lineTo(x, groundY(x));
+  shape.lineTo(78, 0); shape.lineTo(-8, 0);
+  const street = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 4, bevelEnabled: false }), mat(0x6f7b80));
+  street.position.z = -2; street.receiveShadow = true; scene.add(street);
+  // Road in front, lower
+  const road = new THREE.Mesh(new THREE.BoxGeometry(86, 1, 8), mat(0x2a3236));
+  road.position.set(35, 0.5, 6); road.receiveShadow = true; scene.add(road);
+  for (let x = -4; x < 78; x += 6) {
+    const dash = new THREE.Mesh(new THREE.BoxGeometry(3, 0.02, 0.25), mat(0xc9c19a)); dash.position.set(x, 1.01, 6); scene.add(dash);
+  }
+  // Segment joints
+  [15, 35, 55].forEach(x => {
+    const j = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.05, 4.02), mat(0x3a4549)); j.position.set(x, groundY(x) + 0.02, 0); scene.add(j);
+  });
+
+  // Alley: two legs and the back run
+  const alleyMat = mat(0x5a5f58);
+  const alleyParts = [
+    [0, -8, 3, 12], [35, ALLEY.z, 73, 3], [70, -8, 3, 12],
+  ];
+  alleyParts.forEach(([x, z, w, d]) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, ALLEY_Y, d), alleyMat);
+    m.position.set(x, ALLEY_Y / 2, z); m.receiveShadow = true; scene.add(m);
+  });
+
+  // Buildings between street and alley
+  const shops = [
+    { x0: 1.8, x1: 10, h: 6, c: 0x8a5a44, name: 'Noodle House' },
+    { x0: 10.5, x1: 22, h: 7, c: 0x4e5d66 },
+    { x0: 22.5, x1: 34, h: 6, c: 0x6b6252 },
+    { x0: 34.5, x1: 47, h: 7.5, c: 0x51606b },
+    { x0: 47.5, x1: 58, h: 6.5, c: 0x5d5a66 },
+    { x0: 58.5, x1: 68.2, h: 6, c: 0x3f6d6a, name: 'Bookstore' },
+  ];
+  const winMat = new THREE.MeshBasicMaterial({ color: 0xf2d38a });
+  shops.forEach(s => {
+    const w = s.x1 - s.x0, cx = (s.x0 + s.x1) / 2, base = Math.min(groundY(s.x0), groundY(s.x1));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, s.h, 8.5), mat(s.c));
+    b.position.set(cx, base + s.h / 2, -7.6); b.castShadow = b.receiveShadow = true; scene.add(b);
+    for (let row = 0; row < 1; row++) for (let x = s.x0 + 1.2; x < s.x1 - 0.8; x += 2.4) {
+      if ((x * 7 + row * 3) % 5 < 1.6) continue;
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.2), winMat);
+      win.position.set(x + 0.5, base + 4.5 + row * 3, -3.34); scene.add(win);
+    }
+    if (s.name) {
+      const awn = new THREE.Mesh(new THREE.BoxGeometry(w - 1, 0.25, 1.6), mat(s.name === 'Bookstore' ? 0x2f8f86 : 0xb2513a));
+      awn.position.set(cx, base + 3.4, -2.6); scene.add(awn);
+      label(s.name, 'place', new THREE.Vector3(cx, base + s.h + 1.2, -6));
+    }
+  });
+  // Raised bookstore entrance (entranceElevation 1.25 m)
+  const stoop = new THREE.Mesh(new THREE.BoxGeometry(3, 1.25 * ELEV - 5 + 0.01, 1.2), mat(0x8d9a9e));
+  stoop.position.set(67.5, 5 + (1.25 * ELEV - 5) / 2, -2.9); scene.add(stoop);
+
+  // Safe zones
+  const sz1 = new THREE.Mesh(new THREE.BoxGeometry(6, 1.3 * ELEV, 6), mat(0x2b4c55));
+  sz1.position.set(74, 1.3 * ELEV / 2, 2); sz1.receiveShadow = true; scene.add(sz1);
+  const charger = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.2, 0.8), new THREE.MeshStandardMaterial({ color: 0x6fd3a8, emissive: 0x1d5a42 }));
+  charger.position.set(76, 1.3 * ELEV + 1.1, 3.5); scene.add(charger);
+  const sz1Tag = label('SZ-1 charging · 2/4', 'ok', new THREE.Vector3(74, 1.3 * ELEV + 3.4, 2));
+  const sz2 = new THREE.Mesh(new THREE.BoxGeometry(6, 1.3 * ELEV, 7), mat(0x48535a));
+  sz2.position.set(-5, 1.3 * ELEV / 2, 2); sz2.receiveShadow = true; scene.add(sz2);
+  label('SZ-2 plaza · FULL 2/2', 'stop', new THREE.Vector3(-5, 1.3 * ELEV + 3.6, 2));
+  [[-6.5, 0.5], [-3.8, 3.2]].forEach(([x, z]) => {
+    const r = makeRobot(0x5c6970); r.position.set(x, 1.3 * ELEV, z); scene.add(r);
+  });
+
+  // Drain DI-1 on SEG-02
+  const drain = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 1), mat(0x1b1f21));
+  drain.position.set(25, 2.03, 1.2); scene.add(drain);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.45, 40), new THREE.MeshBasicMaterial({ color: 0xff6b5e, transparent: true, opacity: 0.8, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.set(25, 2.1, 1.2); scene.add(ring);
+
+  // ---------- Water ----------
+  const waterMat = new THREE.MeshStandardMaterial({ color: 0x3f9cc2, transparent: true, opacity: 0.55, roughness: 0.15, metalness: 0.1 });
+  const water = {};
+  SEGS.forEach(s => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(s.x1 - s.x0 - 0.02, 1, 3.9), waterMat);
+    m.position.set((s.x0 + s.x1) / 2, 0, 0); scene.add(m); water[s.id] = m;
+    s.tag = label('', 'ok', new THREE.Vector3((s.x0 + s.x1) / 2, s.elev * ELEV + 4.5, 2.4));
+  });
+  const alleyWater = alleyParts.map(([x, z, w, d]) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w - 0.05, 1, d - 0.05), waterMat); m.position.set(x, 0, z); scene.add(m); return m;
+  });
+  ALLEY.tag = label('', 'ok', new THREE.Vector3(35, ALLEY_Y + 3.5, ALLEY.z));
+  function setWater(t) {
+    SEGS.forEach(s => {
+      const d = depthAt(s, t), top = s.elev * ELEV + d * DEPTH, m = water[s.id];
+      m.visible = d > 0; m.scale.y = Math.max(top, 0.01); m.position.y = top / 2;
+      const b = band(d);
+      s.tag.el.className = 'tag ' + b;
+      s.tag.el.innerHTML = `${s.id} · ${d.toFixed(1)} cm<small>${s.note || 'elev ' + s.elev + ' m'}</small>`;
+    });
+    const d = depthAt(ALLEY, t), top = ALLEY_Y + d * DEPTH;
+    alleyWater.forEach(m => { m.scale.y = top; m.position.y = top / 2; });
+    ALLEY.tag.el.className = 'tag ' + band(d);
+    ALLEY.tag.el.innerHTML = `SEG-05 alley · ${d.toFixed(1)} cm<small>elev 1.1 m · 280 m</small>`;
+  }
+
+  // ---------- Routes ----------
+  function tube(points, color, dashed) {
+    const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.05);
+    const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(240));
+    const m = dashed ? new THREE.LineDashedMaterial({ color, dashSize: 1.2, gapSize: 0.8 }) : new THREE.LineBasicMaterial({ color });
+    const line = new THREE.Line(geo, m); if (dashed) line.computeLineDistances(); scene.add(line); return line;
+  }
+  const lift = 3.4;
+  const directPts = []; for (let x = 5; x <= 67.5; x += 1) directPts.push(new THREE.Vector3(x, groundY(x) + lift, 0.8));
+  tube(directPts, 0xff6b5e, true);
+  label('Direct route rejected<small>SEG-02 predicted 9.1 cm at exit (Rule 7)</small>', 'reject', new THREE.Vector3(25, 2 + lift + 2.2, 0.8));
+  const Y = ALLEY_Y + 2.6;
+  tube([new THREE.Vector3(5, 6 + 2.6, -1.4), new THREE.Vector3(0, 6 + 2.6, -1.4), new THREE.Vector3(0, Y, -8), new THREE.Vector3(0, Y, ALLEY.z),
+    new THREE.Vector3(35, Y, ALLEY.z), new THREE.Vector3(70, Y, ALLEY.z), new THREE.Vector3(70, Y, -8), new THREE.Vector3(70, 5 + 2.6, -1.4),
+    new THREE.Vector3(67.5, 5 + 2.6, -1.4)], 0x6fd3a8, false);
+
+  // ---------- Robot ----------
+  function makeRobot(color) {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.9, 1.1), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+    body.position.y = 0.75; body.castShadow = true; g.add(body);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 1.0), new THREE.MeshStandardMaterial({ color: 0x1d2a30 }));
+    lid.position.y = 1.26; g.add(lid);
+    const wheelGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.18, 16);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x15191b });
+    [-0.55, 0, 0.55].forEach(x => [-0.6, 0.6].forEach(z => {
+      const w = new THREE.Mesh(wheelGeo, wheelMat); w.rotation.x = Math.PI / 2; w.position.set(x, 0.28, z); g.add(w);
+    }));
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4), wheelMat); pole.position.set(-0.6, 2, 0.4); g.add(pole);
+    const flag = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.02), new THREE.MeshBasicMaterial({ color: 0xf2b134 }));
+    flag.position.set(-0.4, 2.6, 0.4); g.add(flag);
+    return g;
+  }
+  const bot = makeRobot(0xe8eef0); bot.scale.setScalar(1.25); scene.add(bot);
+  const botTag = label('BOT-7', '', new THREE.Vector3());
+  const beacon = new THREE.PointLight(0xf2b134, 1.2, 10); scene.add(beacon);
+
+  // Timeline (minutes) from the worked scenario
+  const ALLEY_PTS = [[0, -1.4], [0, ALLEY.z], [70, ALLEY.z], [70, -1.4]];
+  const ALLEY_LEN = 12.6 + 70 + 12.6;
+  function alleyPoint(dMeters) {
+    let s = (dMeters / 280) * ALLEY_LEN;
+    for (let i = 1; i < ALLEY_PTS.length; i++) {
+      const [ax, az] = ALLEY_PTS[i - 1], [bx, bz] = ALLEY_PTS[i], len = Math.hypot(bx - ax, bz - az);
+      if (s <= len || i === ALLEY_PTS.length - 1) { const f = Math.min(s / len, 1); return [ax + (bx - ax) * f, az + (bz - az) * f, Math.atan2(-(bz - az), bx - ax)]; }
+      s -= len;
+    }
+  }
+  const lerp = (a, b, f) => a + (b - a) * Math.max(0, Math.min(1, f));
+  function robotState(t) {
+    if (t < 2) return { x: 5, z: -1.4, y: 6, yaw: Math.PI, v: 0, status: 'yielding', batt: 45, cargo: 'ramen' };
+    if (t < 2.2) { const f = (t - 2) / 0.2; return { x: lerp(5, 0, f), z: -1.4, y: 6, yaw: Math.PI, v: 1.5, status: 'delivering', batt: 45 - 0.2 * f, cargo: 'ramen' }; }
+    if (t < 7.93) {
+      const d = t < 4 ? (t - 2.2) * 90 : 162 + (t - 4) * 30;
+      const [x, z, yaw] = alleyPoint(Math.min(d, 280));
+      const onStreet = z > -2.2;
+      return { x, z, y: onStreet ? (x < 35 ? 6 : 5) : ALLEY_Y, yaw, v: t < 4 ? 1.5 : 0.5, status: 'delivering', batt: 45 - 0.2 - 2 * Math.min(d, 280) / 100, cargo: 'ramen' };
+    }
+    if (t < 8.04) { const f = (t - 7.93) / 0.11; return { x: lerp(70, 67.5, f), z: -1.4, y: 5, yaw: Math.PI, v: 1.5, status: 'delivering', batt: 39.2 - 0.1 * f, cargo: 'ramen' }; }
+    if (t < 8.6) return { x: 67.5, z: -1.4, y: 5, yaw: Math.PI / 2, v: 0, status: 'handing over', batt: 39.1, cargo: t < 8.3 ? 'ramen' : 'empty' };
+    const f = (t - 8.6) / 0.2;
+    return { x: lerp(67.5, 73.5, f), z: lerp(-1.4, 1.5, f), y: f >= 1 ? 1.3 * ELEV : 5 + f * 1.5, yaw: 0, v: f < 1 ? 1.5 : 0, status: f < 1 ? 'returning' : 'sheltering', batt: f < 1 ? 39.1 - 0.1 * f : Math.min(39 + (t - 8.8) * 1.5, 100), cargo: 'empty' };
+  }
+
+  // ---------- Crowd ----------
+  const people = [];
+  const skin = [0xd9b38c, 0xa8774f, 0x6e4b33, 0xe3c4a2];
+  const coats = [0x3d6b8a, 0x8a3d3d, 0x5c7a3d, 0x7a6a3d, 0x4d4d6b, 0x2f5f5a];
+  for (let i = 0; i < 15; i++) {
+    const g = new THREE.Group();
+    const vulnerable = i === 6;
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.32, vulnerable ? 0.5 : 1.0, 4, 8), mat(coats[i % coats.length]));
+    torso.position.y = vulnerable ? 1.2 : 1.0; torso.castShadow = true; g.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), mat(skin[i % skin.length]));
+    head.position.y = vulnerable ? 1.95 : 2.05; g.add(head);
+    if (vulnerable) {
+      const chair = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.06, 6, 20), mat(0x9aa5aa));
+      chair.position.set(0, 0.5, 0.4); g.add(chair);
+      const chair2 = chair.clone(); chair2.position.z = -0.4; g.add(chair2);
+    }
+    const umbrella = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.35, 10, 1, true), new THREE.MeshStandardMaterial({ color: coats[(i + 2) % coats.length], side: THREE.DoubleSide }));
+    umbrella.position.y = 2.6; if (i % 3 !== 1 && !vulnerable) g.add(umbrella);
+    g.userData = { sx: 16 + (i % 5) * 0.9 + (i * 0.37) % 0.8, sz: vulnerable ? 1.3 : ((i * 1.7) % 3.4) - 1.0, delay: (i % 5) * 0.12 + (i > 9 ? 0.3 : 0),
+      ex: -6 + (i % 4) * 1.1, ez: 0.2 + Math.floor(i / 4) * 1.0, vulnerable };
+    scene.add(g); people.push(g);
+  }
+  const wheelTag = label('wheelchair user · keep ≥ 1.5 m', '', new THREE.Vector3());
+  function setCrowd(t) {
+    people.forEach(p => {
+      const u = p.userData, f = Math.max(0, Math.min(1, (t - u.delay) / 2.3));
+      const x = u.sx + (u.ex - u.sx) * f;
+      const onPlaza = x < -2;
+      const z = onPlaza ? u.ez + 0.4 : u.sz;
+      p.position.set(x, onPlaza ? 1.3 * ELEV : groundY(x), z);
+      p.rotation.y = f < 1 ? Math.PI / 2 * -1 + Math.PI : 0;
+      if (u.vulnerable) { wheelTag.o.position.set(x, p.position.y + 3.2, z); wheelTag.o.visible = f > 0 && f < 1; }
+    });
+  }
+
+  // ---------- Rain ----------
+  const RAIN = reduceMotion ? 0 : 2200;
+  const rainGeo = new THREE.BufferGeometry();
+  const rp = new Float32Array(RAIN * 3);
+  for (let i = 0; i < RAIN; i++) { rp[i * 3] = Math.random() * 110 - 20; rp[i * 3 + 1] = Math.random() * 40; rp[i * 3 + 2] = Math.random() * 50 - 30; }
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rp, 3));
+  const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({ color: 0x9fc4d6, size: 0.12, transparent: true, opacity: 0.6 }));
+  scene.add(rain);
+
+  // ---------- Panel ----------
+  const steps = [
+    [0, 'Direct route rejected: SEG-02 would reach 9.1 cm by exit (Rule 7). Clogged drain DI-1 reported.'],
+    [0, 'Yield to the evacuating crowd on the building side of SEG-01, 1.5 m clear of the wheelchair user (Rules 9, 10, 12).'],
+    [2.0, 'Crowd has passed. Follow it 20 m to INT-A.'],
+    [2.2, 'Enter alley SEG-05 at 1.5 m/s. Depth 2.1 cm, below the caution band.'],
+    [4.0, 'Alley reaches 3 cm: slow to 0.5 m/s for the last 118 m (Rule 2).'],
+    [7.93, 'Leave alley at 5.0 cm, within the 7 cm limit. SEG-04 is dry.'],
+    [8.04, 'Deliver ORD-1024 at the raised Bookstore entrance, 18:48 (Rule 22).'],
+    [8.6, 'Alert is warning and cargo is empty: shelter and charge at SZ-1 (Rule 18).'],
+  ];
+  const logEl = document.getElementById('log');
+  steps.forEach(([t, txt]) => { const li = document.createElement('li'); li.innerHTML = `<time>t ${t.toFixed(1)}</time><span>${txt}</span>`; logEl.appendChild(li); });
+  const depthsEl = document.getElementById('depths');
+  const rows = [...SEGS, ALLEY].map(s => {
+    const row = document.createElement('div'); row.className = 'depth';
+    row.innerHTML = `<span>${s.id}</span><div class="bar"><i></i></div><span class="chip"></span>`;
+    depthsEl.appendChild(row); return { s, fill: row.querySelector('i'), chip: row.querySelector('.chip') };
+  });
+  const $ = id => document.getElementById(id);
+  function setPanel(t, r) {
+    const mins = 40 + t, hh = 18 + Math.floor(mins / 60), mm = Math.floor(mins % 60), ss = Math.floor((t * 60) % 60);
+    $('clock').textContent = `${hh}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')} · t ${t.toFixed(1)}`;
+    $('sStatus').textContent = r.status; $('sSpeed').textContent = r.v.toFixed(1) + ' m/s';
+    $('sBatt').textContent = r.batt.toFixed(1) + '%'; $('sCargo').textContent = r.cargo;
+    rows.forEach(({ s, fill, chip }) => {
+      const d = depthAt(s, t), b = band(d);
+      fill.style.width = Math.min(d / 10, 1) * 100 + '%';
+      fill.style.background = `var(--${b === 'ok' ? 'water' : b})`;
+      chip.className = 'chip ' + b; chip.textContent = d.toFixed(1) + ' · ' + bandLabel[b];
+    });
+    let cur = 0; steps.forEach(([st], i) => { if (t >= st) cur = i; });
+    if (t < 0.5) cur = t < 0.25 ? 0 : 1; else if (t < 2) cur = 1;
+    [...logEl.children].forEach((li, i) => { li.className = i === cur ? 'on' : i < cur ? 'done' : ''; });
+    sz1Tag.el.textContent = r.status === 'sheltering' ? 'SZ-1 charging · 3/4' : 'SZ-1 charging · 2/4';
+  }
+
+  // ---------- Loop ----------
+  const slider = $('t'), playBtn = $('play');
+  let t = 0, playing = !reduceMotion, last = performance.now();
+  function setT(v) { t = Math.max(0, Math.min(10, v)); slider.value = t; }
+  function render(now) {
+    const dt = (now - last) / 1000; last = now;
+    if (playing) { setT(t + dt * 0.5); if (t >= 10) { playing = false; } }
+    playBtn.textContent = playing ? 'Pause' : (t >= 10 ? 'Replay' : 'Play');
+    setWater(t);
+    const r = robotState(t);
+    bot.position.set(r.x, r.y, r.z); bot.rotation.y = r.yaw;
+    botTag.o.position.set(r.x, r.y + 4.2, r.z);
+    botTag.el.innerHTML = `BOT-7 · ${r.v.toFixed(1)} m/s<small>${r.status}</small>`;
+    beacon.position.set(r.x, r.y + 3, r.z);
+    setCrowd(t); setPanel(t, r);
+    ring.material.opacity = 0.45 + 0.4 * Math.abs(Math.sin(now / 400));
+    if (RAIN) {
+      const p = rainGeo.attributes.position.array;
+      for (let i = 1; i < p.length; i += 3) { p[i] -= dt * 30; if (p[i] < 0) p[i] += 40; }
+      rainGeo.attributes.position.needsUpdate = true;
+    }
+    controls.update();
+    renderer.render(scene, camera); labelRenderer.render(scene, camera);
+    requestAnimationFrame(render);
+  }
+  function resize() {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h); labelRenderer.setSize(w, h);
+    camera.aspect = w / h;
+    // Keep the street clear of the panel: shift right on wide screens, up on phones.
+    const panel = document.querySelector('.panel').getBoundingClientRect();
+    if (w >= 720) camera.setViewOffset(w, h, -(panel.right) / 2 + 8, 0, w, h);
+    else camera.setViewOffset(w, h, 0, (h - panel.top) / 2 - 10, w, h);
+    camera.updateProjectionMatrix();
+  }
+  playBtn.addEventListener('click', () => { if (t >= 10) setT(0); playing = !playing; });
+  slider.addEventListener('input', () => { playing = false; t = parseFloat(slider.value); });
+  $('view').addEventListener('click', resetView);
+  addEventListener('resize', resize);
+  resize(); resetView(); setT(reduceMotion ? 5 : 0);
+  requestAnimationFrame(render);
+})();
+</script>
