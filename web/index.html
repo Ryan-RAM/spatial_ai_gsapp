@@ -1,0 +1,2140 @@
+<title>空间模型实验台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* Layout: drafting table — conversation console on the left, the plan drawn from STATE on the right, rule checker underneath. */
+:root {
+  --paper: #F1F3EE;
+  --panel: #FBFCF9;
+  --ink: #1A2130;
+  --muted: #5B6470;
+  --line: #D3D8CE;
+  --grid: #E3E7DE;
+  --accent: #2443C4;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E2E7FA;
+  --belief: #7442AE;
+  --belief-soft: #EFE6F8;
+  --warn: #A4520C;
+  --warn-soft: #F7E8D6;
+  --ok: #2A7448;
+  --ok-soft: #DDEFE3;
+  --font-display: "Archivo", "Noto Sans SC", system-ui, sans-serif;
+  --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #13161B; --panel: #1A1E25; --ink: #E5E8ED; --muted: #98A0AC; --line: #2E343E; --grid: #242932;
+    --accent: #8EA4FF; --accent-ink: #0E1430; --accent-soft: #232D58; --belief: #C6A4F2; --belief-soft: #2E2340;
+    --warn: #F2A65E; --warn-soft: #3A2916; --ok: #74CC98; --ok-soft: #173325; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #13161B; --panel: #1A1E25; --ink: #E5E8ED; --muted: #98A0AC; --line: #2E343E; --grid: #242932;
+  --accent: #8EA4FF; --accent-ink: #0E1430; --accent-soft: #232D58; --belief: #C6A4F2; --belief-soft: #2E2340;
+  --warn: #F2A65E; --warn-soft: #3A2916; --ok: #74CC98; --ok-soft: #173325; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.6; }
+.wrap { padding-inline: 16px; padding-block: 18px 40px; max-width: 1480px; margin: 0 auto; }
+button, select, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+.brand h1 { font-family: var(--font-display); font-stretch: 78%; font-weight: 800; font-size: 30px; line-height: 1.05; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+.brand p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.sw.agt { background: var(--accent); }
+.sw.ent { border: 1.5px solid var(--ink); }
+.sw.loc { border: 1.5px dashed var(--muted); }
+.sw.bel { background: var(--belief-soft); border: 1.5px solid var(--belief); }
+
+.lab { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 20px; margin-top: 18px; align-items: start; }
+@media (max-width: 960px) { .lab { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.panel-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.eyebrow { font-family: var(--font-display); font-stretch: 85%; font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+.tabs { display: flex; gap: 4px; }
+.tab { border: 1px solid var(--line); background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 13px; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* console */
+.console { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: flex; flex-direction: column; max-height: calc(100vh - 40px); }
+@media (max-width: 960px) { .console { position: static; max-height: none; } }
+.pane { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 260px; }
+@media (max-width: 960px) { .log { max-height: 60vh; } }
+.msg { max-width: 100%; min-width: 0; }
+.msg .who { font-size: 11px; color: var(--muted); letter-spacing: .06em; margin-bottom: 3px; }
+.msg.user { align-self: flex-end; max-width: 88%; }
+.msg.user .body { background: var(--accent-soft); border-radius: var(--r); padding: 8px 12px; white-space: pre-wrap; }
+.msg.assistant .body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg .body pre.state { white-space: pre; overflow-x: auto; font-family: var(--font-mono); font-size: 11.5px; line-height: 1.5; background: var(--paper); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 4px; padding: 8px 10px; margin: 8px 0; }
+.msg .note { font-size: 12px; color: var(--warn); margin-top: 4px; }
+.empty-log { color: var(--muted); font-size: 13px; display: grid; gap: 8px; }
+.empty-log strong { color: var(--ink); }
+
+.composer { border-top: 1px solid var(--line); padding: 10px 12px 12px; display: grid; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn { border: 1px dashed var(--line); background: transparent; border-radius: 999px; padding: 2px 10px; font-size: 12px; cursor: pointer; color: var(--muted); }
+.chip-btn:hover { color: var(--ink); border-color: var(--ink); }
+textarea { width: 100%; resize: vertical; min-height: 64px; border: 1px solid var(--line); border-radius: var(--r); padding: 8px 10px; background: var(--paper); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row .grow { flex: 1; }
+.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); padding: 6px 14px; border-radius: var(--r); cursor: pointer; font-weight: 500; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+select { border: 1px solid var(--line); border-radius: var(--r); padding: 5px 8px; background: var(--panel); }
+.hint { font-size: 12px; color: var(--muted); }
+.unavailable { margin: 0 14px 10px; padding: 8px 10px; border-radius: var(--r); background: var(--warn-soft); color: var(--warn); font-size: 12.5px; }
+
+.import { padding: 14px; display: grid; gap: 10px; }
+.import textarea { min-height: 220px; font-family: var(--font-mono); font-size: 12px; }
+
+/* world */
+.world { display: grid; gap: 20px; min-width: 0; }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 14px; }
+.status .t { font-family: var(--font-display); font-stretch: 80%; font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1; }
+.status .src { font-size: 13px; color: var(--muted); }
+.scrub { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 220px; }
+.scrub input { flex: 1; accent-color: var(--accent); }
+.counts { display: flex; gap: 12px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.counts b { color: var(--ink); font-weight: 600; }
+
+.warnings { padding: 0 14px 12px; display: grid; gap: 4px; }
+.warn-item { font-size: 12.5px; color: var(--warn); background: var(--warn-soft); padding: 4px 10px; border-radius: 4px; }
+.ok-item { font-size: 12.5px; color: var(--ok); background: var(--ok-soft); padding: 4px 10px; border-radius: 4px; }
+
+.plans { padding: 16px 14px 18px; display: grid; gap: 22px; overflow-x: auto; }
+.floor-label { font-family: var(--font-display); font-stretch: 85%; font-weight: 700; font-size: 12px; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+.cluster { display: grid; gap: 0; width: max-content; }
+.room { position: relative; padding: 22px; }
+.room .rname { position: absolute; left: 24px; top: 2px; font-family: var(--font-display); font-weight: 700; font-stretch: 85%; font-size: 13px; }
+.room .wall { position: absolute; font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.room .wall.n { top: 4px; right: 24px; max-width: 60%; text-align: right; }
+.room .wall.s { bottom: 3px; left: 24px; right: 24px; text-align: center; }
+.room .wall.e, .room .wall.w { top: 24px; bottom: 24px; writing-mode: vertical-rl; text-align: center; width: 18px; }
+.room .wall.e { right: 2px; }
+.room .wall.w { left: 2px; transform: rotate(180deg); }
+.grid9 { display: grid; grid-template-columns: repeat(3, 144px); grid-template-rows: repeat(3, minmax(96px, auto)); border: 3px solid var(--ink); background: var(--panel); }
+.cell { border: 1px dashed var(--grid); padding: 16px 6px 6px; position: relative; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 0; }
+.cell .cl { position: absolute; top: 2px; left: 5px; font-family: var(--font-mono); font-size: 9.5px; color: var(--muted); opacity: .8; }
+.cell.hl-a { background: var(--accent-soft); }
+.cell.hl-b { background: var(--belief-soft); }
+.cell.hl-between { background-image: repeating-linear-gradient(45deg, transparent 0 6px, var(--grid) 6px 8px); }
+
+.thing { font-size: 12px; line-height: 1.35; max-width: 100%; }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 4px; border: 1.5px solid var(--ink); background: var(--panel); font-family: var(--font-mono); font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag.agt { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.tag.loc { border-style: dashed; border-color: var(--muted); color: var(--muted); }
+.tag .arrow { font-family: var(--font-body); font-weight: 700; }
+.tag .h { font-size: 9.5px; opacity: .75; }
+.nest { margin: 2px 0 0 10px; padding-left: 8px; border-left: 1px solid var(--line); display: grid; gap: 2px; }
+.rel { font-size: 10.5px; color: var(--muted); margin-right: 3px; }
+
+.outside { display: flex; flex-wrap: wrap; gap: 12px; }
+.out-card { border: 1.5px dashed var(--muted); border-radius: var(--r); padding: 8px 12px 10px; min-width: 180px; max-width: 100%; display: grid; gap: 4px; }
+.out-card h4 { margin: 0; font-family: var(--font-display); font-stretch: 85%; font-weight: 700; font-size: 13px; }
+.out-card .kind { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11.5px; letter-spacing: .04em; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 6px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+td code, .mono { font-family: var(--font-mono); font-size: 11.5px; }
+.pill { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 11px; white-space: nowrap; }
+.pill.bad { background: var(--warn-soft); color: var(--warn); }
+.pill.good { background: var(--ok-soft); color: var(--ok); }
+.pill.unk { background: var(--belief-soft); color: var(--belief); }
+.empty { color: var(--muted); font-size: 12.5px; padding: 8px 10px; }
+
+/* checker */
+.checker { padding: 14px; display: grid; gap: 14px; }
+.chk-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; }
+.field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.field select { color: var(--ink); width: 100%; }
+.verdict { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; font-size: 13px; }
+.verdict dt { color: var(--muted); }
+.verdict dd { margin: 0; min-width: 0; }
+.big { font-family: var(--font-display); font-stretch: 85%; font-weight: 800; font-size: 22px; line-height: 1.1; }
+.steps { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); white-space: pre-wrap; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; overflow-x: auto; }
+
+details.raw summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 0 14px 12px; }
+details.raw pre { margin: 0 14px 14px; font-family: var(--font-mono); font-size: 11.5px; background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 10px; overflow-x: auto; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .msg { animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(4px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>空间模型实验台</h1>
+      <p>左边和按规范扮演空间模型的 Claude 对话；右边把它写下的 STATE 画成平面图，并用 §4 的规则机械地核对方位答案。</p>
+    </div>
+    <div class="legend" aria-label="图例">
+      <span><i class="sw agt"></i>人物 AGT</span>
+      <span><i class="sw ent"></i>物品 ENT</span>
+      <span><i class="sw loc"></i>子位置 LOC</span>
+      <span><i class="sw bel"></i>信念 BEL</span>
+    </div>
+  </header>
+
+  <main class="lab">
+    <section class="panel console" aria-label="对话">
+      <div class="panel-h">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" id="tab-chat" aria-selected="true" aria-controls="pane-chat">对话</button>
+          <button class="tab" role="tab" id="tab-import" aria-selected="false" aria-controls="pane-import">导入记录</button>
+        </div>
+        <label class="hint" for="tier">模型
+          <select id="tier">
+            <option value="default">默认</option>
+            <option value="complex">最强（慢）</option>
+            <option value="quick">快速</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="pane" id="pane-chat" role="tabpanel" aria-labelledby="tab-chat">
+        <div class="unavailable" id="no-sample" hidden>这里调用不了 Claude：需要在 claude.ai 里打开这个页面并允许它使用 Claude。导入记录和规则核对照常可用。</div>
+        <div class="log" id="log" aria-live="polite">
+          <div class="empty-log" id="empty-log">
+            <div><strong>还没有对话。</strong>右边先显示的是示例「试跑 01」的世界状态。</div>
+            <div>先描述一个场景，Claude 会按规范写出第一份 STATE；之后每说一句，右边的平面图就跟着更新。</div>
+          </div>
+        </div>
+        <div class="composer">
+          <div class="chips" id="presets"></div>
+          <textarea id="msg" placeholder="描述场景、推动剧情，或者问一个空间问题……（Enter 发送，Shift+Enter 换行）"></textarea>
+          <div class="row">
+            <button class="btn" id="send">发送</button>
+            <button class="btn ghost" id="stop" hidden>停止</button>
+            <span class="grow"></span>
+            <button class="btn ghost" id="reset">新场景</button>
+          </div>
+          <div class="hint" id="ctx-hint">每次都会把完整规范和全部对话发给 Claude；它没有别的记忆。</div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-import" role="tabpanel" aria-labelledby="tab-import" hidden>
+        <div class="import">
+          <div class="row">
+            <label class="field grow" for="example">载入示例
+              <select id="example"></select>
+            </label>
+          </div>
+          <label class="field" for="paste">或者粘贴任意含 <code>[STATE t=…] … [/STATE]</code> 的文字
+            <textarea id="paste" placeholder="[STATE t=1]&#10;LOC kitchen &lt; house | room | N:window E:door S:stove W:fridge | aff: cook&#10;ENT mug : on table&#10;…&#10;[/STATE]"></textarea>
+          </label>
+          <div class="row">
+            <button class="btn" id="parse">解析并显示</button>
+            <span class="hint" id="parse-hint"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="world" aria-label="世界状态">
+      <div class="panel">
+        <div class="status">
+          <div class="t" id="t-label">t=—</div>
+          <div class="src" id="src-label"></div>
+          <div class="scrub">
+            <label class="hint" for="scrub">回合</label>
+            <input type="range" id="scrub" min="0" max="0" value="0" step="1">
+          </div>
+          <div class="counts" id="counts"></div>
+        </div>
+        <div class="warnings" id="warnings"></div>
+        <details class="raw"><summary>这一轮的 STATE 原文</summary><pre id="raw"></pre></details>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="eyebrow">平面图 · 按 adj 拼接</span><span class="hint">北在上</span></div>
+        <div class="plans" id="plans"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="eyebrow">规则核对 · §4</span><span class="hint">选锚点和目标，按规则算出应有的答案，对照 Claude 的回答</span></div>
+        <div class="checker">
+          <div class="chk-controls">
+            <label class="field" for="chk-a">锚点（人或有朝向的物）<select id="chk-a"></select></label>
+            <label class="field" for="chk-b">目标<select id="chk-b"></select></label>
+          </div>
+          <div id="chk-out"></div>
+        </div>
+      </div>
+
+      <div class="tables">
+        <div class="panel">
+          <div class="panel-h"><span class="eyebrow">位置链 · Q1</span></div>
+          <div class="tbl-wrap"><table id="tbl-chain"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><span class="eyebrow">信念与真相 · BEL</span></div>
+          <div class="tbl-wrap"><table id="tbl-bel"></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><span class="eyebrow">未知 · 退役 · 习惯</span></div>
+          <div class="tbl-wrap"><table id="tbl-misc"></table></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="text/plain" id="spec-src"># Spatial Model (LLM-only, no external state)
+
+You simulate a world in which every entity has a definite location. You
+have no database: the STATE block you write each turn IS the world's
+memory. Before answering any spatial question or narrating any movement,
+consult your most recent STATE. If narration and STATE ever disagree,
+STATE is correct. Fix the narration.
+
+## 1. STATE notation
+
+Write STATE at the end of every turn in which placements changed or were
+newly established. Use this compact notation:
+
+```
+[STATE t=<turn>]
+LOC <id> < <parent> [<cell>] | <type> | N:<feature> E:<feature> S:<feature> W:<feature> | adj: <side>:<room> | aff: <affordances>
+ENT <id> : <relation> <location> [<cell>] (<attributes>)
+AGT <id> : <relation> <location> [<cell>] facing <dir> | holds: <ids> | wears: <ids>
+BEL <believer> : <entity> -> <relation> <location> (<source>)
+BEL <believer> : <entity> -> unknown (last believed: <relation> <location>, t=<turn>; ruled out: <places>)
+HAB <who> : <entity> -> <relation> <location> (<source>)
+UNK <id> (last seen: <relation> <location>, t=<turn>; within: <location>; ruled out: <places>)
+RET <id> (<reason>, t=<turn>)
+[/STATE]
+```
+
+- ids are short, stable, lowercase: mug_red, kitchen, mara. Never rename
+  an id. Add new names to aliases instead.
+- `<cell>` places the entity in its parent's 3x3 grid:
+
+  ```
+  NW  N  NE
+  W   C   E
+  SW  S  SE
+  ```
+
+  North is the room's north wall. Every room declares what's on each wall.
+- A wall feature may name which third of the wall it occupies with `@`:
+  `E:door_bed@SE(open)` is a door in the southern third of the east wall.
+  With no `@`, it is the middle third. Doors and windows need a state:
+  open or closed.
+- A wall may list several features, comma-separated, each with its own
+  `@`: `N:stairs_up@NW, front_door@N(closed)`.
+- `adj:` lists rooms that share a wall, floor or ceiling:
+  `adj: E:bedroom, up:study_up`. A room listed as `up:` sits directly
+  above with the same footprint, so its cells line up with the room
+  below. Stairs are a feature at the same cell on both floors
+  (`stairs_up@NW` ↔ `stairs_down@NW`), and are the only opening in the
+  floor. A door on a shared wall must sit at the same third on both
+  sides (study E wall @SE ↔ bedroom W wall @SW).
+- A LOC that is part of a room (a window sill, a wall hook, a niche)
+  takes a cell like an ENT: `LOC sill < study_up [S] | ledge`.
+- Anything with a front (car, sofa, chair) carries `heading: <dir>`: the
+  absolute direction its front points now. It is state, not a fixed
+  property: when the thing turns, write a Δ with the new heading. The
+  intrinsic frame always uses the current heading.
+- A part of an oriented thing names its intrinsic side:
+  `LOC trunk < car | container | side: back`. side ∈ front, back, left,
+  right, top, bottom. Its absolute side comes from the parent's heading.
+- An agent seated in a vehicle writes `facing with <vehicle>`: it faces
+  the vehicle's heading and turns with it, with no extra lines.
+- HAB records a habit: where someone usually keeps or finds something
+  (`HAB nia : glasses -> on sill (habit)`). Like any detail it is fixed
+  once written. It is not the entity's location: ENT says where the
+  thing is now.
+- A cell holds furniture and people together unless an entity is marked
+  `fills` (a bed that takes the whole cell). Nobody can stand in a
+  filled cell.
+- Only direct children of a gridded LOC (a room) take a `<cell>`. Nested
+  items (in a drawer, under a sofa, held by someone) omit it; they occupy
+  their container's cell.
+- A LOC with no grid (outdoor areas, vehicles, abstract places) omits the
+  wall field, and its children omit `<cell>`. Frame questions inside it
+  use intrinsic or relative frames only.
+- relation ∈ in, on, under, beside, attached_to, held_by, worn_by.
+- dir ∈ N, NE, E, SE, S, SW, W, NW, or `—` for an agent with no
+  meaningful facing (carried, worn, curled up asleep). Frame questions
+  anchored on a `—` agent use its holder's facing; with no holder, answer
+  in the absolute frame (§4 step 1).
+- Containers and people are locations too: `ENT key : in coat_pocket`,
+  `LOC coat_pocket < coat`.
+- Every 10 turns, or whenever the scene changes, write a FULL state.
+  Otherwise write only the lines that changed, prefixed with Δ.
+- A Δ line always restates the whole line. For AGT, that means facing,
+  holds and wears too, even if only one of them changed.
+- If one id moves several times in one turn, write one Δ line with the
+  final place and the whole path in the note:
+  `(was: under sofa → held_by tom → held_by ana; handed over, put on)`.
+  Every step in the path must itself obey §2.
+- To remove a line, write a Δ line whose body is `∅`, with the reason:
+  `Δ ENT coin : ∅  (destroyed: melted down)`. When an entity's location
+  is lost, replace its ENT line with a UNK line in the same block:
+  `Δ ENT key : ∅` followed by `Δ UNK key (last seen: on table, t=4)`.
+  Removing a line never means the entity was unestablished; once a line
+  has existed, the id stays reserved.
+- An entity that stops existing (destroyed, eaten, merged) gets a RET
+  line: `Δ ENT mug : ∅` then `Δ RET mug (destroyed: broke in sink, t=9)`.
+  RET lines are carried into every FULL state, so the id stays reserved
+  and BEL lines that still mention it have something to point to.
+- A character who learns that their belief is wrong but not where the
+  thing is gets `BEL <who> : <id> -> unknown (last believed: ..., t=n)`.
+  Places they have searched go in its `ruled out:`.
+- When a belief comes from someone else, the source says how the teller
+  meant it, judged by the teller's own BEL at that moment:
+  `told by sam, sincere` (teller believes it), `told by sam, guess`
+  (teller has no BEL), `told by sam, lie` (teller believes otherwise).
+  The listener's BEL is the same in all three cases; only the narrator
+  knows the tag's meaning for the teller.
+- A BEL may name a place that has no LOC (someone was told about a
+  kitchen drawer that was never established). Do not create the place
+  because someone believes in it. Mark it `(…; place unverified)`. Only
+  when someone goes there or looks, establish it under §3 from what fits
+  the world, or establish that it does not exist.
+- Substances (water, sand, flour) are not entities while they are in a
+  container: write the amount as the container's attribute,
+  `(holds ~0.5 L water)`. A substance outside any container gets its own
+  ENT: `ENT spill_water : in living [C] (~0.25 L, on floor)`. Asked
+  where a substance went, list every container and spill holding it.
+
+## 2. Invariants (check before writing STATE)
+
+- One entity, one place. If you are about to place something that already
+  has a location, you must be moving it, and the move needs a cause.
+- Contents travel with their container. Held and worn items travel with
+  their holder. Don't write separate lines to move them.
+- No teleporting. A change in location requires an event in the narration.
+- Physical plausibility: size, capacity, and support (nothing floats).
+- Four states, never confused:
+  - known → ENT line exists
+  - unknown → UNK line (exists, but its location is lost or unseen)
+  - retired → RET line (existed, no longer exists)
+  - unestablished → no line at all
+- Ground truth versus belief: characters know only what they have seen
+  or been told. A character's dialogue and actions follow their BEL
+  lines, not the ENT lines.
+- What a character acts on, in order: a BEL with a place; else, if their
+  BEL is unknown or absent, their HAB, skipping places in `ruled out`;
+  else they search (Q4 from where they stand).
+
+## 3. Lazy detail, then fixed
+
+When a question needs a detail that was never established (what's in the
+drawer, which wall the window is on), decide it once, in a way that fits
+everything already established, write it into STATE immediately, and
+treat it as fixed thereafter. Never re-decide an established detail.
+
+The same applies to UNK entities. An UNK line records what is still
+certain: `within:` (the smallest place it cannot have left, given who
+could have moved it) and `ruled out:` (places already searched). While
+the entity is UNK, never state where it is, not even in narration.
+When someone finds it, or a question forces an answer, resolve it once:
+pick a place inside `within`, not in `ruled out`, reachable from the
+last-seen place by events that happened. Then write `Δ UNK <id> : ∅`
+and its new ENT line in the same block. A search that fails adds the
+searched place to `ruled out`.
+
+## 4. Frames of reference
+
+Three frames. Always say which one an answer uses.
+
+- Absolute: compass and grid cells ("the NE corner", "the north wall").
+- Intrinsic: relative to an oriented object's own front ("in front of
+  the car" means the side the car faces).
+- Relative: from an observer's position and facing ("to Mara's left").
+
+To convert, do not reason freely. Follow these steps:
+
+1. Find the anchor's cell and facing, and the target's cell. If they are
+   in rooms that share a wall (`adj:`), lay the two grids side by side:
+   the neighbour's cells continue past the shared wall (an east
+   neighbour's W column is x=3, its C is (4,1)). Use these combined
+   coordinates for steps 2, 4 and 5. Each floor adds a z coordinate
+   (ground 0, next floor 1). If z differs, the answer starts with
+   "above" or "below", then the horizontal direction from x and y (if
+   any); another floor always counts as "name the route" for distance,
+   and the floor hides everything except through the stair opening. Rooms not adjacent: name the route
+   and give only the direction of the first doorway.
+   If the anchor has no facing (an object, or `—`), answer in the
+   absolute frame instead and say so.
+2. Take the absolute direction from anchor to target. Cell differences
+   give it; for example, anchor at C and target at NE gives NE. Count
+   columns east (+) / west (−) and rows north (+) / south (−). If both
+   differences are non-zero and equal in size, the direction is the
+   diagonal. If one is larger, the larger one wins and gives a cardinal
+   direction (anchor NW, target S: 1 east, 2 south → S).
+3. Look it up in this table (rows: anchor facing; cells: what that
+   absolute direction becomes):
+
+   | facing | front | right | behind | left |
+   |--------|-------|-------|--------|------|
+   | N      | N     | E     | S      | W    |
+   | E      | E     | S     | W      | N    |
+   | S      | S     | W     | N      | E    |
+   | W      | W     | N     | E      | S    |
+
+   For diagonals, combine the two (anchor facing E, target NE gives
+   front-left). For a diagonal facing, always rotate counter-clockwise
+   to a cardinal row: NE→N, SE→E, SW→S, NW→W. Rotate the target the
+   same 45° counter-clockwise, then use that row (facing NE, target E:
+   rotate to facing N, target NE → front-right).
+4. Distance, by the larger of the two cell differences:
+   0 (same cell) = right there; 1 (adjacent, including diagonally) =
+   a few steps; 2 = far side (across the room); another room = name
+   the route.
+5. Visibility. First find the cells between anchor and target. Step
+   one column (or row) at a time along the longer axis, from anchor to
+   target, excluding both ends. At each step, place the other coordinate
+   on the straight line between them:
+   - a whole number → that cell is between them;
+   - exactly .5 → the line passes between two cells: both count, and
+     each is "half" in the way;
+   - anything else → round to the nearest cell.
+   (E→NW: one step, at y=1.5 → C and N are both half. (2,0)→(5,1): at
+   x=3, y≈0.33 → (3,0); at x=4, y≈0.67 → (4,1).)
+
+   Then compare heights. Every entity and eye level has a height class:
+   low (< 0.5 m: floor items, a lying cat), mid (0.5–1.2 m: tables, sofa
+   backs, a seated person's eyes), tall (> 1.2 m: shelves, a standing
+   person and their eyes). Walls and closed doors are opaque at every
+   height. For each blocker in a between-cell:
+   - blocker lower than target → does not hide it;
+   - blocker at least as high as target, and at least as high as the
+     observer's eyes → hides it;
+   - blocker at least as high as target, but lower than the eyes →
+     partly hides it.
+
+   A "half" cell can only partly hide. Report the worst result over all
+   blockers: hidden > partly hidden > visible.
+
+   Across a shared wall, the line must cross that wall inside an open
+   door's or window's third; otherwise the wall hides the target.
+
+6. Field of view. A person sees front, front-left, front-right, left
+   and right. Behind, behind-left and behind-right are out of view until
+   they turn. Report it separately: "behind-right, a few steps, out of
+   view (would be visible if Kai turned)".
+
+## 5. The four queries
+
+Before answering, quietly do the lookup steps. The answer is one line
+first, then supporting detail.
+
+**Q1. Referent → location.**
+Resolve the referent: id → alias → attributes → the most recently
+mentioned matching entity (for pronouns). If two or more candidates fit,
+ask which one, and list them with a distinguishing detail. Otherwise,
+give the relation plus the full chain up to the scene level:
+"in the left pocket of Mara's coat — Mara is in the hallway."
+For an UNK entity, say it's unknown, give its last known place and its
+`within` bound. For a RET entity, say it no longer exists and why.
+
+**Q2. Location → occupants.**
+List the ENT/AGT lines whose location is that place, grouped by
+relation. Nested contents only if asked or obvious. If the place has
+no lines: if it was explicitly established as empty, say "empty";
+otherwise apply §3 (decide, record, answer).
+
+**Q3. Frame-relative position.**
+Identify the frame and anchor, then follow §4 exactly. Answer as
+direction + distance + visibility (+ field of view, for a person).
+Use only the words the table produces (front, front-left, …, N, NE, …);
+never add qualifiers it can't produce, such as "west-southwest" or
+"slightly to the left":
+"From the doorway: front-right, far side of the room, partly hidden
+by the sofa."
+
+**Q4. Vague description → specific location.**
+Break the description into constraints: affordance (hide, cook, sit),
+relation (near X), habit or ownership (her usual spot: check HAB lines
+first), and context
+(current scene, speaker). Check LOC lines from the current room
+outward. Pick the most specific location the evidence supports, give a
+one-clause reason, and mention a runner-up if it's close:
+"the pantry off the kitchen — it closes and has no window (runner-up:
+under the stairs)."
+Never invent a location when an existing one fits. If none fits, create
+one under §3 and record it.
+
+## 6. Movement events
+
+Narrate the move, then record it in the Δ lines:
+
+```
+Δ ENT mug_red : in sink [W]        (was: on counter [NE]; mara moved it)
+```
+
+Update BEL for every character who witnessed the move.
+</script>
+<script type="text/plain" id="ex-0" data-example="试跑 01 · 厨房与门厅"># 试跑 01：厨房与门厅（10 轮）
+
+按 `prompts/spatial_model.md`（含补充的四条规则）自问自答跑十轮。
+每轮格式：**输入**（事件或提问）→ **回答/叙述** → STATE。
+坐标约定（用于核对 §4）：x 向东为 +，y 向北为 +；
+NW(0,2) N(1,2) NE(2,2) / W(0,1) C(1,1) E(2,1) / SW(0,0) S(1,0) SE(2,0)。
+
+---
+
+## t=1 搭场景
+
+**输入**：一栋房子，厨房东墙有门通门厅。Mara 穿着灰外套站在厨房西侧，Leo 在东南角。桌上有把黄铜钥匙，台面上有个红杯子。
+
+**叙述**：厨房北墙是窗，窗下是水槽；东北角一条齐腰高的台面贴着北墙；正中一张木桌；西南角立着两米高的书架。门厅北墙是前门，前门旁的西北角有衣钩和伞架。
+
+```
+[STATE t=1]
+LOC street < world | outdoor | aff: walk
+LOC house < street | building | aff: shelter
+LOC kitchen < house | room | N:window E:door_hall S:stove W:fridge | aff: cook, eat, wash
+LOC hallway < house | room | N:front_door E:stairs S:closet W:door_kitchen | aff: pass, hang_coats
+LOC coat_pocket_l < coat_grey | container | aff: hold_small
+ENT table : in kitchen [C] (wood, waist-high)
+ENT counter : in kitchen [NE] (waist-high, along N wall)
+ENT sink : in kitchen [N] (under window)
+ENT shelf_tall : in kitchen [SW] (2 m, blocks view)
+ENT mug_red : on counter [NE]
+ENT key_brass : on table [C] (aliases: key, Mara's key)
+ENT coat_grey : worn_by mara
+ENT coat_hook : attached_to hallway [NW]
+ENT umbrella_stand : in hallway [NW]
+AGT mara : in kitchen [W] facing E | holds: — | wears: coat_grey
+AGT leo : in kitchen [SE] facing N | holds: — | wears: —
+BEL mara : key_brass -> on table (seen t1)
+BEL mara : mug_red -> on counter (seen t1)
+BEL leo : key_brass -> on table (seen t1)
+BEL leo : mug_red -> on counter (seen t1)
+[/STATE]
+```
+
+---
+
+## t=2 Q3 相对方位
+
+**输入**：从 Mara 的角度看，红杯子在哪？
+
+**回答**：在 Mara 的正前方，房间另一头，看得见。（相对参照系，锚点 Mara）
+
+- 推导：Mara W(0,1) → 杯子 NE(2,2)，dx=+2、dy=+1，东向差值更大 → E。
+  朝东那一行：E = front。距离取较大差值 2 → 房间另一头。
+- 可见性：中间经过 C（桌子，齐腰高），不挡视线；书架在 SW，不在中间。
+
+（无位置变化，不写 STATE。）
+
+---
+
+## t=3 移动
+
+**输入**：Mara 去门厅把外套挂起来。
+
+**叙述**：Mara 穿过桌边，从东墙的门进入门厅，走到西北角，面朝北把灰外套挂上衣钩。Leo 看见她出了门，但看不到门厅里的情况。
+
+```
+[STATE t=3]
+Δ AGT mara : in hallway [NW] facing N | holds: — | wears: —   (was: in kitchen [W] facing E; walked via door_hall)
+Δ ENT coat_grey : on coat_hook   (was: worn_by mara; mara hung it)
+[/STATE]
+```
+
+---
+
+## t=4 移动（Mara 不在场）
+
+**输入**：Leo 收拾厨房：钥匙放进台面抽屉，红杯子放进水槽。
+
+**叙述**：Leo 从东南角往北走，经过桌子时拿起钥匙。到台面前拉开抽屉（第一次提到抽屉，按 §3 确定：台面下有一个抽屉）放进钥匙。然后把杯子挪进旁边的水槽，最后站在台面前面朝北。
+
+```
+[STATE t=4]
+Δ LOC drawer_counter < counter | container | aff: hold_small   (new, §3)
+Δ ENT key_brass : in drawer_counter   (was: on table [C]; leo moved it)
+Δ ENT mug_red : in sink   (was: on counter [NE]; leo moved it)
+Δ AGT leo : in kitchen [NE] facing N | holds: — | wears: —   (was: [SE] facing N)
+Δ BEL leo : key_brass -> in drawer_counter (did it, t4)
+Δ BEL leo : mug_red -> in sink (did it, t4)
+[/STATE]
+```
+
+Mara 在门厅，没看见这两次移动，所以她的 BEL 不变。
+
+---
+
+## t=5 信念与真相
+
+**输入**：Mara 回厨房拿钥匙。她会先去哪找？
+
+**回答**：去桌上找。依据是她的 BEL（t1 看到钥匙在桌上），实际上钥匙在抽屉里。
+
+**叙述**：Mara 从门厅西墙的门回到厨房东侧，面朝西。桌子 C 在她正前方几步远（dx=−1 → W → front），一眼就能看出桌上空了。
+
+```
+[STATE t=5]
+Δ AGT mara : in kitchen [E] facing W | holds: — | wears: —   (was: in hallway [NW] facing N)
+Δ BEL mara : key_brass -> unknown (last believed on table t1; saw it gone t5)
+[/STATE]
+```
+
+> ⚠ 规则缺口：BEL 没有"信念者知道东西不见了"的写法，这里临时用 `-> unknown (...)`。
+
+---
+
+## t=6 Q1 + Q3
+
+**输入**：红杯子在哪？Mara 能看见吗？
+
+**回答**：在水槽里，水槽在厨房北墙窗下 [N]。从 Mara 看是右前方，几步远，看得见。（Q1 用绝对参照系；第二问用相对参照系，锚点 Mara）
+
+- 推导：Mara E(2,1) → 水槽 N(1,2)，dx=−1、dy=+1，两个差值相等 → NW。
+  朝西那一行：W = front，N = right → front-right。距离 1 → 几步远。
+- Mara 看了一眼，更新了信念。
+
+```
+[STATE t=6]
+Δ BEL mara : mug_red -> in sink (seen t6)
+[/STATE]
+```
+
+---
+
+## t=7 斜向朝向 + 告知
+
+**输入**：Leo 转身面朝西南。这时 Mara 在 Leo 的哪边？Mara 问 Leo 见没见过钥匙。
+
+**回答**：Mara 在 Leo 的左前方，几步远。（相对参照系，锚点 Leo，朝向是斜向）
+
+- 推导：Leo NE(2,2) → Mara E(2,1)，dx=0、dy=−1 → S。
+  朝向 SW 是斜向，按规则逆时针转 45°：SW→S；目标也转：S→SE。
+  朝南那一行：S = front，E = left → SE = front-left。
+- 直觉核对：面朝西南时，正南在正前方与左手（东南）之间 → 左前方 ✓。
+
+**叙述**：Leo 说："在台面抽屉里。"
+
+```
+[STATE t=7]
+Δ AGT leo : in kitchen [NE] facing SW | holds: — | wears: —   (was: facing N)
+Δ BEL mara : key_brass -> in drawer_counter (told by leo, t7)
+[/STATE]
+```
+
+---
+
+## t=8 移动
+
+**输入**：Mara 去拿钥匙。
+
+**叙述**：Mara 往北走几步到台面前（E→NE），和 Leo 站在同一格。她面朝北拉开抽屉，拿出钥匙。Leo 看着她拿的。
+
+```
+[STATE t=8]
+Δ AGT mara : in kitchen [NE] facing N | holds: key_brass | wears: —   (was: [E] facing W)
+Δ ENT key_brass : held_by mara   (was: in drawer_counter; mara took it)
+Δ BEL mara : key_brass -> held_by mara (self, t8)
+Δ BEL leo : key_brass -> held_by mara (seen t8)
+[/STATE]
+```
+
+---
+
+## t=9 Q4 模糊描述 + ∅ 删除
+
+**输入**：Mara 想把钥匙放在"出门时不会忘的地方"。同时 Leo 在洗那个红杯子。
+
+**回答**：放进灰外套的左口袋。外套挂在前门旁的衣钩上，出门总要穿（备选：同一个角落的伞架，但出门不一定带伞）。
+
+**叙述**：Mara 走回门厅西北角，面朝北，把钥匙塞进外套左口袋。厨房里 Leo 走到水槽前 [N]，杯子一滑摔碎在水槽里。Mara 听到了响声，但没看见。
+
+```
+[STATE t=9]
+Δ AGT mara : in hallway [NW] facing N | holds: — | wears: —   (was: in kitchen [NE])
+Δ ENT key_brass : in coat_pocket_l   (was: held_by mara; mara put it there)
+Δ BEL mara : key_brass -> in coat_pocket_l (self, t9)
+Δ AGT leo : in kitchen [N] facing N | holds: — | wears: —   (was: [NE] facing SW)
+Δ ENT mug_red : ∅   (destroyed: slipped and broke in sink, t9)
+Δ ENT shards_red : in sink   (remains of mug_red)
+Δ BEL leo : shards_red -> in sink (saw it break, t9)
+[/STATE]
+```
+
+Mara 的 BEL 还是"杯子在水槽里"。这是过时信念，按 §2 照原样保留：她的言行会以为杯子完好。
+
+---
+
+## t=10 场景切换（完整 STATE）
+
+**输入**：Mara 穿上外套出门。问：Mara 的钥匙现在在哪？如果问 Leo，他会怎么说？
+
+**回答**：在 Mara 灰外套的左口袋里，Mara 穿着这件外套，人在前门外的街上。Leo 会说"在 Mara 手里"，因为他最后看到的是 t8（BEL）。
+
+- 钥匙没有单独移动：它随口袋移动，口袋随外套，外套随 Mara（§2：容器内容随容器走）。
+
+```
+[STATE t=10]
+LOC street < world | outdoor | aff: walk
+LOC house < street | building | aff: shelter
+LOC kitchen < house | room | N:window E:door_hall S:stove W:fridge | aff: cook, eat, wash
+LOC hallway < house | room | N:front_door E:stairs S:closet W:door_kitchen | aff: pass, hang_coats
+LOC drawer_counter < counter | container | aff: hold_small
+LOC coat_pocket_l < coat_grey | container | aff: hold_small
+ENT table : in kitchen [C] (wood, waist-high)
+ENT counter : in kitchen [NE] (waist-high, along N wall)
+ENT sink : in kitchen [N] (under window)
+ENT shelf_tall : in kitchen [SW] (2 m, blocks view)
+ENT shards_red : in sink (remains of mug_red)
+ENT key_brass : in coat_pocket_l (aliases: key, Mara's key)
+ENT coat_grey : worn_by mara
+ENT coat_hook : attached_to hallway [NW]
+ENT umbrella_stand : in hallway [NW]
+AGT mara : on street facing N | holds: — | wears: coat_grey
+AGT leo : in kitchen [N] facing N | holds: — | wears: —
+BEL mara : key_brass -> in coat_pocket_l (self, t9)
+BEL mara : mug_red -> in sink (seen t6; stale — destroyed t9)
+BEL leo : key_brass -> held_by mara (seen t8)
+BEL leo : shards_red -> in sink (saw it break, t9)
+[/STATE]
+```
+
+---
+
+## 试跑发现
+
+**新规则都用上了，结果正确**
+
+- 斜向朝向逆时针转（t7）：结果与直觉一致。
+- 差值相等取斜向（t6）、差值大的一方取正方向（t2）：都能得出唯一方向。
+- 距离按较大差值分档（t2、t6、t7）：没出现模糊的情况。
+- `∅` 删除（t9）：杯子销毁后，碎片作为新 id 出现。
+
+**新暴露的缺口**（尚未改规则）
+
+1. **BEL 没有"不知道在哪"的写法**（t5）。建议允许
+   `BEL <who> : <id> -> unknown (last believed: ..., t=n)`。
+2. **嵌套物品的格子怎么写不明确**。规范示例 `in sink [W]` 写了格子，但 sink 自己没有 3x3 网格。本次嵌套物品不写格子，按容器所在格子推算。建议明文规定：只有带网格的 LOC 的直接子项才写格子。
+3. **完整 STATE 会丢掉已删除的 id**。t10 的完整 STATE 里没有 mug_red，"id 保留不再用"的约束就没有出处了，可 Mara 的 BEL 还在引用它。建议加一类 `RET mug_red (destroyed t9)` 行，在完整 STATE 里保留。
+4. **室外/无网格位置**（street）不写格子，也没有墙面特征。规范没说可以省略。
+5. **AGT 的 Δ 只能整行重写**。改朝向也要重写 holds/wears。可以接受，但最好在规范里说一句"AGT 的 Δ 行写整行"。
+6. **UNK（真相层面的丢失）这次没测到**。`∅` + UNK 的替换写法还需要另跑一场验证。
+</script>
+<script type="text/plain" id="ex-1" data-example="试跑 02 · 停电后丢东西"># 试跑 02：停电后丢东西（10 轮，测 UNK / RET）
+
+重点测：东西丢了（∅ + UNK）、UNK 的 `within` / `ruled out`、找到后如何确定位置、
+东西销毁（RET）、信念不知道（BEL unknown）、嵌套物品不写格子、室外无网格。
+坐标约定同试跑 01：x 向东 +，y 向北 +；NW(0,2) N(1,2) NE(2,2) / W(0,1) C(1,1) E(2,1) / SW(0,0) S(1,0) SE(2,0)。
+
+---
+
+## t=1 搭场景
+
+**输入**：客厅。Ana 戴着金戒指坐在沙发上，Tom 站在东侧，猫 Mio 在猫窝里。
+
+**叙述**：客厅北墙是窗，东墙门通门厅（关着），南墙门通花园（关着，下面有猫洞），西墙是壁炉。
+沙发在正中，朝北，靠背 0.9 m 高，底下离地 8 cm；沙发北边是矮茶几，上面有杯水；
+西北角一把扶手椅，底下离地 15 cm；东北角落地灯；西南角猫窝。
+
+```
+[STATE t=1]
+LOC house < street | building | aff: shelter
+LOC living < house | room | N:window E:door_hall(closed) S:door_garden(closed, cat_flap) W:fireplace | aff: sit, rest
+LOC garden < house | outdoor | aff: roam, hide
+ENT sofa : in living [C] (faces N; back 0.9 m; 8 cm gap under)
+ENT coffee_table : in living [N] (low, on legs)
+ENT glass_water : on coffee_table
+ENT armchair : in living [NW] (15 cm gap under)
+ENT lamp_floor : in living [NE]
+ENT basket_cat : in living [SW]
+ENT ring_gold : worn_by ana (aliases: ring, Ana's ring)
+ENT phone : held_by tom
+AGT ana : on sofa facing N | holds: — | wears: ring_gold
+AGT tom : in living [E] facing W | holds: phone | wears: —
+AGT mio : in basket_cat facing N | holds: — | wears: —
+BEL ana : ring_gold -> worn_by ana (self, t1)
+BEL tom : ring_gold -> worn_by ana (seen t1)
+BEL ana : mio -> in basket_cat (seen t1)
+BEL tom : mio -> in basket_cat (seen t1)
+[/STATE]
+```
+
+`ana`、`mio` 坐/卧在沙发和猫窝里，都是嵌套位置，按新规则不写格子。
+
+---
+
+## t=2 移动（Tom 没看见）
+
+**输入**：Ana 摘下戒指准备擦护手霜，戒指捏在手里。Tom 在低头看手机。
+
+```
+[STATE t=2]
+Δ ENT ring_gold : held_by ana   (was: worn_by ana; ana took it off)
+Δ AGT ana : on sofa facing N | holds: ring_gold | wears: —
+Δ BEL ana : ring_gold -> held_by ana (self, t2)
+[/STATE]
+```
+
+Tom 低头看手机，没看见。他的 BEL 还是"戒指戴在 Ana 手上"。
+
+---
+
+## t=3 停电：丢失 + 销毁
+
+**输入**：突然停电。Ana 吓了一跳，手一松戒指掉了；她往前一探，把茶几上的水杯碰到地上摔碎了。黑暗里猫窝那边窸窣一声。
+
+**叙述**：一片漆黑，没人看见戒指落在哪，也没人看见猫去了哪。玻璃碎在茶几旁的地上 [N]。
+
+推导 `within`：
+- 戒指：两扇门都关着，没人走动；猫叼走戒指不合常理（§2 合理性），所以戒指出不了客厅 → `within: living`。
+- 猫：门厅门关着，但南门有猫洞 → `within: living, garden`。
+
+```
+[STATE t=3]
+Δ ENT ring_gold : ∅   (lost: dropped in the dark)
+Δ UNK ring_gold (last seen: held_by ana, on sofa, t=2; within: living; ruled out: —)
+Δ AGT ana : on sofa facing N | holds: — | wears: —
+Δ ENT glass_water : ∅
+Δ RET glass_water (destroyed: knocked off coffee_table, shattered, t=3)
+Δ ENT shards_glass : in living [N] (on floor beside coffee_table)
+Δ AGT mio : ∅   (moved unseen in the dark)
+Δ UNK mio (last seen: in basket_cat, t=1; within: living, garden; ruled out: —)
+Δ BEL ana : ring_gold -> unknown (last believed: held_by ana, t=2)
+Δ BEL tom : ring_gold -> unknown (last believed: worn_by ana, t=1; told by ana "戒指掉了", t=3)
+[/STATE]
+```
+
+AGT 的 Δ 行按新规则写整行（Ana 只是 holds 变了，也整行重写）。
+
+---
+
+## t=4 Q1 问未知物
+
+**输入**：戒指在哪？猫呢？
+
+**回答**：
+- 戒指：**位置不明**。最后一次是 t2 捏在 Ana 手里（沙发上），停电时掉了；可以确定还在客厅里。
+- Mio：**位置不明**。最后一次是 t1 在西南角猫窝里；可能还在客厅，也可能从猫洞去了花园。
+
+（无变化，不写 STATE。叙述里没有替它们"顺口定位"，符合 UNK 期间不得断言位置的规则。）
+
+---
+
+## t=5 陷阱：诱导断言
+
+**输入**：戒指是不是滚到厨房去了？
+
+**回答**：不可能。戒指的 `within` 是客厅：通门厅的门一直关着，停电后也没人进出。厨房在这一场里也还没建立。
+
+（无变化。没有为了回答去新建厨房，也没有把 UNK 改成任何位置。）
+
+---
+
+## t=6 来电，搜索排除
+
+**输入**：灯亮了。Tom 从东侧往西看，Ana 跪在沙发上转身往后看。
+
+**回答（Tom 视角，相对参照系，锚点 Tom E(2,1) 朝 W）**：
+- N(1,2)：dx=−1、dy=+1 → NW → 朝西行 W=front、N=right → 右前方，几步远，看得见：玻璃碴，没有戒指。
+- NE(2,2)：dy=+1 → N → 右边，几步远，看得见。
+- W(0,1)：dx=−2 → W → 正前方，房间另一头；中间格 C 是沙发靠背 → **看不见**地面。
+- NW(0,2)、SW(0,0)：dx=−2、dy=±1 → W → 正前方，房间另一头；视线擦过 C 和 N / C 和 S 之间 → 部分被挡（见文末缺口 1）。
+
+**Ana 视角**：她在 C，所有格子都只隔一格。转身朝 S 跪着看过靠背，补看了 W、SW、S：地面空，猫窝空。
+
+合起来：客厅里露在外面的地面都看过，没有戒指也没有猫；猫窝是空的。
+
+```
+[STATE t=6]
+Δ UNK ring_gold (last seen: held_by ana, on sofa, t=2; within: living; ruled out: open floor of living)
+Δ UNK mio (last seen: in basket_cat, t=1; within: living, garden; ruled out: open floor of living, basket_cat)
+Δ AGT ana : on sofa facing S | holds: — | wears: —   (was: facing N; turned to look)
+Δ BEL ana : mio -> unknown (last believed: in basket_cat, t=1; saw it empty t=6)
+Δ BEL tom : mio -> unknown (last believed: in basket_cat, t=1; saw it empty t=6)
+[/STATE]
+```
+
+---
+
+## t=7 Q4 推断 + 找到（UNK 落定）
+
+**输入**：戒指最可能在哪？去找。
+
+**回答**：**沙发底下**：戒指是从坐垫高度掉的，会滚，而沙发底下有 8 cm 缝，露在外面的地面已经排除了。（备选：坐垫缝里）
+
+**叙述**：Ana 先摸坐垫缝，没有。Tom 在沙发东侧蹲下，用手机照沙发底下，看见戒指躺在灰尘里，没别的东西。
+
+按 §3 落定：位置选在 `within` 里、不在 `ruled out` 里，并且从"沙发上，Ana 手里"一滚就能到 → 沙发底下 ✓。
+同一次查看也排除了"沙发底下有猫"。
+
+```
+[STATE t=7]
+Δ UNK ring_gold : ∅   (resolved: found)
+Δ ENT ring_gold : under sofa   (was: UNK; found by tom)
+Δ UNK mio (last seen: in basket_cat, t=1; within: living, garden; ruled out: open floor of living, basket_cat, under sofa)
+Δ AGT tom : in living [E] facing W | holds: phone | wears: —   (crouching; same cell)
+Δ BEL ana : ring_gold -> under sofa (seen t7)
+Δ BEL tom : ring_gold -> under sofa (seen t7)
+[/STATE]
+```
+
+（失败的搜索"坐垫缝"只与已找到的戒指有关；戒指已落定，不再记它的 ruled out。）
+
+---
+
+## t=8 物归原主
+
+**输入**：Tom 把戒指捡出来递给 Ana，她重新戴上。
+
+```
+[STATE t=8]
+Δ ENT ring_gold : worn_by ana   (was: under sofa; tom picked it up and handed it over, ana put it on)
+Δ AGT ana : on sofa facing S | holds: — | wears: ring_gold
+Δ BEL ana : ring_gold -> worn_by ana (self, t8)
+Δ BEL tom : ring_gold -> worn_by ana (seen t8)
+[/STATE]
+```
+
+---
+
+## t=9 找猫：排除 → 室外无网格落定
+
+**输入**：Mio 呢？
+
+**回答**：**最可能在花园**：受惊的猫会从熟悉的猫洞跑出去，而客厅里能藏的地方大多已经排除。（备选：扶手椅底下，西北角）
+
+**叙述**：Tom 先去西北角趴下看扶手椅底下，空的。他从南门出去到花园，在一丛灌木下面看到 Mio 缩成一团（灌木是 §3 现场补的），抱起了它。
+
+落定检查：花园在 `within` 里，不在 `ruled out` 里，从猫窝出猫洞就能到 ✓。花园是室外无网格，按新规则不写格子。
+
+```
+[STATE t=9]
+Δ ENT bush : in garden   (new, §3)
+Δ UNK mio : ∅   (resolved: found)
+Δ AGT mio : held_by tom facing — | holds: — | wears: —   (was: UNK; found under bush in garden, tom picked it up)
+Δ AGT tom : in garden facing S | holds: phone, mio | wears: —   (was: in living [E]; via armchair [NW], then door_garden)
+Δ BEL tom : mio -> held_by tom (self, t9)
+[/STATE]
+```
+
+Ana 还在沙发上，看不到花园。她的 BEL 关于 Mio 仍是 unknown。
+
+---
+
+## t=10 回屋，完整 STATE（含 RET）
+
+**输入**：Tom 抱猫回来，把它放回猫窝。顺便问：刚才那杯水呢？
+
+**回答**：**那杯水已经不存在了**，t3 停电时被碰到地上摔碎了，玻璃碴在茶几旁地上 [N]。
+
+```
+[STATE t=10]
+LOC house < street | building | aff: shelter
+LOC living < house | room | N:window E:door_hall(closed) S:door_garden(closed, cat_flap) W:fireplace | aff: sit, rest
+LOC garden < house | outdoor | aff: roam, hide
+ENT sofa : in living [C] (faces N; back 0.9 m; 8 cm gap under)
+ENT coffee_table : in living [N] (low, on legs)
+ENT shards_glass : in living [N] (on floor beside coffee_table)
+ENT armchair : in living [NW] (15 cm gap under)
+ENT lamp_floor : in living [NE]
+ENT basket_cat : in living [SW]
+ENT ring_gold : worn_by ana (aliases: ring, Ana's ring)
+ENT phone : held_by tom
+ENT bush : in garden
+AGT ana : on sofa facing S | holds: — | wears: ring_gold
+AGT tom : in living [SW] facing S | holds: phone | wears: —
+AGT mio : in basket_cat facing N | holds: — | wears: —
+RET glass_water (destroyed: knocked off coffee_table, shattered, t=3)
+BEL ana : ring_gold -> worn_by ana (self, t8)
+BEL tom : ring_gold -> worn_by ana (seen t8)
+BEL ana : mio -> in basket_cat (seen t10)
+BEL tom : mio -> in basket_cat (did it, t10)
+[/STATE]
+```
+
+Ana 坐在沙发上朝南，猫窝在她西南边、隔一格，所以看到了 Tom 放猫，她的 BEL 也更新了。
+
+---
+
+## 试跑发现
+
+**这次测到并且通过的规则**
+
+- **∅ + UNK**（t3）：戒指和猫丢了都换成了 UNK，`within` 由门的开关和"谁能搬动它"推出来。
+- **UNK 期间不断言位置**（t4、t5）：t5 的诱导问题被 `within` 挡住了，没有为了回答去新建厨房。
+- **`ruled out` 一路累积**（t6 → t7 → t9），找到时的落定位置同时满足三个条件：在 `within` 里、不在 `ruled out` 里、从最后看到的位置能到达。
+- **RET**（t3、t10）：杯子在完整 STATE 里留下了 RET 行，Q1 问到时能回答"已经不存在了"。
+- **BEL unknown**（t3、t6）：Tom 是"被告知"变成不知道，和 Ana"亲眼看到它不见了"的来源区分开了。
+- **嵌套物品不写格子、室外无网格**（全程、t9）：都没出现歧义。
+- **AGT 的 Δ 写整行**：没有出现漏写 holds/wears。
+
+**新暴露的缺口**（尚未改规则）
+
+1. **视线遮挡判定不完整**：`§4.5` 只说"中间格子里有高东西"，但像 E→NW 这种日字形偏移，视线正好擦过两个格子之间（C/N），没有规定算哪一格。建议：擦过两格时，只要其中一格有遮挡就算"部分被挡"。
+2. **遮挡不看目标高度**：0.9 m 的沙发靠背挡得住地上的戒指，挡不住站着的人。§4.5 只说"高的实体"，建议改成"遮挡物比目标高"。
+3. **AGT 被抱着时朝向没意义**：t9 写成了 `facing —`，规范里 dir 没有这个值。建议规定 held_by / worn_by 状态的 AGT 写 `facing —`。
+4. **同一轮里多次移动**：t8 戒指"沙发底下 → Tom 手里 → Ana 戴上"写成了一行，把中间过程放进括号。这样可行，但规范没说一轮里同一个 id 只写最终位置。
+</script>
+<script type="text/plain" id="ex-2" data-example="试跑 04 · 厨房与客厅（相邻、楼上）"># 试跑 04：厨房与客厅（迭代 2，6 轮）
+
+测迭代 2 新规则：视野、相邻房间拼格、墙上门窗格位（`@`）、无朝向锚点退回绝对参照系、格子占用。
+另外试两个新场景：同名物品指代不清、楼上楼下。
+
+---
+
+## t=1 搭场景
+
+厨房在西，客厅在东。厨房东墙南段有门（开着），对应客厅西墙南段。客厅南墙西段是上楼的楼梯。
+
+```
+[STATE t=1]
+LOC house < street | building | aff: shelter
+LOC kitchen < house | room | N:window E:door_living@SE(open) S:stove W:fridge | adj: E:living | aff: cook, eat
+LOC living < house | room | N:tv E:window S:stairs_up@SW W:door_kitchen@SW(open) | adj: W:kitchen | aff: sit, rest
+ENT table : in kitchen [C] (mid)
+ENT counter : in kitchen [N] (mid)
+ENT mug_white_a : on table (aliases: white mug)
+ENT mug_white_b : on counter (aliases: white mug)
+ENT sofa : in living [C] (mid, faces N)
+ENT plant_tall : in living [S] (tall)
+ENT ball_red : in living [E] (low, on floor)
+AGT yu : in kitchen [W] facing E | holds: — | wears: —   (standing, eyes tall)
+AGT jo : on sofa facing N | holds: — | wears: —   (seated, eyes mid)
+[/STATE]
+```
+
+门的一致性检查：厨房东墙 @SE ↔ 客厅西墙 @SW，都在南段 ✓。
+
+拼格：客厅接在厨房东边，客厅的 W 列 x=3，C=(4,1)，E=(5,1)。
+
+---
+
+## t=2 跨房间方位 + 隔墙
+
+**输入**：红球在 Yu 的哪边？看得见吗？
+
+**回答**：在 Yu 正前方，在隔壁客厅，路线是从东墙南段的门过去，**被墙挡住，看不见**（相对参照系，锚点 Yu）。
+
+- 拼格坐标：Yu (0,1)，球 (5,1)。dx=+5、dy=0 → E → front。
+- 视线：y=1 一直不变，穿过公共墙时在墙的中段；门在南段 → 墙挡住 → 看不见。
+
+---
+
+## t=3 移到门边再看
+
+**输入**：Yu 走到厨房东南角的门边，面朝东。现在呢？
+
+**回答**：在 Yu 正前方，在隔壁客厅，**部分被挡**（相对参照系，锚点 Yu）。
+
+- Yu (2,0) → 球 (5,1)：dx=+3、dy=+1 → E → front。
+- 过墙：在 x=2.5 处 y≈0.17，落在南段，正好穿过开着的门 ✓。
+- 中间格：x=3 时 y≈0.33 → (3,0) 客厅 SW，空的；x=4 时 y≈0.67 → (4,1) 客厅 C，沙发（mid）≥ 球（low），但低于 Yu 的眼睛（tall）→ 部分遮挡。
+
+```
+[STATE t=3]
+Δ AGT yu : in kitchen [SE] facing E | holds: — | wears: —   (was: [W] facing E)
+[/STATE]
+```
+
+> ⚠ 缺口：§4.5 的"中间格"只规定了相邻、同行列和 2×1 偏移。像 3×1 这种更长的视线，这里临时按"每一列取 y 值四舍五入到最近的格"来算，规范里没写。
+
+---
+
+## t=4 视野
+
+**输入**：Jo 能看见 Yu 吗？能看见那盆高植物吗？
+
+**回答**：
+- Yu 在 Jo 的左边，在隔壁厨房，透过门**看得见**（相对参照系，锚点 Jo）。
+  Jo (4,1) → Yu (2,0)：dx=−2、dy=−1 → W；朝北行 W=left，在视野内。视线在 x=2.5 处 y=0.25，落在门的南段 ✓。
+- 植物在 Jo 正后方，几步远，**不在视野里**，转身才看得见。
+  (4,1) → (4,0)：S → behind。
+
+---
+
+## t=5 指代不清 + 无朝向锚点
+
+**输入**：Yu 说："把白杯子拿给我。"再问：Yu 在红球的哪边？
+
+**回答**：
+- 有两个白杯子，需要先问清楚是哪一个：桌上那个（`mug_white_a`，厨房正中），还是台面上那个（`mug_white_b`，厨房北墙边）？
+- 球没有朝向，退回绝对参照系：Yu 在球的西南偏西，隔一面墙，经门相通。
+  球 (5,1) → Yu (2,0)：dx=−3、dy=−1 → W。
+
+> 观察：两个回答都通过。但"西南偏西"是我自己加的修饰，规则算出来的结果就是 W，应该老实回答"西边"。
+
+---
+
+## t=6 楼上
+
+**输入**：Jo 上楼去拿毯子。毯子在哪？现在 Jo 在哪个方向？
+
+**叙述**：楼上的房间还没建立，按 §3 现场补：楼上卧室 `bedroom_up`，毯子叠在床尾。
+Jo 从客厅西南的楼梯上去。
+
+```
+[STATE t=6]
+Δ LOC bedroom_up < house | room | N:window E:wall S:stairs_down@SW W:wardrobe | adj: — | aff: sleep   (new, §3)
+Δ ENT bed_up : in bedroom_up [C] (mid)
+Δ ENT blanket : on bed_up
+Δ AGT jo : in bedroom_up [SW] facing N | holds: — | wears: —   (was: on sofa; via stairs_up)
+[/STATE]
+```
+
+**回答**：毯子在楼上卧室的床上，床在房间正中。问"Jo 现在在 Yu 的哪个方向"：**规范答不了**。
+- `adj:` 只有东南西北，没有上下；拼格也只有平面坐标。
+- 楼梯下端在客厅西南，上端在楼上卧室西南。这是我自己定的，规范里没有"楼梯两端对齐"这种约束。
+- 只能先回答"在楼上，从客厅西南的楼梯上去"。
+
+---
+
+## 发现
+
+**通过**：跨房间拼格（t2、t3）、门格位与一致性检查（t1）、视野（t4）、无朝向锚点退回（t5）、指代不清时追问（t5）。
+
+**缺口 → 迭代 3 要补**
+1. 长视线的中间格算法（t3）。
+2. 垂直方向：楼层、楼梯两端对齐、"上方/下方"（t6）。
+3. 回答时不能加规则以外的修饰（t5，"西南偏西"）。
+</script>
+<script type="text/plain" id="ex-3" data-example="试跑 05 · 两层楼加车库"># 试跑 05：两层楼加车库（迭代 3，6 轮）
+
+测迭代 3 新规则：长视线逐格算法、楼层 z 坐标与楼梯对齐、回答不加规则外修饰。
+新场景：车（会移动的容器，有自己的前后）、习惯性位置。
+
+---
+
+## t=1 搭场景
+
+一楼：门厅（西）和车库（东）。二楼：书房，正好在门厅上方。
+
+```
+[STATE t=1]
+LOC house < street | building | aff: shelter
+LOC street < world | outdoor | aff: walk, drive
+LOC hall < house | room | N:stairs_up@NW, front_door@N(closed) E:door_garage(open) S:wall W:window(closed) | adj: E:garage, up:study_up | aff: pass
+LOC garage < house | room | N:wall E:wall S:garage_door(closed) W:door_hall(open) | adj: W:hall | aff: park, store
+LOC study_up < house | room | N:stairs_down@NW E:wall S:window(closed) W:wall | adj: down:hall | aff: read
+ENT shelf_tall : in hall [C] (tall)
+ENT box : in hall [SW] (low)
+ENT car : in garage [C] (tall; front: S)
+LOC trunk < car | container | aff: hold
+LOC seat_driver < car | seat | aff: sit, drive
+ENT ladder : in garage [N] (tall)
+AGT ben : in hall [SW] facing N | holds: — | wears: —   (standing)
+AGT nia : in study_up [C] facing S | holds: — | wears: —   (standing)
+[/STATE]
+```
+
+一致性检查：门厅东墙的门（中段）↔ 车库西墙的门（中段）✓；楼梯 `stairs_up@NW` ↔ `stairs_down@NW` ✓。
+
+> 观察：N 墙上有两样东西（楼梯和前门），我用逗号分开写了。规范没说一面墙能不能列多个特征、怎么列。
+
+---
+
+## t=2 长视线
+
+**输入**：Ben 看得见车库里的梯子吗？
+
+**回答**：梯子在 Ben 右边，在隔壁车库，路线是穿过门厅东墙的门；**部分被挡**（相对参照系，锚点 Ben）。
+
+- 拼格：Ben (0,0)，梯子 (4,2)。dx=+4、dy=+2 → E；朝北行 E=right。
+- 逐格（沿 x 走）：x=1 时 y=0.5 → (1,0) 和 (1,1) 各算半格；x=2 时 y=1 → (2,1)；x=3 时 y=1.5 → (3,1) 和 (3,2) 各算半格。
+- 过墙：x=2.5 时 y=1.25 → 墙的中段，门开着 ✓。
+- 遮挡：(1,1) 有高书架，书架 ≥ 梯子、≥ 眼睛，但它只是半格 → 部分遮挡。其余几格是空的。→ **部分被挡**。
+
+---
+
+## t=3 楼上看楼下
+
+**输入**：从 Nia 的角度看，Ben 在哪？
+
+**回答**：**在 Nia 下方、右前方**，在楼下门厅，路线是走西北角的楼梯下去；**被地板挡住，看不见**（相对参照系，锚点 Nia）。
+
+- Nia (1,1,z=1)，Ben (0,0,z=0)：z 小 → 下方；水平 dx=−1、dy=−1 → SW；朝南行 S=front、W=right → 右前方。
+- 视线不经过 NW 的楼梯口 → 地板挡住。
+
+措辞只用了表里有的词。
+
+---
+
+## t=4 放进后备箱（内在参照系）
+
+**输入**：Ben 把箱子搬到车上，放进后备箱。箱子在车的哪一头？
+
+**叙述**：Ben 抱起箱子，穿过门厅东墙的门进车库，绕到车的北头，打开后备箱放进去，人站在车库北侧 [N] 面朝南。
+
+```
+[STATE t=4]
+Δ ENT box : in trunk   (was: in hall [SW] → held_by ben → in trunk; ben carried it via door_garage)
+Δ AGT ben : in garage [N] facing S | holds: — | wears: —   (was: in hall [SW] facing N)
+[/STATE]
+```
+
+**回答**：**在车尾**（内在参照系：后备箱在车尾，车头朝南）。换成绝对参照系是车的北头。
+
+> ⚠ 缺口：在格子层面，后备箱和车同在 C 格；"北头"这个信息只能从车头朝向推出来，规范没有"部件位于物体哪一侧"的写法。
+
+---
+
+## t=5 开车出门（移动的容器）
+
+**输入**：Ben 开车出门。
+
+**叙述**：Ben 坐进驾驶座，用遥控器打开车库门，把车开出去，在街上掉头往东开。
+
+```
+[STATE t=5]
+Δ LOC garage < house | room | N:wall E:wall S:garage_door(open) W:door_hall(open) | adj: W:hall | aff: park, store
+Δ ENT car : on street (tall; front: S)   (was: in garage [C]; ben drove it out)
+Δ AGT ben : in seat_driver facing E | holds: — | wears: —   (was: in garage [N])
+[/STATE]
+```
+
+**问**：箱子在哪？
+
+**回答**：在车的后备箱里，车在街上，Ben 在开车。箱子随车走，没有单独写一行 ✓。
+
+> ⚠ 缺口：车往东开时，`front: S` 就错了。"车头"是车本身的属性，"朝哪开"是会变的状态，现在混在一个字段里。车里人的朝向应该跟着车走，规范也没写。
+
+---
+
+## t=6 习惯位置
+
+**输入**：Nia 要找眼镜。她平时把眼镜放在哪？
+
+**回答**：眼镜还没建立，Nia 的习惯也没有记录。按 §3 现场补：她平时放在书房窗台上，现在也在那里。
+
+```
+[STATE t=6]
+Δ ENT glasses : on window_sill_study (aliases: Nia's glasses)   (new, §3)
+Δ LOC window_sill_study < study_up | ledge | aff: hold_small   (new, §3)
+[/STATE]
+```
+
+> ⚠ 缺口：
+> 1. 规范没有记录"习惯"的行。上面只记下了眼镜现在的位置，"平时放窗台"这个习惯没地方写，下次问"平时"可能会答得不一样。
+> 2. 窗台 `window_sill_study` 依附在南墙的窗上，但 LOC 行没法表达"在南墙上"，只能挂在房间下面，格位丢了。
+
+---
+
+## 发现
+
+**通过**：长视线逐格算（t2）、楼层 z 坐标（t3）、楼梯对齐检查（t1）、措辞约束（t3）、移动容器带着内容走（t5）。
+
+**缺口 → 迭代 4 要补**
+1. 车辆：车头朝向（固定）和行驶方向（会变）要分开；车里人的朝向跟着车（t5）。
+2. 部件位于物体的哪一侧，比如后备箱在车尾（t4）。
+3. 习惯性位置要有一种行来记录（t6）。
+4. 一面墙上有多个特征的写法（t1）。
+5. 依附在墙上的小地方（窗台、壁架）怎么挂到墙和格位上（t6）。
+</script>
+<script type="text/plain" id="ex-4" data-example="试跑 07 · 假消息与洒水"># 试跑 07：假消息与洒水（迭代 5，6 轮，接试跑 06）
+
+测迭代 5 新规则：BEL 来源意图标签、信念指向不存在的地方、行动优先级（BEL > HAB > 搜索）、
+BEL unknown 的 `ruled out`、液体记录；顺便测第 10 轮的完整 STATE 节奏。
+
+---
+
+## t=7 重开场景（完整 STATE，用新写法补标签）
+
+Sam 说钥匙在厨房抽屉时，他自己对钥匙没有任何 BEL → 来源标签是 `guess`。厨房从没建立过 → `place unverified`。
+
+```
+[STATE t=7]
+LOC street < world | outdoor | aff: walk, drive
+LOC house < street | building | aff: shelter
+LOC living < house | room | N:window(open) E:door_out@SE(open), hook_wall@E S:wall W:shelves | adj: — | aff: sit, pack
+LOC hook_keys < living [E] | hook | aff: hang_small
+ENT table : in living [C] (mid)
+ENT jug_water : on table (holds ~0.5 L water)
+ENT glass_1 : on table (holds ~0.25 L water)
+ENT glass_2 : on table (holds ~0.25 L water)
+ENT van : on street (tall; heading: N)
+LOC cargo < van | container | side: back | aff: hold_large
+LOC seat_driver < van | seat | side: front | aff: sit, drive
+LOC ignition_van < van | slot | side: front | aff: hold_small
+ENT keys_van : in ignition_van (aliases: van keys)
+AGT raj : in seat_driver facing with van | holds: — | wears: —
+AGT mei : in living [C] facing N | holds: — | wears: —
+AGT sam : in living [C] facing W | holds: — | wears: —
+HAB mei : keys_van -> on hook_keys (habit)
+BEL raj : keys_van -> in ignition_van (did it, t1)
+BEL mei : keys_van -> in drawer_kitchen (told by sam, guess, t4; place unverified)
+[/STATE]
+```
+
+---
+
+## t=8 去找"厨房抽屉"
+
+**输入**：Mei 去厨房抽屉找钥匙。
+
+**叙述**：按 §3 现在必须决定厨房存不存在。已建立的事实是：客厅北墙是窗，东墙是出门的门，南墙是实墙，西墙是书架，**没有任何门通往别的房间**；房子下面也只有客厅一个房间。和这些事实一致的决定是：这是一间单间公寓，**没有厨房**。
+Mei 环顾一圈就明白了。
+
+```
+[STATE t=8]
+Δ LOC house < street | building (single room: living only) | aff: shelter   (fixed, §3: no kitchen)
+Δ BEL mei : keys_van -> unknown (last believed: in drawer_kitchen, t4; ruled out: drawer_kitchen — does not exist)
+[/STATE]
+```
+
+没有因为 Mei 的信念去凭空造一个厨房 ✓。
+叙述者知道 Sam 的话是 `guess`，但 Mei 的 BEL 和她的反应都和真话没区别，直到她去核实 ✓。
+
+---
+
+## t=9 行动优先级：BEL unknown → HAB → 被告知
+
+**输入**：Mei 接下来去哪找？
+
+**回答**：**东墙的钥匙挂钩**。她对钥匙的 BEL 是 unknown，所以按优先级用 HAB，而挂钩不在她的 `ruled out` 里。
+
+**叙述**：Mei 走到东墙挂钩前，上面是空的。门外车里的 Raj 听见了，喊："钥匙插在车上！"
+
+Raj 的 BEL 是 `in ignition_van` → 他说的是真话 → 标签 `sincere`。
+
+```
+[STATE t=9]
+Δ AGT mei : in living [E] facing E | holds: — | wears: —   (was: [C] facing N)
+Δ BEL mei : keys_van -> in ignition_van (told by raj, sincere, t9)
+[/STATE]
+```
+
+挂钩搜完没找到，按规则本该写进 `ruled out`；但同一轮里 Raj 就告诉了她位置，BEL 已经换成有位置的版本，`ruled out` 随之作废。这样处理是合理的，规范里也没说要保留。
+
+---
+
+## t=10 洒水 + 出门（第 10 轮完整 STATE）
+
+**输入**：Sam 转身时碰倒了 glass_2，水洒在桌边地上。Mei 从东南的门出去上车。
+
+```
+[STATE t=10]
+LOC street < world | outdoor | aff: walk, drive
+LOC house < street | building (single room: living only) | aff: shelter
+LOC living < house | room | N:window(open) E:door_out@SE(open), hook_wall@E S:wall W:shelves | adj: — | aff: sit, pack
+LOC hook_keys < living [E] | hook | aff: hang_small
+ENT table : in living [C] (mid)
+ENT jug_water : on table (holds ~0.5 L water)
+ENT glass_1 : on table (holds ~0.25 L water)
+ENT glass_2 : on table (empty, tipped over)
+ENT spill_water : in living [C] (~0.25 L, on floor beside table)
+ENT van : on street (tall; heading: N)
+LOC cargo < van | container | side: back | aff: hold_large
+LOC seat_driver < van | seat | side: front | aff: sit, drive
+LOC seat_passenger < van | seat | side: front | aff: sit   (new, §3)
+LOC ignition_van < van | slot | side: front | aff: hold_small
+ENT keys_van : in ignition_van (aliases: van keys)
+AGT raj : in seat_driver facing with van | holds: — | wears: —
+AGT mei : in seat_passenger facing with van | holds: — | wears: —
+AGT sam : in living [C] facing S | holds: — | wears: —
+HAB mei : keys_van -> on hook_keys (habit)
+BEL raj : keys_van -> in ignition_van (did it, t1)
+BEL mei : keys_van -> in ignition_van (seen t10)
+[/STATE]
+```
+
+- 水洒出容器后成了独立的 ENT `spill_water` ✓。
+- Mei 上车后，朝向按 `facing with van` 自动跟车 ✓。
+- Mei 的 HAB 没变：一次例外不改变习惯 ✓。
+
+---
+
+## t=11 液体去向
+
+**输入**：那壶水去哪了？
+
+**回答**：**分在三处**：壶里还剩约 0.5 L（桌上），glass_1 约 0.25 L（桌上），还有约 0.25 L 洒在桌边地上。glass_2 已经空了，倒在桌上。合计约 1 L，和 t1 壶里的水量相符 ✓。
+
+---
+
+## t=12 Q2：车里有什么
+
+**输入**：车里都有什么？
+
+**回答**：
+- 驾驶座：Raj
+- 副驾驶座：Mei
+- 点火孔：车钥匙
+- 货厢：**之前没建立**，也没说过是空的 → 按 §3 现在决定：三个封好的纸箱。
+
+```
+[STATE t=12]
+Δ ENT box_1 : in cargo (sealed, moving box)   (new, §3)
+Δ ENT box_2 : in cargo (sealed, moving box)   (new, §3)
+Δ ENT box_3 : in cargo (sealed, moving box)   (new, §3)
+[/STATE]
+```
+
+> 观察：Q2 规定"嵌套内容只在被问到或显而易见时才列"。车的直接子项是 cargo、座位、点火孔这些 LOC，本身并不是东西。这里直接展开了一层，因为"车里有什么"显然问的是里面的东西。规则可以说得更明确一些。
+
+---
+
+## 发现
+
+**通过**：来源意图标签（t7、t9）、不为信念造地方（t8）、BEL unknown → HAB → 被告知的优先级（t9）、液体分装和洒出（t10、t11）、第 10 轮完整 STATE（t10）。
+
+**遗留**（五轮迭代后还开着）
+1. Q2 遇到只有子 LOC 的容器（车、柜子），应该自动展开一层（t12）。
+2. 有了更具体的 BEL 后，BEL unknown 的 `ruled out` 是否保留，规范没说（t9）。
+</script>
+
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const SPEC = $("#spec-src").textContent.trim();
+
+/* ---------- examples ---------- */
+const EXAMPLES = [...document.querySelectorAll("script[data-example]")].map((s) => ({ id: s.id, name: s.dataset.example, text: s.textContent }));
+
+/* ---------- geometry (§4) ---------- */
+const CELL = { NW: [0, 2], N: [1, 2], NE: [2, 2], W: [0, 1], C: [1, 1], E: [2, 1], SW: [0, 0], S: [1, 0], SE: [2, 0] };
+const CELL_AT = {}; for (const [k, [x, y]] of Object.entries(CELL)) CELL_AT[x + "," + y] = k;
+const D8 = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const ARROW = { N: "↑", NE: "↗", E: "→", SE: "↘", S: "↓", SW: "↙", W: "←", NW: "↖" };
+const ROW = {
+  N: { N: "front", E: "right", S: "behind", W: "left" },
+  E: { E: "front", S: "right", W: "behind", N: "left" },
+  S: { S: "front", W: "right", N: "behind", E: "left" },
+  W: { W: "front", N: "right", E: "behind", S: "left" },
+};
+const REL_ZH = { front: "正前方", behind: "正后方", left: "左边", right: "右边", "front-left": "左前方", "front-right": "右前方", "behind-left": "左后方", "behind-right": "右后方" };
+const ABS_ZH = { N: "北", NE: "东北", E: "东", SE: "东南", S: "南", SW: "西南", W: "西", NW: "西北" };
+const HCLASS = { low: 0, mid: 1, tall: 2 };
+
+function absDir(dx, dy) {
+  if (!dx && !dy) return null;
+  if (Math.abs(dx) === Math.abs(dy)) return (dy > 0 ? "N" : "S") + (dx > 0 ? "E" : "W");
+  if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? "E" : "W";
+  return dy > 0 ? "N" : "S";
+}
+function relDir(facing, d) {
+  let note = "";
+  if (facing.length === 2) {
+    const f2 = D8[(D8.indexOf(facing) + 7) % 8], d2 = D8[(D8.indexOf(d) + 7) % 8];
+    note = `朝向 ${facing} 是斜向 → 逆时针转 45°：朝向 ${f2}，目标 ${d} → ${d2}`;
+    facing = f2; d = d2;
+  }
+  const r = ROW[facing];
+  if (d.length === 1) return { rel: r[d], note };
+  const parts = [r[d[0]], r[d[1]]].sort((a, b) => ["front", "behind", "left", "right"].indexOf(a) - ["front", "behind", "left", "right"].indexOf(b));
+  return { rel: parts.join("-"), note };
+}
+// cells strictly between a and b, per §4.5 (exact rational arithmetic)
+function between(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, n = Math.max(Math.abs(dx), Math.abs(dy)), out = [];
+  if (n <= 1) return out;
+  const alongX = Math.abs(dx) >= Math.abs(dy);
+  for (let i = 1; i < n; i++) {
+    const main = alongX ? a.x + Math.sign(dx) * i : a.y + Math.sign(dy) * i;
+    const num = alongX ? a.y * n + dy * i : a.x * n + dx * i; // other coordinate × n
+    let cells;
+    if (num % n === 0) cells = [[num / n, false]];
+    else if ((2 * num) % n === 0) cells = [[Math.floor(num / n), true], [Math.ceil(num / n), true]];
+    else cells = [[Math.round(num / n), false]];
+    for (const [o, half] of cells) out.push(alongX ? { x: main, y: o, half } : { x: o, y: main, half });
+  }
+  return out;
+}
+
+/* ---------- STATE parsing ---------- */
+const RELS = "in|on|under|beside|attached_to|held_by|worn_by";
+const KIND_RE = /^(LOC|ENT|AGT|BEL|HAB|UNK|RET)\s+(.*)$/;
+function extractBlocks(text) {
+  const re = /\[STATE\s+t=(\d+)\]([\s\S]*?)\[\/STATE\]/g, out = []; let m;
+  while ((m = re.exec(text))) out.push({ t: +m[1], body: m[2].trim() });
+  return out;
+}
+function newWorld() { return { t: 0, LOC: new Map(), ENT: new Map(), AGT: new Map(), BEL: new Map(), HAB: new Map(), UNK: new Map(), RET: new Map(), issues: [] }; }
+function splitNote(s) { const m = s.match(/^(.*?)\s{2,}(\(.*\))\s*$/); return m ? [m[1].trim(), m[2]] : [s.trim(), ""]; }
+function parseWalls(fields) {
+  const walls = {};
+  for (const f of fields) {
+    const re = /(?:^|\s)([NESW]):(.*?)(?=\s+[NESW]:|$)/g; let m;
+    while ((m = re.exec(f))) walls[m[1]] = m[2].trim();
+  }
+  return walls;
+}
+function wallFeatures(text) {
+  if (!text) return [];
+  return (text.match(/[^,(]+(?:\([^)]*\))?/g) || []).map((f) => f.trim()).filter(Boolean).map((f) => {
+    const m = f.match(/^([^@(]+)(?:@(\w+))?(?:\(([^)]*)\))?/);
+    return m ? { name: m[1].trim(), at: m[2] || null, state: m[3] || "" } : { name: f, at: null, state: "" };
+  });
+}
+function parsePlace(body) {
+  const m = body.match(new RegExp(`^(${RELS})\\s+(\\S+?)(?:\\s*\\[(\\w+)\\])?(?:\\s+(.*))?$`));
+  return m ? { rel: m[1], loc: m[2], cell: m[3] || null, rest: (m[4] || "").trim() } : null;
+}
+function applyBlock(w, blk) {
+  const lines = blk.body.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("```"));
+  const isDelta = lines.some((l) => l.startsWith("Δ"));
+  if (!isDelta) { const keep = w.issues; Object.assign(w, newWorld()); w.issues = keep; }
+  w.t = blk.t;
+  for (const raw of lines) {
+    const l = raw.replace(/^Δ\s*/, "");
+    const km = l.match(KIND_RE);
+    if (!km) continue;
+    const [, kind, rest] = km;
+    const [main, note] = splitNote(rest);
+    const removal = /^\S+\s*:\s*∅/.test(main);
+    const id = (main.match(/^(\S+)/) || [])[1];
+    if (!id) continue;
+    if (removal && (kind === "ENT" || kind === "AGT" || kind === "UNK" || kind === "LOC" || kind === "RET")) {
+      if (!w[kind].has(id)) w.issues.push({ t: blk.t, msg: `t=${blk.t}：删除了不存在的 ${kind} ${id}` });
+      w[kind].delete(id); continue;
+    }
+    if (kind === "LOC") {
+      const m = main.match(/^(\S+)\s*<\s*(\S+?)(?:\s*\[(\w+)\])?\s*(\|.*)?$/);
+      if (!m) { w.issues.push({ t: blk.t, msg: `t=${blk.t}：看不懂这行 LOC：${main}` }); continue; }
+      const fields = (m[4] || "").split("|").map((s) => s.trim()).filter(Boolean);
+      const walls = parseWalls(fields.filter((f) => /^[NESW]:/.test(f)));
+      const adjF = fields.find((f) => f.startsWith("adj:")), affF = fields.find((f) => f.startsWith("aff:")), sideF = fields.find((f) => f.startsWith("side:"));
+      const type = fields.find((f) => !/^([NESW]:|adj:|aff:|side:)/.test(f)) || "";
+      const adj = {};
+      if (adjF) for (const p of adjF.slice(4).split(",")) { const mm = p.trim().match(/^(up|down|[NESW]):(\S+)/); if (mm) adj[mm[1]] = mm[2]; }
+      w.LOC.set(m[1], { id: m[1], parent: m[2], cell: m[3] || null, type, walls, adj, aff: affF ? affF.slice(4).trim() : "", side: sideF ? sideF.slice(5).trim() : "", gridded: Object.keys(walls).length > 0, note });
+    } else if (kind === "ENT" || kind === "AGT") {
+      const m = main.match(/^(\S+)\s*:\s*(.*)$/);
+      if (!m) { w.issues.push({ t: blk.t, msg: `t=${blk.t}：看不懂这行 ${kind}：${main}` }); continue; }
+      let body = m[2], facing = null, holds = [], wears = [];
+      if (kind === "AGT") {
+        const parts = body.split("|").map((s) => s.trim());
+        body = parts[0];
+        const fm = body.match(/\s+facing\s+(with\s+\S+|\S+)\s*$/);
+        if (fm) { facing = fm[1]; body = body.slice(0, fm.index); }
+        for (const p of parts.slice(1)) {
+          const pm = p.match(/^(holds|wears):\s*(.*)$/);
+          if (pm) { const ids = pm[2].split(/[,\s]+/).filter((x) => x && x !== "—" && x !== "-"); if (pm[1] === "holds") holds = ids; else wears = ids; }
+        }
+      }
+      const pl = parsePlace(body.trim());
+      if (!pl) { w.issues.push({ t: blk.t, msg: `t=${blk.t}：${kind} ${m[1]} 的位置写法看不懂：${body}` }); continue; }
+      const attrs = (pl.rest.match(/^\((.*)\)$/) || [])[1] || pl.rest;
+      w[kind].set(m[1], { id: m[1], kind, ...pl, attrs, facing, holds, wears, note });
+    } else if (kind === "BEL" || kind === "HAB") {
+      const m = main.match(/^(\S+)\s*:\s*(\S+)\s*(?:->\s*(.*))?$/);
+      if (!m) { w.issues.push({ t: blk.t, msg: `t=${blk.t}：看不懂这行 ${kind}：${main}` }); continue; }
+      const key = m[1] + "|" + m[2];
+      if (/^∅/.test(m[3] || "") || (!m[3] && /∅/.test(main))) { w[kind].delete(key); continue; }
+      w[kind].set(key, { who: m[1], ent: m[2], value: (m[3] || "").trim(), note });
+    } else if (kind === "UNK" || kind === "RET") {
+      const m = main.match(/^(\S+)\s*(.*)$/);
+      w[kind].set(m[1], { id: m[1], detail: (m[2] || "").replace(/^\(|\)$/g, ""), note });
+    }
+  }
+}
+function thing(w, id) { return w.ENT.get(id) || w.AGT.get(id) || null; }
+function lint(w) {
+  const out = [];
+  const known = (id) => w.LOC.has(id) || w.ENT.has(id) || w.AGT.has(id) || id === "world";
+  for (const e of [...w.ENT.values(), ...w.AGT.values()]) {
+    const tag = `${e.kind} ${e.id}`;
+    if (!known(e.loc)) out.push(`${tag} 的位置 ${e.loc} 没有建立`);
+    const parent = w.LOC.get(e.loc);
+    if (e.cell && !(parent && parent.gridded)) out.push(`${tag} 写了格子 [${e.cell}]，但 ${e.loc} 不是带网格的房间`);
+    if (!e.cell && parent && parent.gridded && !["held_by", "worn_by"].includes(e.rel)) out.push(`${tag} 直接在房间 ${e.loc} 里，却没写格子`);
+    if (e.cell && !CELL[e.cell]) out.push(`${tag} 的格子 [${e.cell}] 不是九宫格名`);
+    if ((e.rel === "held_by" || e.rel === "worn_by") && !w.AGT.has(e.loc)) out.push(`${tag} ${e.rel} ${e.loc}，但 ${e.loc} 不是人物`);
+    if (w.UNK.has(e.id)) out.push(`${e.id} 同时有位置行和 UNK 行`);
+    if (w.RET.has(e.id)) out.push(`${e.id} 同时有位置行和 RET 行`);
+  }
+  for (const a of w.AGT.values()) {
+    if (a.facing && !(D8.includes(a.facing) || a.facing === "—" || a.facing.startsWith("with "))) out.push(`AGT ${a.id} 的朝向 ${a.facing} 不合法`);
+    if (!a.facing) out.push(`AGT ${a.id} 没写朝向`);
+    for (const h of a.holds) { const e = thing(w, h); if (!e) out.push(`${a.id} holds ${h}，但 ${h} 没有位置行`); else if (!(e.rel === "held_by" && e.loc === a.id)) out.push(`${a.id} holds ${h}，但 ${h} 的位置是 ${e.rel} ${e.loc}`); }
+    for (const h of a.wears) { const e = thing(w, h); if (!e) out.push(`${a.id} wears ${h}，但 ${h} 没有位置行`); else if (!(e.rel === "worn_by" && e.loc === a.id)) out.push(`${a.id} wears ${h}，但 ${h} 的位置是 ${e.rel} ${e.loc}`); }
+  }
+  for (const e of [...w.ENT.values(), ...w.AGT.values()]) {
+    if (e.rel === "held_by" && w.AGT.has(e.loc) && !w.AGT.get(e.loc).holds.includes(e.id)) out.push(`${e.id} held_by ${e.loc}，但 ${e.loc} 的 holds 里没有它`);
+    if (e.rel === "worn_by" && w.AGT.has(e.loc) && !w.AGT.get(e.loc).wears.includes(e.id)) out.push(`${e.id} worn_by ${e.loc}，但 ${e.loc} 的 wears 里没有它`);
+  }
+  for (const l of w.LOC.values()) if (!l.gridded && !l.cell && w.LOC.get(l.parent)?.gridded) out.push(`LOC ${l.id} 挂在房间 ${l.parent} 下面，却没写格子`);
+  // adjacency consistency
+  const OPP = { E: "W", W: "E", N: "S", S: "N", up: "down", down: "up" };
+  for (const r of w.LOC.values()) for (const [side, other] of Object.entries(r.adj)) {
+    const o = w.LOC.get(other);
+    if (!o) out.push(`${r.id} 的 adj ${side}:${other} 指向没有建立的房间`);
+    else if (Object.keys(o.adj).length && o.adj[OPP[side]] !== r.id) out.push(`${r.id} 说 ${other} 在 ${side}，但 ${other} 没写回 ${OPP[side]}:${r.id}`);
+  }
+  return out;
+}
+
+/* ---------- layout of rooms ---------- */
+function layoutRooms(w) {
+  const rooms = [...w.LOC.values()].filter((r) => r.gridded);
+  const pos = new Map(), clusters = [];
+  const OFF = { E: [1, 0, 0], W: [-1, 0, 0], N: [0, 1, 0], S: [0, -1, 0], up: [0, 0, 1], down: [0, 0, -1] };
+  for (const r of rooms) {
+    if (pos.has(r.id)) continue;
+    const cl = clusters.length; clusters.push([]);
+    const queue = [r.id]; pos.set(r.id, { x: 0, y: 0, z: 0, cl });
+    while (queue.length) {
+      const id = queue.shift(); clusters[cl].push(id);
+      const room = w.LOC.get(id), p = pos.get(id);
+      for (const [side, other] of Object.entries(room.adj || {})) {
+        const o = w.LOC.get(other);
+        if (!o || !o.gridded || pos.has(other)) continue;
+        const [dx, dy, dz] = OFF[side];
+        pos.set(other, { x: p.x + dx, y: p.y + dy, z: p.z + dz, cl }); queue.push(other);
+      }
+    }
+  }
+  return { pos, clusters };
+}
+// where is a thing, in combined coordinates
+function locate(w, id, layout, depth = 0) {
+  if (depth > 12) return null;
+  const e = thing(w, id);
+  if (e) {
+    const parent = w.LOC.get(e.loc);
+    if (e.cell && parent && parent.gridded && layout.pos.has(parent.id)) {
+      const p = layout.pos.get(parent.id), [cx, cy] = CELL[e.cell] || [1, 1];
+      return { room: parent.id, cell: e.cell, x: p.x * 3 + cx, y: p.y * 3 + cy, z: p.z, cl: p.cl };
+    }
+    return locate(w, e.loc, layout, depth + 1);
+  }
+  const l = w.LOC.get(id);
+  if (l) {
+    if (l.cell && w.LOC.get(l.parent)?.gridded && layout.pos.has(l.parent)) {
+      const p = layout.pos.get(l.parent), [cx, cy] = CELL[l.cell] || [1, 1];
+      return { room: l.parent, cell: l.cell, x: p.x * 3 + cx, y: p.y * 3 + cy, z: p.z, cl: p.cl };
+    }
+    if (l.gridded) return null;
+    return locate(w, l.parent, layout, depth + 1);
+  }
+  return null;
+}
+function roomAt(layout, x, y, z, cl) {
+  for (const [id, p] of layout.pos) if (p.cl === cl && p.z === z && Math.floor(x / 3) === p.x && Math.floor(y / 3) === p.y) return id;
+  return null;
+}
+function heightOf(e) {
+  const s = (e.attrs || "") + " " + (e.note || "");
+  const eyes = s.match(/eyes\s+(low|mid|tall)/);
+  const own = s.replace(/eyes\s+(low|mid|tall)/, "").match(/\b(low|mid|tall)\b/);
+  return { eyes: eyes ? eyes[1] : null, own: own ? own[1] : null };
+}
+function headingOf(w, id) {
+  const e = thing(w, id); if (!e) return null;
+  const m = (e.attrs || "").match(/heading:\s*(N|NE|E|SE|S|SW|W|NW)\b/); return m ? m[1] : null;
+}
+function facingOf(w, id) {
+  const a = w.AGT.get(id);
+  if (a) {
+    if (a.facing && a.facing.startsWith("with ")) { const v = a.facing.slice(5); return { dir: headingOf(w, v), how: `随 ${v} 的 heading` }; }
+    if (a.facing === "—") {
+      if (a.rel === "held_by") { const f = facingOf(w, a.loc); return { dir: f.dir, how: `facing —，用抱着它的 ${a.loc} 的朝向` }; }
+      return { dir: null, how: "facing —，没人抱着" };
+    }
+    return { dir: D8.includes(a.facing) ? a.facing : null, how: "" };
+  }
+  const h = headingOf(w, id); return { dir: h, how: h ? "heading" : "" };
+}
+function wallOpen(w, roomId, side, third) {
+  const r = w.LOC.get(roomId); if (!r) return { open: false, what: "没有房间" };
+  const feats = wallFeatures(r.walls[side]);
+  const name = { E: ["SE", "E", "NE"], W: ["SW", "W", "NW"], N: ["NW", "N", "NE"], S: ["SW", "S", "SE"] }[side][third];
+  for (const f of feats) {
+    const at = f.at || side;
+    if (at === name && /\bopen\b/.test(f.state)) return { open: true, what: `${f.name}@${name}（开着）` };
+  }
+  const hit = feats.find((f) => (f.at || side) === name);
+  return { open: false, what: hit ? `${hit.name}@${name}${hit.state ? "（" + hit.state + "）" : ""}` : `墙@${name}` };
+}
+
+/* ---------- state ---------- */
+let source = { kind: "example", name: EXAMPLES[0]?.name || "", text: EXAMPLES[0]?.text || "" };
+let blocks = [], idx = 0, world = newWorld(), layout = { pos: new Map(), clusters: [] };
+
+function loadSource(text, kind, name, toEnd = true) {
+  source = { kind, name, text };
+  blocks = extractBlocks(text);
+  idx = toEnd ? Math.max(0, blocks.length - 1) : 0;
+  const s = $("#scrub"); s.max = Math.max(0, blocks.length - 1); s.value = idx; s.disabled = blocks.length < 2;
+  rebuild();
+}
+function rebuild() {
+  world = newWorld();
+  for (let i = 0; i <= idx && i < blocks.length; i++) applyBlock(world, blocks[i]);
+  layout = layoutRooms(world);
+  renderAll();
+}
+
+/* ---------- rendering ---------- */
+function tagFor(w, id) {
+  const a = w.AGT.get(id), e = w.ENT.get(id), l = w.LOC.get(id);
+  if (a) {
+    const f = a.facing || "";
+    const arrow = ARROW[f] || (f.startsWith("with ") ? "⟳" : "·");
+    const title = `${a.id}：${a.rel} ${a.loc}${a.cell ? " [" + a.cell + "]" : ""}，facing ${f}`;
+    return `<span class="tag agt" title="${esc(title)}"><span class="arrow">${arrow}</span>${esc(a.id)}</span>`;
+  }
+  if (e) {
+    const h = heightOf(e).own;
+    return `<span class="tag" title="${esc(e.id + "：" + e.rel + " " + e.loc + (e.attrs ? "（" + e.attrs + "）" : ""))}">${esc(e.id)}${h ? `<span class="h">${h}</span>` : ""}</span>`;
+  }
+  if (l) return `<span class="tag loc" title="${esc(l.id + (l.type ? "：" + l.type : ""))}">${esc(l.id)}</span>`;
+  return `<span class="tag">${esc(id)}</span>`;
+}
+function childrenOf(w, id) {
+  const kids = [];
+  for (const e of [...w.AGT.values(), ...w.ENT.values()]) if (e.loc === id && !e.cell) kids.push({ id: e.id, rel: e.rel });
+  for (const l of w.LOC.values()) if (l.parent === id && !l.cell && !l.gridded) kids.push({ id: l.id, rel: "⊂" });
+  return kids;
+}
+function renderThing(w, id, rel, depth = 0) {
+  const kids = depth < 5 ? childrenOf(w, id) : [];
+  return `<div class="thing">${rel ? `<span class="rel">${esc(rel)}</span>` : ""}${tagFor(w, id)}${kids.length ? `<div class="nest">${kids.map((k) => renderThing(w, k.id, k.rel, depth + 1)).join("")}</div>` : ""}</div>`;
+}
+let hl = { a: null, b: null, between: [] };
+function renderPlans() {
+  const w = world, el = $("#plans");
+  if (!w.LOC.size && !w.ENT.size) { el.innerHTML = `<div class="empty">这一轮还没有任何位置行。</div>`; return; }
+  let html = "";
+  layout.clusters.forEach((ids, cl) => {
+    const ps = ids.map((id) => layout.pos.get(id));
+    const zs = [...new Set(ps.map((p) => p.z))].sort((a, b) => b - a);
+    const minX = Math.min(...ps.map((p) => p.x)), maxY = Math.max(...ps.map((p) => p.y));
+    for (const z of zs) {
+      const here = ids.filter((id) => layout.pos.get(id).z === z);
+      html += `<div>${zs.length > 1 || z !== 0 ? `<div class="floor-label">${z === 0 ? "一楼" : z > 0 ? `楼上 ${z}` : `地下 ${-z}`}</div>` : ""}<div class="cluster">`;
+      for (const id of here) {
+        const p = layout.pos.get(id), r = w.LOC.get(id);
+        const style = `grid-column:${p.x - minX + 1};grid-row:${maxY - p.y + 1}`;
+        let cells = "";
+        for (const name of ["NW", "N", "NE", "W", "C", "E", "SW", "S", "SE"]) {
+          const occ = [];
+          for (const l of w.LOC.values()) if (l.parent === id && l.cell === name) occ.push(renderThing(w, l.id, ""));
+          for (const e of [...w.AGT.values(), ...w.ENT.values()]) if (e.loc === id && e.cell === name) occ.push(renderThing(w, e.id, e.rel === "in" ? "" : e.rel));
+          const [cx, cy] = CELL[name], gx = p.x * 3 + cx, gy = p.y * 3 + cy;
+          const cls = [hl.a && hl.a.x === gx && hl.a.y === gy && hl.a.z === z && hl.a.cl === cl ? "hl-a" : "",
+            hl.b && hl.b.x === gx && hl.b.y === gy && hl.b.z === z && hl.b.cl === cl ? "hl-b" : "",
+            hl.between.some((c) => c.x === gx && c.y === gy && c.z === z && c.cl === cl) ? "hl-between" : ""].join(" ");
+          cells += `<div class="cell ${cls}"><span class="cl">${name}</span>${occ.join("")}</div>`;
+        }
+        const wl = (s) => esc(r.walls[s] || "");
+        html += `<div class="room" style="${style}"><div class="rname">${esc(id)}</div>
+          <div class="wall n" title="${wl("N")}">N: ${wl("N")}</div>
+          <div class="wall e" title="${wl("E")}">E: ${wl("E")}</div>
+          <div class="wall s" title="${wl("S")}">S: ${wl("S")}</div>
+          <div class="wall w" title="${wl("W")}">W: ${wl("W")}</div>
+          <div class="grid9">${cells}</div></div>`;
+      }
+      html += `</div></div>`;
+    }
+  });
+  // non-gridded places that hold things directly
+  const outs = [...w.LOC.values()].filter((l) => !l.gridded && !l.cell && !(w.LOC.get(l.parent)?.gridded) && !thing(w, l.parent))
+    .filter((l) => [...w.ENT.values(), ...w.AGT.values()].some((e) => e.loc === l.id));
+  if (outs.length) {
+    html += `<div><div class="floor-label">没有网格的地方</div><div class="outside">` + outs.map((l) =>
+      `<div class="out-card"><h4>${esc(l.id)}<span class="kind">${esc(l.type)}</span></h4>${[...w.AGT.values(), ...w.ENT.values()].filter((e) => e.loc === l.id).map((e) => renderThing(w, e.id, e.rel)).join("")}</div>`).join("") + `</div></div>`;
+  }
+  el.innerHTML = html;
+}
+function chainOf(w, id) {
+  const hops = []; let cur = id, guard = 0;
+  while (cur && guard++ < 12) {
+    const e = thing(w, cur);
+    if (e) { hops.push(`${e.rel} <b>${esc(e.loc)}</b>${e.cell ? " [" + e.cell + "]" : ""}`); cur = e.loc; continue; }
+    const l = w.LOC.get(cur);
+    if (l && l.parent && l.parent !== "world") { hops.push(`⊂ <b>${esc(l.parent)}</b>${l.cell ? " [" + l.cell + "]" : ""}`); cur = l.parent; continue; }
+    break;
+  }
+  return hops.join(" → ");
+}
+function renderTables() {
+  const w = world;
+  const rows = [...w.AGT.values(), ...w.ENT.values()].map((e) => `<tr><td><code>${esc(e.id)}</code></td><td class="mono">${chainOf(w, e.id)}</td></tr>`).join("");
+  $("#tbl-chain").innerHTML = rows ? `<thead><tr><th>id</th><th>位置（一直到场景）</th></tr></thead><tbody>${rows}</tbody>` : `<tbody><tr><td class="empty">没有物品。</td></tr></tbody>`;
+
+  const bel = [...w.BEL.values()].map((b) => {
+    const truth = thing(w, b.ent);
+    let verdict;
+    if (/^unknown/.test(b.value)) verdict = `<span class="pill unk">不知道</span>`;
+    else if (!truth) verdict = w.RET.has(b.ent) ? `<span class="pill bad">东西已不存在</span>` : w.UNK.has(b.ent) ? `<span class="pill unk">真相也未知</span>` : `<span class="pill bad">无此物</span>`;
+    else {
+      const p = parsePlace(b.value.replace(/\s*\(.*$/, ""));
+      verdict = p && p.rel === truth.rel && p.loc === truth.loc ? `<span class="pill good">与真相一致</span>` : `<span class="pill bad">与真相不符</span>`;
+    }
+    return `<tr><td><code>${esc(b.who)}</code></td><td><code>${esc(b.ent)}</code></td><td class="mono">${esc(b.value)}</td><td>${verdict}</td></tr>`;
+  }).join("");
+  $("#tbl-bel").innerHTML = bel ? `<thead><tr><th>谁</th><th>什么</th><th>以为在</th><th>对照</th></tr></thead><tbody>${bel}</tbody>` : `<tbody><tr><td class="empty">没有信念行。</td></tr></tbody>`;
+
+  const misc = [
+    ...[...w.UNK.values()].map((u) => `<tr><td><span class="pill unk">UNK</span></td><td><code>${esc(u.id)}</code></td><td class="mono">${esc(u.detail)}</td></tr>`),
+    ...[...w.RET.values()].map((u) => `<tr><td><span class="pill bad">RET</span></td><td><code>${esc(u.id)}</code></td><td class="mono">${esc(u.detail)}</td></tr>`),
+    ...[...w.HAB.values()].map((h) => `<tr><td><span class="pill good">HAB</span></td><td><code>${esc(h.who)} · ${esc(h.ent)}</code></td><td class="mono">${esc(h.value)}</td></tr>`),
+  ].join("");
+  $("#tbl-misc").innerHTML = misc ? `<thead><tr><th>类</th><th>id</th><th>说明</th></tr></thead><tbody>${misc}</tbody>` : `<tbody><tr><td class="empty">没有未知、退役或习惯行。</td></tr></tbody>`;
+}
+function renderStatus() {
+  const w = world;
+  $("#t-label").textContent = blocks.length ? `t=${w.t}` : "t=—";
+  $("#src-label").textContent = source.kind === "chat" ? "来源：这次对话" : source.kind === "example" ? `来源：示例 · ${source.name}` : "来源：粘贴的记录";
+  $("#counts").innerHTML = blocks.length
+    ? `<span>STATE <b>${idx + 1}</b>/${blocks.length}</span><span>房间 <b>${[...w.LOC.values()].filter((l) => l.gridded).length}</b></span><span>人物 <b>${w.AGT.size}</b></span><span>物品 <b>${w.ENT.size}</b></span><span>信念 <b>${w.BEL.size}</b></span>`
+    : `<span>还没有 STATE</span>`;
+  const issues = [...w.issues.filter((i) => i.t <= w.t).map((i) => i.msg), ...lint(w)];
+  $("#warnings").innerHTML = blocks.length
+    ? (issues.length ? issues.map((m) => `<div class="warn-item">${esc(m)}</div>`).join("") : `<div class="ok-item">这一轮的 STATE 通过了全部一致性检查（位置存在、格子合法、holds/wears 对得上、adj 互相对应）。</div>`)
+    : "";
+  $("#raw").textContent = blocks[idx] ? `[STATE t=${blocks[idx].t}]\n${blocks[idx].body}\n[/STATE]` : "";
+}
+
+/* ---------- checker ---------- */
+function fillChecker() {
+  const w = world, a = $("#chk-a"), b = $("#chk-b"), pa = a.value, pb = b.value;
+  const anchors = [...w.AGT.keys(), ...[...w.ENT.values()].filter((e) => headingOf(w, e.id)).map((e) => e.id)];
+  const targets = [...w.AGT.keys(), ...w.ENT.keys(), ...[...w.LOC.values()].filter((l) => l.cell).map((l) => l.id)];
+  a.innerHTML = anchors.map((id) => `<option value="${esc(id)}">${esc(id)}</option>`).join("") || `<option value="">（没有人物）</option>`;
+  b.innerHTML = targets.map((id) => `<option value="${esc(id)}">${esc(id)}</option>`).join("") || `<option value="">（没有物品）</option>`;
+  if (anchors.includes(pa)) a.value = pa;
+  if (targets.includes(pb)) b.value = pb; else if (targets.length > 1 && b.value === a.value) b.value = targets.find((t) => t !== a.value);
+}
+function runChecker() {
+  const w = world, A = $("#chk-a").value, B = $("#chk-b").value, out = $("#chk-out");
+  hl = { a: null, b: null, between: [] };
+  if (!A || !B) { out.innerHTML = `<div class="empty">需要至少一个人物和一个物品。</div>`; return; }
+  if (A === B) { out.innerHTML = `<div class="empty">锚点和目标是同一个。</div>`; return; }
+  const pa = locate(w, A, layout), pb = locate(w, B, layout);
+  const steps = [];
+  if (!pa || !pb) {
+    const who = !pa ? A : B;
+    out.innerHTML = `<dl class="verdict"><dt>结果</dt><dd>${esc(who)} 不在任何带网格的房间里（比如在街上、花园或车里），§4 的格子算法用不上，只能用内在或相对参照系口头回答。</dd></dl>`;
+    return;
+  }
+  hl.a = pa; hl.b = pb;
+  if (pa.cl !== pb.cl) { out.innerHTML = `<dl class="verdict"><dt>结果</dt><dd>两者在互不相邻的房间里，按规则只能说出路线和第一个门的方向。</dd></dl>`; return; }
+  const dx = pb.x - pa.x, dy = pb.y - pa.y, dz = pb.z - pa.z;
+  steps.push(`${A}: ${pa.room} [${pa.cell}] → 拼格坐标 (${pa.x},${pa.y}${pa.z ? "," + pa.z : ""})`);
+  steps.push(`${B}: ${pb.room} [${pb.cell}] → 拼格坐标 (${pb.x},${pb.y}${pb.z ? "," + pb.z : ""})`);
+  const d = absDir(dx, dy);
+  steps.push(`dx=${dx >= 0 ? "+" : ""}${dx}, dy=${dy >= 0 ? "+" : ""}${dy}${dz ? `, dz=${dz}` : ""} → 绝对方向 ${d || "（同一格）"}`);
+  const f = facingOf(w, A);
+  let relText = "", fovText = "";
+  if (d) {
+    if (f.dir) {
+      const r = relDir(f.dir, d);
+      if (r.note) steps.push(r.note);
+      steps.push(`朝 ${f.dir}${f.how ? "（" + f.how + "）" : ""} 查表 → ${r.rel}`);
+      relText = `${REL_ZH[r.rel]} <span class="hint">${r.rel}</span>`;
+      if (w.AGT.has(A) && !w.AGT.get(A).facing?.startsWith("with ")) fovText = /behind/.test(r.rel) ? "不在视野里（转身才看得见）" : "在视野里";
+    } else {
+      steps.push(`${A} 没有可用的朝向${f.how ? "（" + f.how + "）" : ""} → 退回绝对参照系`);
+      relText = `${ABS_ZH[d]}（绝对参照系） <span class="hint">${d}</span>`;
+    }
+  } else relText = "同一格";
+  if (dz) relText = `${dz > 0 ? "上方" : "下方"}，${relText}`;
+  // distance
+  let distText;
+  if (dz) distText = "另一层：要说明路线（经楼梯）";
+  else if (pa.room !== pb.room) distText = "另一个房间：要说明路线";
+  else distText = ["就在这里", "几步远", "房间另一头"][Math.max(Math.abs(dx), Math.abs(dy))];
+  // visibility
+  let vis = "看得见", visWhy = [];
+  const rank = { visible: 0, partly: 1, hidden: 2 }; let worst = "visible";
+  const bump = (lvl, why) => { visWhy.push(why); if (rank[lvl] > rank[worst]) worst = lvl; };
+  if (dz) bump("hidden", "隔着楼板（楼梯口除外）");
+  else {
+    // wall crossings
+    if (pa.room !== pb.room) {
+      for (let x = Math.min(pa.x, pb.x); x < Math.max(pa.x, pb.x); x++) {
+        if (Math.floor(x / 3) === Math.floor((x + 1) / 3) || !dx) continue;
+        const xb = x + 0.5, y = pa.y + dy * (xb - pa.x) / dx;
+        const west = roomAt(layout, x, Math.round(y), pa.z, pa.cl), east = roomAt(layout, x + 1, Math.round(y), pa.z, pa.cl);
+        const third = ((Math.round(y) % 3) + 3) % 3;
+        const o1 = west ? wallOpen(w, west, "E", third) : { open: false, what: "外面" }, o2 = east ? wallOpen(w, east, "W", third) : { open: false, what: "外面" };
+        steps.push(`在 x=${xb} 穿过墙，y≈${y.toFixed(2)} → ${west || "?"} 东墙 / ${east || "?"} 西墙：${o1.what} · ${o2.what}`);
+        if (!(o1.open || o2.open)) bump("hidden", "墙挡住（这段墙上没有开着的门或窗）");
+      }
+      for (let y = Math.min(pa.y, pb.y); y < Math.max(pa.y, pb.y); y++) {
+        if (Math.floor(y / 3) === Math.floor((y + 1) / 3) || !dy) continue;
+        const yb = y + 0.5, x = pa.x + dx * (yb - pa.y) / dy;
+        const south = roomAt(layout, Math.round(x), y, pa.z, pa.cl), north = roomAt(layout, Math.round(x), y + 1, pa.z, pa.cl);
+        const third = ((Math.round(x) % 3) + 3) % 3;
+        const o1 = south ? wallOpen(w, south, "N", third) : { open: false, what: "外面" }, o2 = north ? wallOpen(w, north, "S", third) : { open: false, what: "外面" };
+        steps.push(`在 y=${yb} 穿过墙，x≈${x.toFixed(2)} → ${south || "?"} 北墙 / ${north || "?"} 南墙：${o1.what} · ${o2.what}`);
+        if (!(o1.open || o2.open)) bump("hidden", "墙挡住（这段墙上没有开着的门或窗）");
+      }
+    }
+    const btw = between(pa, pb).map((c) => ({ ...c, z: pa.z, cl: pa.cl }));
+    hl.between = btw;
+    if (btw.length) {
+      steps.push("中间格：" + btw.map((c) => { const r = roomAt(layout, c.x, c.y, c.z, c.cl); const cn = CELL_AT[(((c.x % 3) + 3) % 3) + "," + (((c.y % 3) + 3) % 3)]; return `${r || "?"}[${cn}]${c.half ? "½" : ""}`; }).join("，"));
+    } else steps.push("中间格：没有（相邻或同格）");
+    const ea = thing(w, A), eb = thing(w, B);
+    const eye = (ea && heightOf(ea).eyes) || (w.AGT.has(A) ? "tall" : "mid");
+    let tgt = eb ? (w.AGT.has(B) ? heightOf(eb).eyes || heightOf(eb).own || "tall" : heightOf(eb).own) : null;
+    if (!tgt) { tgt = "mid"; steps.push(`${B} 没标高度，按 mid 算`); }
+    steps.push(`眼高 ${eye}，目标 ${tgt}`);
+    for (const c of btw) {
+      const r = roomAt(layout, c.x, c.y, c.z, c.cl); if (!r) continue;
+      const cn = CELL_AT[(((c.x % 3) + 3) % 3) + "," + (((c.y % 3) + 3) % 3)];
+      for (const e of [...w.ENT.values(), ...w.AGT.values()]) {
+        if (e.loc !== r || e.cell !== cn || e.id === A || e.id === B) continue;
+        const h = w.AGT.has(e.id) ? heightOf(e).eyes || heightOf(e).own || "tall" : heightOf(e).own;
+        if (!h) { steps.push(`  ${e.id} 在 ${cn}${c.half ? "½" : ""}，没标高度，忽略`); continue; }
+        if (HCLASS[h] < HCLASS[tgt]) { steps.push(`  ${e.id}(${h}) 比目标矮 → 不挡`); continue; }
+        let lvl = HCLASS[h] >= HCLASS[eye] ? "hidden" : "partly";
+        if (c.half) lvl = "partly";
+        steps.push(`  ${e.id}(${h})${c.half ? " 半格" : ""} → ${lvl === "hidden" ? "挡住" : "部分遮挡"}`);
+        bump(lvl, `${e.id}（${h}）`);
+      }
+    }
+  }
+  vis = { visible: "看得见", partly: "部分被挡", hidden: "看不见" }[worst];
+  out.innerHTML = `<dl class="verdict">
+      <dt>方位</dt><dd class="big">${relText}</dd>
+      <dt>距离</dt><dd>${esc(distText)}</dd>
+      <dt>可见性</dt><dd>${esc(vis)}${visWhy.length ? ` <span class="hint">（${esc(visWhy.join("；"))}）</span>` : ""}</dd>
+      ${fovText ? `<dt>视野</dt><dd>${esc(fovText)}</dd>` : ""}
+    </dl>
+    <div class="steps">${esc(steps.join("\n"))}</div>`;
+}
+
+function renderAll() {
+  renderStatus(); fillChecker(); runChecker(); renderPlans(); renderTables();
+}
+
+/* ---------- chat ---------- */
+const PREAMBLE = `下面是一份「空间模型」规范。从现在起，你就是规范里描述的这个模型：严格按它记录和回答。
+
+要求：
+- 叙述和回答用中文；STATE 里的 id、关键字和记法保持规范原样（英文）。
+- 用户每说一句话算一轮，t 从 1 开始递增。
+- 每一轮只要位置有变化或新建立了细节，就在回答末尾写 STATE；第 1 轮和场景切换时写完整 STATE。
+- STATE 块可以放在 \`\`\` 代码块里，但必须以 [STATE t=n] 开头、[/STATE] 结尾。
+- 房间的人物写明眼睛高度，例如 (standing, eyes tall)；物品写明高度类 low/mid/tall，方便核对遮挡。
+
+===== 规范开始 =====
+${SPEC}
+===== 规范结束 =====`;
+
+const PRESETS = [
+  { label: "开场：厨房", text: "一栋房子，厨房东墙有门通门厅。Mara 穿着灰外套站在厨房西侧面朝东，Leo 在东南角面朝北。桌上有把黄铜钥匙，东北角台面上有个红杯子。" },
+  { label: "开场：两层楼", text: "一楼是门厅（西）和车库（东），门开着；二楼书房正好在门厅上方，西北角有楼梯。Ben 站在门厅西南角面朝北，Nia 站在书房正中面朝南。车停在车库正中，车头朝南。" },
+  { label: "问方位", text: "从 Mara 的角度看，红杯子在哪？看得见吗？" },
+  { label: "移动", text: "Mara 去门厅把外套挂起来。" },
+  { label: "信念", text: "Leo 趁 Mara 不在，把钥匙放进台面抽屉。Mara 回来后会先去哪找钥匙？" },
+  { label: "丢失", text: "突然停电，有人手里的东西掉了，没人看见掉在哪。" },
+];
+let messages = [], sample = null, ctl = null, busy = false;
+
+function renderMsgBody(text) {
+  // STATE blocks → highlighted pre; strip code fences; light markdown
+  const parts = []; let last = 0; const re = /\[STATE\s+t=\d+\][\s\S]*?\[\/STATE\]/g; let m;
+  const prose = (s) => esc(s.replace(/^```\w*\s*$/gm, "").replace(/\n{3,}/g, "\n\n")).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, '<code class="mono">$1</code>').replace(/^#{1,6}\s*/gm, "");
+  while ((m = re.exec(text))) { parts.push(prose(text.slice(last, m.index))); parts.push(`<pre class="state">${esc(m[0])}</pre>`); last = m.index + m[0].length; }
+  parts.push(prose(text.slice(last)));
+  return parts.join("").trim();
+}
+function renderLog() {
+  const log = $("#log");
+  $("#empty-log").hidden = messages.length > 0;
+  log.querySelectorAll(".msg").forEach((n) => n.remove());
+  for (const msg of messages) log.appendChild(msgNode(msg));
+  log.scrollTop = log.scrollHeight;
+}
+function msgNode(msg) {
+  const d = document.createElement("div");
+  d.className = "msg " + msg.role;
+  d.innerHTML = `<div class="who">${msg.role === "user" ? "你" : "空间模型"}${msg.t ? ` · 第 ${msg.t} 轮` : ""}</div><div class="body">${msg.role === "user" ? esc(msg.content) : renderMsgBody(msg.content || "思考中……")}</div>${msg.error ? `<div class="note">${esc(msg.error)}</div>` : ""}`;
+  return d;
+}
+function chatTranscript() { return messages.filter((m) => m.role === "assistant").map((m) => m.content).join("\n\n"); }
+function errorCopy(code) {
+  return {
+    not_granted: "没有获得使用 Claude 的许可。", sampling_disabled: "这个账号不能在页面里调用 Claude。", rate_limited: "调用太频繁或额度用完了，过一会儿再试。",
+    session_expired: "登录已过期，请重新登录 claude.ai。", refused: "Claude 拒绝了这条输入，换个说法再试。", prompt_too_large: "对话太长，超过上限了。点「新场景」重新开始。",
+    empty_completion: "Claude 没有回答，换个说法再试。", cancelled: "已停止。",
+  }[code] || "出错了，可以再发一次。";
+}
+async function send() {
+  const box = $("#msg"), text = box.value.trim();
+  if (!text || busy || !sample) return;
+  box.value = "";
+  const turnNo = messages.filter((m) => m.role === "user").length + 1;
+  messages.push({ role: "user", content: text, t: turnNo });
+  const reply = { role: "assistant", content: "", t: turnNo };
+  messages.push(reply);
+  renderLog();
+  const node = $("#log").lastElementChild.querySelector(".body");
+  busy = true; $("#send").disabled = true; $("#stop").hidden = false;
+  ctl = new AbortController();
+  let turns = [{ role: "user", content: PREAMBLE }, ...messages.slice(0, -1).filter((m) => m.content).map((m) => ({ role: m.role, content: m.content }))];
+  try {
+    const { text: full, truncated } = await sample(turns, {
+      cache: false, signal: ctl.signal, modelTier: $("#tier").value,
+      onText: ({ text: t }) => { reply.content = t; node.innerHTML = renderMsgBody(t); const log = $("#log"); log.scrollTop = log.scrollHeight; },
+    });
+    reply.content = full;
+    if (truncated) reply.error = "回答被截断了，可以让它继续。";
+  } catch (e) {
+    reply.content = (e && e.text) || "";
+    reply.error = errorCopy(e && e.code);
+    if (e && (e.code === "not_granted" || e.code === "sampling_disabled")) disableChat();
+    if (!reply.content) { messages.pop(); messages.pop(); box.value = text; $("#ctx-hint").textContent = reply.error; }
+  } finally {
+    busy = false; $("#send").disabled = !sample; $("#stop").hidden = true;
+    renderLog();
+    if (messages.some((m) => m.role === "assistant" && m.content)) loadSource(chatTranscript(), "chat", "");
+  }
+}
+function disableChat() { sample = null; $("#no-sample").hidden = false; $("#send").disabled = true; }
+
+/* ---------- wiring ---------- */
+function setTab(which) {
+  for (const t of ["chat", "import"]) { $("#tab-" + t).setAttribute("aria-selected", String(t === which)); $("#pane-" + t).hidden = t !== which; }
+}
+$("#tab-chat").onclick = () => setTab("chat");
+$("#tab-import").onclick = () => setTab("import");
+$("#presets").innerHTML = PRESETS.map((p, i) => `<button class="chip-btn" data-i="${i}">${esc(p.label)}</button>`).join("");
+$("#presets").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; $("#msg").value = PRESETS[+b.dataset.i].text; $("#msg").focus(); };
+$("#send").onclick = send;
+$("#stop").onclick = () => ctl && ctl.abort();
+$("#msg").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+let resetArmed = false;
+$("#reset").onclick = () => {
+  if (!messages.length) return;
+  if (!resetArmed) { resetArmed = true; $("#reset").textContent = "再点一次：清空对话"; setTimeout(() => { resetArmed = false; $("#reset").textContent = "新场景"; }, 3000); return; }
+  resetArmed = false; $("#reset").textContent = "新场景";
+  ctl && ctl.abort(); messages = []; renderLog();
+  loadSource(EXAMPLES[0].text, "example", EXAMPLES[0].name);
+};
+$("#example").innerHTML = EXAMPLES.map((e, i) => `<option value="${i}">${esc(e.name)}</option>`).join("");
+$("#example").onchange = () => { const ex = EXAMPLES[+$("#example").value]; loadSource(ex.text, "example", ex.name); $("#parse-hint").textContent = `已载入 ${ex.name}，共 ${blocks.length} 个 STATE。`; };
+$("#parse").onclick = () => {
+  const text = $("#paste").value;
+  const n = extractBlocks(text).length;
+  if (!n) { $("#parse-hint").textContent = "没找到 [STATE t=…] … [/STATE] 块。"; return; }
+  loadSource(text, "paste", ""); $("#parse-hint").textContent = `解析了 ${n} 个 STATE。`;
+};
+$("#scrub").oninput = (e) => { idx = +e.target.value; rebuild(); };
+$("#chk-a").onchange = () => { runChecker(); renderPlans(); };
+$("#chk-b").onchange = () => { runChecker(); renderPlans(); };
+
+loadSource(source.text, "example", source.name);
+
+(async () => {
+  try { sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch { sample = null; }
+  if (!sample) disableChat(); else { $("#no-sample").hidden = true; $("#send").disabled = false; }
+})();
+$("#send").disabled = true;
+})();
+</script>
