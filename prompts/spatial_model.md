@@ -17,7 +17,9 @@ LOC <id> < <parent> | <type> | N:<feature> E:<feature> S:<feature> W:<feature> |
 ENT <id> : <relation> <location> [<cell>] (<attributes>)
 AGT <id> : <relation> <location> [<cell>] facing <dir> | holds: <ids> | wears: <ids>
 BEL <believer> : <entity> -> <relation> <location> (<source>)
-UNK <id> (last seen: <relation> <location>, t=<turn>)
+BEL <believer> : <entity> -> unknown (last believed: <relation> <location>, t=<turn>)
+UNK <id> (last seen: <relation> <location>, t=<turn>; within: <location>; ruled out: <places>)
+RET <id> (<reason>, t=<turn>)
 [/STATE]
 ```
 
@@ -32,18 +34,32 @@ UNK <id> (last seen: <relation> <location>, t=<turn>)
   ```
 
   North is the room's north wall. Every room declares what's on each wall.
+- Only direct children of a gridded LOC (a room) take a `<cell>`. Nested
+  items (in a drawer, under a sofa, held by someone) omit it; they occupy
+  their container's cell.
+- A LOC with no grid (outdoor areas, vehicles, abstract places) omits the
+  wall field, and its children omit `<cell>`. Frame questions inside it
+  use intrinsic or relative frames only.
 - relation ∈ in, on, under, beside, attached_to, held_by, worn_by.
 - dir ∈ N, NE, E, SE, S, SW, W, NW.
 - Containers and people are locations too: `ENT key : in coat_pocket`,
   `LOC coat_pocket < coat`.
 - Every 10 turns, or whenever the scene changes, write a FULL state.
   Otherwise write only the lines that changed, prefixed with Δ.
+- A Δ line always restates the whole line. For AGT, that means facing,
+  holds and wears too, even if only one of them changed.
 - To remove a line, write a Δ line whose body is `∅`, with the reason:
   `Δ ENT coin : ∅  (destroyed: melted down)`. When an entity's location
   is lost, replace its ENT line with a UNK line in the same block:
   `Δ ENT key : ∅` followed by `Δ UNK key (last seen: on table, t=4)`.
   Removing a line never means the entity was unestablished; once a line
   has existed, the id stays reserved.
+- An entity that stops existing (destroyed, eaten, merged) gets a RET
+  line: `Δ ENT mug : ∅` then `Δ RET mug (destroyed: broke in sink, t=9)`.
+  RET lines are carried into every FULL state, so the id stays reserved
+  and BEL lines that still mention it have something to point to.
+- A character who learns that their belief is wrong but not where the
+  thing is gets `BEL <who> : <id> -> unknown (last believed: ..., t=n)`.
 
 ## 2. Invariants (check before writing STATE)
 
@@ -53,9 +69,10 @@ UNK <id> (last seen: <relation> <location>, t=<turn>)
   their holder. Don't write separate lines to move them.
 - No teleporting. A change in location requires an event in the narration.
 - Physical plausibility: size, capacity, and support (nothing floats).
-- Three states, never confused:
+- Four states, never confused:
   - known → ENT line exists
   - unknown → UNK line (exists, but its location is lost or unseen)
+  - retired → RET line (existed, no longer exists)
   - unestablished → no line at all
 - Ground truth versus belief: characters know only what they have seen
   or been told. A character's dialogue and actions follow their BEL
@@ -67,6 +84,16 @@ When a question needs a detail that was never established (what's in the
 drawer, which wall the window is on), decide it once, in a way that fits
 everything already established, write it into STATE immediately, and
 treat it as fixed thereafter. Never re-decide an established detail.
+
+The same applies to UNK entities. An UNK line records what is still
+certain: `within:` (the smallest place it cannot have left, given who
+could have moved it) and `ruled out:` (places already searched). While
+the entity is UNK, never state where it is, not even in narration.
+When someone finds it, or a question forces an answer, resolve it once:
+pick a place inside `within`, not in `ruled out`, reachable from the
+last-seen place by events that happened. Then write `Δ UNK <id> : ∅`
+and its new ENT line in the same block. A search that fails adds the
+searched place to `ruled out`.
 
 ## 4. Frames of reference
 
@@ -121,7 +148,8 @@ mentioned matching entity (for pronouns). If two or more candidates fit,
 ask which one, and list them with a distinguishing detail. Otherwise,
 give the relation plus the full chain up to the scene level:
 "in the left pocket of Mara's coat — Mara is in the hallway."
-For an UNK entity, say it's unknown and give its last known place.
+For an UNK entity, say it's unknown, give its last known place and its
+`within` bound. For a RET entity, say it no longer exists and why.
 
 **Q2. Location → occupants.**
 List the ENT/AGT lines whose location is that place, grouped by
