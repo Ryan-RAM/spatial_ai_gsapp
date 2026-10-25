@@ -1,5 +1,8 @@
 # spatial_ai_gsapp
+
 ARCH6956-1
+
+Instructor: [William Martin](https://awmartin.xyz/spatial-computing/course/)
 
 Each folder holds the contents of one former branch:
 
