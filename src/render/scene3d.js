@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { G, C, nodeXYL } from '../sim/world.js';
-import { eyePoint, inCone } from '../sim/los.js';
+import { eyePoint, inCone, segmentCrossings } from '../sim/los.js';
 
 const tmpMatrix = new THREE.Matrix4();
 const tmpQuat = new THREE.Quaternion();
@@ -144,6 +144,12 @@ export function makeScene3D(container, palette) {
   const straight = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: palette.euclidean, fog: false, linewidth: 2 }));
   const pathLine = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineDashedMaterial({ color: palette.path, dashSize: 0.35, gapSize: 0.22, fog: false }));
   straight.frustumCulled = false;
+  // dots on the straight line wherever the sound passes through solid material (acoustic distance)
+  const MAX_DOTS = 96;
+  const muffleDots = new THREE.InstancedMesh(new THREE.SphereGeometry(0.13, 12, 8), new THREE.MeshBasicMaterial({ color: palette.acoustic, fog: false }), MAX_DOTS);
+  muffleDots.count = 0;
+  muffleDots.frustumCulled = false;
+  scene.add(muffleDots);
   pathLine.frustumCulled = false;
   scene.add(straight, pathLine);
 
@@ -297,6 +303,16 @@ export function makeScene3D(container, palette) {
     const pe = eyePoint(world, game.police.node);
     const te = eyePoint(world, game.thief.node);
     straight.geometry.setFromPoints([new THREE.Vector3(pe[0], pe[2], pe[1]), new THREE.Vector3(te[0], te[2], te[1])]);
+    const len = Math.hypot(te[0] - pe[0], te[1] - pe[1], te[2] - pe[2]);
+    const crossings = segmentCrossings(world, pe, te).slice(0, MAX_DOTS);
+    crossings.forEach((c, i) => {
+      const k = Math.min(1, (c.t + 0.25) / Math.max(len, 1e-9));
+      tmpPos.set(pe[0] + (te[0] - pe[0]) * k, pe[2] + (te[2] - pe[2]) * k, pe[1] + (te[1] - pe[1]) * k);
+      tmpMatrix.compose(tmpPos, tmpQuat.identity(), tmpScale.set(1, 1, 1));
+      muffleDots.setMatrixAt(i, tmpMatrix);
+    });
+    muffleDots.count = crossings.length;
+    muffleDots.instanceMatrix.needsUpdate = true;
     const pts = game.ctx.pf.path(game.police.node, game.thief.node).map((n) => {
       const { x, y, level } = nodeXYL(world, n);
       return new THREE.Vector3(x + 0.5, level * world.config.levelHeight + 0.2, y + 0.5);
@@ -325,6 +341,7 @@ export function makeScene3D(container, palette) {
       updateVision(a, a.node, a.current.facing, [a.current.x - a.to.x, a.current.y - a.to.y, a.current.z - a.to.z]);
     }
     straight.visible = options.lines;
+    muffleDots.visible = options.lines;
     pathLine.visible = options.lines;
     for (let i = ripples.length - 1; i >= 0; i--) {
       const r = ripples[i];

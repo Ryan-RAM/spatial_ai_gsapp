@@ -2,7 +2,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canSee, castRay, eyePoint, inCone } from '../src/sim/los.js';
+import { canSee, castRay, eyePoint, inCone, acousticDistance } from '../src/sim/los.js';
 import { CONFIG } from '../src/sim/config.js';
 import { makeTestWorld, EAST, WEST, NORTH, SOUTH } from './helpers.mjs';
 
@@ -162,4 +162,55 @@ test('rays stop at the ground, at slabs and at the fog limit', () => {
   const [x3, y3, z3] = eyePoint(world, at(1, 3, 2));
   assert.ok(Math.abs(castRay(world, x3, y3, z3, 0, 0, -1, 9) - 1.5) < 1e-9); // platform floor
   assert.ok(Math.abs(castRay(world, 1.5, 4.5, 1.5, 1, 0, 0, 20) - 11.5) < 1e-9); // the wall
+});
+
+// ---- hearing: acoustic distance ------------------------------------------
+
+test('acoustic distance equals the Euclidean distance in open air', () => {
+  const { world, at } = makeTestWorld(OPEN);
+  const r = acousticDistance(world, eyePoint(world, at(0, 2, 4)), eyePoint(world, at(0, 9, 4)));
+  assert.equal(r.distance, 7);
+  assert.equal(r.crossings.length, 0);
+});
+
+test('every cell of material on the straight line adds its muffling', () => {
+  const g = OPEN.slice();
+  g[4] = '#....bRR.....#';
+  const { world, at } = makeTestWorld(g);
+  const r = acousticDistance(world, eyePoint(world, at(0, 2, 4)), eyePoint(world, at(0, 10, 4)));
+  const m = world.config.muffling;
+  assert.deepEqual(r.crossings.map((c) => c.material), ['bush', 'rock', 'rock']);
+  assert.ok(Math.abs(r.distance - (8 + m.bush + 2 * m.rock)) < 1e-9);
+});
+
+test('a platform floor muffles the sound between the levels; open air does not', () => {
+  const canopy = [
+    '              ',
+    '              ',
+    '              ',
+    '              ',
+    '====          ',
+    '              ',
+    '              ',
+    '              ',
+    '              ',
+  ];
+  const { world, at } = makeTestWorld(OPEN, canopy);
+  const m = world.config.muffling;
+  // right below the platform: through the floor slab
+  const below = acousticDistance(world, eyePoint(world, at(1, 2, 4)), eyePoint(world, at(0, 2, 4)));
+  assert.ok(Math.abs(below.distance - (3 + m.floor)) < 1e-9);
+  // from the platform edge down to the ground in the open: straight through the air
+  const open = acousticDistance(world, eyePoint(world, at(1, 3, 4)), eyePoint(world, at(0, 7, 4)));
+  assert.equal(open.extra, 0);
+  assert.equal(open.distance, 5);
+});
+
+test('acoustic distance is the same in both directions', () => {
+  const g = OPEN.slice();
+  g[3] = '#...T..b.....#';
+  const { world, at } = makeTestWorld(g);
+  const a = eyePoint(world, at(0, 1, 2));
+  const b = eyePoint(world, at(0, 11, 5));
+  assert.equal(acousticDistance(world, a, b).distance, acousticDistance(world, b, a).distance);
 });

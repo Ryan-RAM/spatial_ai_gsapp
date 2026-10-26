@@ -53,12 +53,12 @@ function perceive(game) {
   };
 }
 
-// Footsteps carry along walkable paths (360 degrees) up to the hearing range.
+// Footsteps are heard in every direction while the acoustic distance is within the hearing range.
 function makeSound(game, who) {
-  const { pf, config } = game.ctx;
+  const { metrics, config } = game.ctx;
   const mover = who === 'police' ? game.police : game.thief;
   const listener = who === 'police' ? game.thief : game.police;
-  const heard = pf.distance(mover.node, listener.node) <= config.hearingRange;
+  const heard = metrics.acoustic(mover.node, listener.node) <= config.hearingRange;
   game.sounds.push({ who, node: mover.node, heard });
   if (!heard) return false;
   listener.heardAt = mover.node;
@@ -135,7 +135,12 @@ function record(game) {
   const { metrics } = game.ctx;
   const a = game.police.node;
   const b = game.thief.node;
-  game.distances = { euclidean: metrics.euclidean(a, b), path: metrics.path(a, b), perceptual: metrics.perceptual(a, b) };
+  game.distances = {
+    euclidean: metrics.euclidean(a, b),
+    acoustic: metrics.acoustic(a, b),
+    path: metrics.path(a, b),
+    perceptual: metrics.perceptual(a, b),
+  };
   game.history.push({ step: game.step, ...game.distances });
   game.hint = describeDistances(game);
 }

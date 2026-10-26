@@ -52,6 +52,13 @@ test('axioms on the generated map', () => {
     assert.equal(r[name].triangle, 0, name);
     assert.equal(r[name].selfNonZero, 0, name);
   }
+  // the acoustic distance is a semimetric: everything holds except the triangle inequality,
+  // because a detour via a third point can avoid a rock the straight line passes through
+  assert.equal(r.acoustic.negative, 0);
+  assert.equal(r.acoustic.asymmetric, 0);
+  assert.equal(r.acoustic.selfNonZero, 0);
+  assert.ok(r.acoustic.triangle > 0);
+  assert.equal(r.acoustic.zeroPairs, 0);
   assert.equal(r.euclidean.zeroPairs, 0);
   assert.equal(r.path.zeroPairs, 0);
 });

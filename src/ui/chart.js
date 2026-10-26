@@ -1,5 +1,5 @@
 // Distance-over-time chart for the current round (canvas, no library).
-// Left axis: Euclidean and path distance in cells, with the 9-cell vision and 12-cell hearing limits.
+// Left axis: Euclidean, acoustic and path distance in cells, with the 9-cell vision and 12-cell hearing limits.
 // Right axis: perceptual distance (difference between visibility fingerprints).
 
 export function makeChart(canvas, tooltip) {
@@ -31,7 +31,7 @@ export function makeChart(canvas, tooltip) {
     const pw = L.w - L.left - L.right;
     const ph = L.h - L.top - L.bottom;
     const maxStep = config.maxSteps;
-    const cellsMax = niceMax(Math.max(16, ...data.map((d) => Math.max(d.euclidean, Number.isFinite(d.path) ? d.path : 0))), 10);
+    const cellsMax = niceMax(Math.max(16, ...data.map((d) => Math.max(d.euclidean, d.path))), 10);
     const percMax = niceMax(Math.max(40, ...data.map((d) => d.perceptual)), 20);
     const X = (s) => L.left + (s / maxStep) * pw;
     const Y = (v) => L.top + ph - (v / cellsMax) * ph;
@@ -67,7 +67,7 @@ export function makeChart(canvas, tooltip) {
       g.fillText(label, right ? L.left + pw - 4 : L.left + 4, Y(v) - 2);
     };
     limit(config.visionRange, `Vision limit ${config.visionRange}`, palette.euclidean, true);
-    limit(config.hearingRange, `Hearing limit ${config.hearingRange}`, palette.path);
+    limit(config.hearingRange, `Hearing limit ${config.hearingRange}`, palette.acoustic);
 
     const series = (key, color, yfn, width) => {
       g.strokeStyle = color;
@@ -79,6 +79,7 @@ export function makeChart(canvas, tooltip) {
     };
     series('perceptual', palette.perceptual, YP, 1.5);
     series('path', palette.path, Y, 2);
+    series('acoustic', palette.acoustic, (v) => Y(Math.min(v, cellsMax)), 2);
     series('euclidean', palette.euclidean, Y, 2);
 
     // hover crosshair
@@ -88,7 +89,7 @@ export function makeChart(canvas, tooltip) {
         g.strokeStyle = palette.muted;
         g.lineWidth = 1;
         g.beginPath(); g.moveTo(X(d.step), L.top); g.lineTo(X(d.step), L.top + ph); g.stroke();
-        for (const [key, color, yfn] of [['euclidean', palette.euclidean, Y], ['path', palette.path, Y], ['perceptual', palette.perceptual, YP]]) {
+        for (const [key, color, yfn] of [['euclidean', palette.euclidean, Y], ['acoustic', palette.acoustic, (v) => Y(Math.min(v, cellsMax))], ['path', palette.path, Y], ['perceptual', palette.perceptual, YP]]) {
           g.fillStyle = color;
           g.beginPath(); g.arc(X(d.step), yfn(d[key]), 3.5, 0, Math.PI * 2); g.fill();
         }
@@ -107,7 +108,7 @@ export function makeChart(canvas, tooltip) {
     const d = data.find((p) => p.step === s);
     if (d) {
       tooltip.hidden = false;
-      tooltip.innerHTML = `<b>Step ${d.step}</b><br>Euclidean ${d.euclidean.toFixed(1)}<br>Path ${d.path.toFixed(1)}<br>Perceptual ${d.perceptual.toFixed(1)}`;
+      tooltip.innerHTML = `<b>Step ${d.step}</b><br>Euclidean ${d.euclidean.toFixed(1)}<br>Acoustic ${d.acoustic.toFixed(1)}<br>Path ${d.path.toFixed(1)}<br>Perceptual ${d.perceptual.toFixed(1)}`;
       const x = ev.clientX - rect.left;
       tooltip.style.left = `${Math.min(x + 12, rect.width - 130)}px`;
       tooltip.style.top = '8px';

@@ -1,9 +1,10 @@
-// The three distances of the project and a sampled check of the metric axioms.
-//   Euclidean distance  : straight 3D line between two eye points, passes through everything.
-//   Path distance       : shortest walk around obstacles and via ladders (see paths.js).
-//   Perceptual distance : Euclidean distance between two visibility fingerprints.
+// The distances of the project and a sampled check of the metric axioms.
+//   Euclidean distance  : straight 3D line between two eye points, passes through everything (sight).
+//   Acoustic distance   : the same straight line, plus muffling by every solid it passes through (hearing).
+//   Path distance       : shortest walk around obstacles and via ladders (walking, see paths.js).
+//   Perceptual distance : Euclidean distance between two visibility fingerprints (sense of place).
 
-import { eyePoint } from './los.js';
+import { eyePoint, acousticDistance } from './los.js';
 import { fingerprint } from './rays.js';
 import { makeRng } from './rng.js';
 
@@ -13,6 +14,7 @@ export function makeMetrics(world, rays, pathfinder) {
     const q = eyePoint(world, b);
     return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
   }
+  const acoustic = (a, b) => acousticDistance(world, eyePoint(world, a), eyePoint(world, b)).distance;
   const path = (a, b) => pathfinder.distance(a, b);
   function perceptual(a, b) {
     const fa = fingerprint(world, rays, a);
@@ -21,7 +23,7 @@ export function makeMetrics(world, rays, pathfinder) {
     for (let i = 0; i < fa.length; i++) { const d = fa[i] - fb[i]; s += d * d; }
     return Math.sqrt(s);
   }
-  return { euclidean, path, perceptual };
+  return { euclidean, acoustic, path, perceptual };
 }
 
 // Typical spread of each distance over random pairs, used to word the hints.
@@ -42,7 +44,7 @@ export function sampleQuantiles(world, metrics, name, count = 3000, seed = 7) {
 export function checkAxioms(world, rays, metrics, { triples = 4000, seed = 11 } = {}) {
   const rng = makeRng(seed);
   const eps = 1e-6;
-  const names = ['euclidean', 'path', 'perceptual'];
+  const names = ['euclidean', 'acoustic', 'path', 'perceptual'];
   const results = {};
   for (const name of names) {
     const d = metrics[name];
@@ -68,9 +70,10 @@ export function checkAxioms(world, rays, metrics, { triples = 4000, seed = 11 } 
     results[name] = { triples, negative, asymmetric, triangle, worstTriangle, selfNonZero };
   }
 
-  // d = 0 for two different cells. Euclidean and path distance can only be 0 for the same cell;
+  // d = 0 for two different cells. Euclidean, acoustic and path distance can only be 0 for the same cell;
   // for the perceptual distance we look for identical fingerprints over every cell of the map.
   results.euclidean.zeroPairs = 0;
+  results.acoustic.zeroPairs = 0;
   results.path.zeroPairs = 0;
   const groups = new Map();
   for (const n of world.nodes) {

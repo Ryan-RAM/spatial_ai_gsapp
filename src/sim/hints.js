@@ -9,7 +9,7 @@ export function describeDistances(game) {
   const { world, config, perceptualQ } = game.ctx;
   const p = game.police;
   const t = game.thief;
-  const { euclidean: e, path: d, perceptual: q } = game.distances;
+  const { euclidean: e, acoustic: s, path: d, perceptual: q } = game.distances;
   const P = nodeXYL(world, p.node);
   const T = nodeXYL(world, t.node);
   const clear = segmentClear(world, eyePoint(world, p.node), eyePoint(world, t.node));
@@ -25,18 +25,27 @@ export function describeDistances(game) {
       title: 'Stacked on two levels',
       text: `${upper} is on the canopy almost directly above the other: only ${f1(e)} cells apart in a straight line, `
         + `but ${clear ? 'the opening between them is the only gap' : 'the platform floor is in between, so neither can see the other'}. `
-        + `To meet, one of them would have to walk ${f1(d)} cells and climb a ladder. Euclidean distance says near; path distance says far.`,
+        + `To meet, one of them would have to walk ${f1(d)} cells and climb a ladder. Euclidean distance says near; path distance says far.`
+        + (s > e + 1e-6 ? ` Footsteps are muffled by the floor too: acoustic distance ${f1(s)}.` : ''),
     };
   }
   if (P.level === T.level && e <= 6 && !clear && d >= 1.8 * e && d - e >= 4) {
-    const sound = d > hearing
-      ? ` Footsteps travel along the path, so at ${f1(d)} cells they do not carry across, even though the straight line is well inside ${hearing}.`
-      : '';
+    const sound = s > hearing
+      ? ` The leaves and stone also muffle footsteps: acoustic distance ${f1(s)}, beyond the ${hearing}-cell hearing range.`
+      : ` Footsteps still carry through it (acoustic distance ${f1(s)}).`;
     return {
       kind: 'hedge',
       title: 'A wall of vegetation between them',
       text: `Only ${f1(e)} cells apart as the crow flies, but bushes, rocks or trees block both the view and the way: `
         + `the walk around is ${f1(d)} cells.${sound}`,
+    };
+  }
+  if (e <= hearing && s > hearing) {
+    return {
+      kind: 'muffled',
+      title: 'Near, but muffled',
+      text: `Only ${f1(e)} cells apart: in open air every footstep would be heard. But the straight line passes through `
+        + `solid material that adds ${f1(s - e)} cells of muffling, so the acoustic distance is ${f1(s)} and neither hears the other.`,
     };
   }
   if (e <= vision && clear && !pSees.inCone && !tSees.inCone) {
@@ -73,17 +82,18 @@ export function describeDistances(game) {
         + 'Both stand in places that look almost the same from the inside: Euclidean distance says far; perceptual distance says near.',
     };
   }
-  if (d <= hearing && !pSees.visible && !tSees.visible && e <= vision) {
+  if (s <= hearing && !pSees.visible && !tSees.visible) {
     return {
       kind: 'hearOnly',
       title: 'Within earshot, out of sight',
-      text: `Path distance ${f1(d)} is inside the ${hearing}-cell hearing range, so footsteps carry, but neither can see the other.`,
+      text: `Acoustic distance ${f1(s)} is inside the ${hearing}-cell hearing range, so footsteps carry, `
+        + `but neither can see the other${e > vision ? ` (${f1(e)} cells is beyond the fog)` : ''}.`,
     };
   }
   return {
     kind: 'none',
     title: 'No strong disagreement right now',
-    text: `Euclidean ${f1(e)}, path ${f1(d)}, perceptual ${f1(q)}. `
+    text: `Euclidean ${f1(e)}, acoustic ${f1(s)}, path ${f1(d)}, perceptual ${f1(q)}. `
       + (d > e * 1.5 ? 'The walk is clearly longer than the straight line.' : 'The walk is close to the straight line.'),
   };
 }

@@ -29,6 +29,7 @@ export function makePanels() {
     const d = game.distances;
     const per = game.perception;
     $('d-eu').innerHTML = `${f1(d.euclidean)}<small>cells</small>`;
+    $('d-ac').innerHTML = `${f1(d.acoustic)}<small>cells</small>`;
     $('d-path').innerHTML = `${f1(d.path)}<small>cells</small>`;
     $('d-perc').innerHTML = `${f1(d.perceptual)}`;
 
@@ -44,10 +45,14 @@ export function makePanels() {
       }
     }
     $('d-eu-note').textContent = `Sight: ${why.join(', ')}.`;
-    $('d-path-note').textContent = d.path <= config.hearingRange
+    const muffle = d.acoustic - d.euclidean;
+    $('d-ac-note').textContent = (d.acoustic <= config.hearingRange
       ? `Within the ${config.hearingRange}-cell hearing range: any footstep is heard.`
-      : `Beyond the ${config.hearingRange}-cell hearing range: footsteps do not carry.`
-        + (d.euclidean <= config.hearingRange ? ' The straight line is shorter, but sound has to walk.' : '');
+      : `Beyond the ${config.hearingRange}-cell hearing range: footsteps do not carry.`)
+      + (muffle > 1e-6 ? ` Muffling adds ${f1(muffle)}.` : ' Nothing solid in between.');
+    $('d-path-note').textContent = d.path > d.euclidean * 1.5
+      ? `Walking: ${f1(d.path - d.euclidean)} cells longer than the straight line.`
+      : 'Walking: close to the straight line.';
     const q = game.ctx.perceptualQ;
     const rank = d.perceptual <= q(0.1) ? 'very similar places (closest 10% of pairs on this map)'
       : d.perceptual <= q(0.5) ? 'fairly similar places' : 'places that look quite different';
@@ -95,6 +100,7 @@ export function makePanels() {
   function axioms(results) {
     const rows = [
       ['euclidean', 'Euclidean'],
+      ['acoustic', 'Acoustic'],
       ['path', 'Path'],
       ['perceptual', 'Perceptual'],
     ];
@@ -109,9 +115,10 @@ export function makePanels() {
           ? `<span class="ok">Pass on this map</span><small>no two cells have identical fingerprints; closest pair d = ${r.closestDistinct.d.toFixed(2)}</small>`
           : `<span class="bad">Fails</span><small>${r.zeroPairs} pairs of different cells with d = 0</small>`)
         : `<span class="ok">Pass</span><small>d = 0 only for the same cell (all ${results.cells} cells)</small>`;
-      const verdict = key === 'perceptual'
-        ? '<b>Pseudometric</b><small>d = 0 is allowed for two different places</small>'
-        : '<b>Metric</b>';
+      const verdict = {
+        perceptual: '<b>Pseudometric</b><small>d = 0 is allowed for two different places</small>',
+        acoustic: '<b>Semimetric</b><small>no triangle inequality</small>',
+      }[key] ?? '<b>Metric</b>';
       return `<tr><td><b>${label}</b></td><td>${cell(r.negative, n)}</td><td>${cell(r.asymmetric, n)}</td>`
         + `<td>${cell(r.triangle, n, ' (random triples)')}</td><td>${id}</td><td>${verdict}</td></tr>`;
     }).join('');
@@ -124,7 +131,12 @@ export function makePanels() {
         : `On this map ${r.zeroPairs} pairs of different cells match exactly.`}
       In space, this is what getting lost means: two places that look the same from the inside can be far apart,
       and nothing in what you see tells you which one you are in. Symmetry and the triangle inequality always hold, because it is
-      a Euclidean distance between vectors.`;
+      a Euclidean distance between vectors.<br><br>
+      <b>Why the acoustic distance is only a semimetric.</b> It fails the triangle inequality in ${results.acoustic.triangle} of
+      ${results.acoustic.triples} random triples: a straight line from a to c may cross a rock, while a to b and b to c both pass
+      beside it, so going "via b" sounds closer than going straight. Real sound does exactly that: it bends around obstacles
+      (diffraction) and arrives along the least muffled route. This model only follows the straight line, which keeps it simple
+      and readable, at the price of the triangle inequality.`;
   }
 
   return { status, distances, addEvents, roundMarker, axioms, resetHint() { lastNotable = null; } };

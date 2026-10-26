@@ -162,20 +162,20 @@ export function buildWorld(config, W, H, ground, canopy, platforms = [], seed = 
   const nodeIndex = new Int32Array(2 * N).fill(-1);
   nodes.forEach((n, i) => { nodeIndex[n] = i; });
 
-  // Solid vertical intervals [lo, hi] in each column of the grid.
+  // Solid vertical intervals [lo, hi, material] in each column of the grid.
   const solids = [];
   for (let i = 0; i < N; i++) {
     const list = [];
     switch (ground[i]) {
-      case G.WALL: list.push([-1, 1e6]); break;
-      case G.TREE: list.push([0, config.treeTop]); break;
-      case G.BUSH: list.push([0, config.bushTop]); break;
-      case G.ROCK: list.push([0, config.rockTop]); break;
+      case G.WALL: list.push([-1, 1e6, 'wall']); break;
+      case G.TREE: list.push([0, config.treeTop, 'tree']); break;
+      case G.BUSH: list.push([0, config.bushTop, 'bush']); break;
+      case G.ROCK: list.push([0, config.rockTop, 'rock']); break;
       default: break;
     }
     switch (canopy[i]) {
-      case C.PLATFORM: case C.BRIDGE: case C.LADDER: list.push([config.slabBottom, config.slabTop]); break;
-      case C.FOLIAGE: list.push([config.slabBottom, config.foliageTop]); break;
+      case C.PLATFORM: case C.BRIDGE: case C.LADDER: list.push([config.slabBottom, config.slabTop, 'floor']); break;
+      case C.FOLIAGE: list.push([config.slabBottom, config.foliageTop, 'leaves']); break;
       default: break;
     }
     solids.push(list);

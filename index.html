@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Misty Forest Chase</title>
-  <meta name="description" content="A self-running police-and-thief chase in a two-level misty forest, where three distances drive three senses: Euclidean distance for sight, path distance for hearing, perceptual distance for how alike two places look.">
+  <meta name="description" content="A self-running police-and-thief chase in a two-level misty forest, where each distance drives one sense: Euclidean distance for sight, acoustic distance for hearing, path distance for walking, perceptual distance for how alike two places look.">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
     {
@@ -22,11 +22,12 @@
     <p class="lede">
       A police officer patrols a foggy forest with a canopy walkway three cells up; a thief tries to stay unseen
       for 500 steps. Nobody plays: both are simple AIs, and each step they act once. The game is a way to compare
-      three distances, because each one drives a different sense.
+      four distances, because each one drives a different sense.
     </p>
     <div class="senses">
       <div class="sense sense-eu"><span class="sense-name">Sight</span><span class="sense-metric">Euclidean distance</span><span class="sense-rule">Straight 3D line, up to 9 cells, only forward, blocked by solid volumes.</span></div>
-      <div class="sense sense-path"><span class="sense-name">Hearing</span><span class="sense-metric">Path distance</span><span class="sense-rule">Footsteps travel along walkable paths and ladders, up to 12 cells, all around.</span></div>
+      <div class="sense sense-ac"><span class="sense-name">Hearing</span><span class="sense-metric">Acoustic distance</span><span class="sense-rule">The straight line again, plus muffling by every solid it passes through. Up to 12, all around.</span></div>
+      <div class="sense sense-path"><span class="sense-name">Walking</span><span class="sense-metric">Path distance</span><span class="sense-rule">The shortest walk around obstacles and over ladders. How far it really is to get there.</span></div>
       <div class="sense sense-perc"><span class="sense-name">Sense of place</span><span class="sense-metric">Perceptual distance</span><span class="sense-rule">How different two positions look, from all 362 rays cast around each one.</span></div>
     </div>
   </header>
@@ -89,9 +90,13 @@
           <div class="dist-top"><span class="dist-name"><i class="swatch line"></i>Euclidean</span><span class="dist-val" id="d-eu">0</span></div>
           <div class="dist-note" id="d-eu-note">Straight 3D line. Sight needs this under 9, a clear line and the target inside the cone.</div>
         </div>
+        <div class="dist dist-ac">
+          <div class="dist-top"><span class="dist-name"><i class="swatch dotted"></i>Acoustic</span><span class="dist-val" id="d-ac">0</span></div>
+          <div class="dist-note" id="d-ac-note">Straight line plus muffling by what it passes through. Footsteps are heard under 12.</div>
+        </div>
         <div class="dist dist-path">
           <div class="dist-top"><span class="dist-name"><i class="swatch dashed"></i>Path</span><span class="dist-val" id="d-path">0</span></div>
-          <div class="dist-note" id="d-path-note">Shortest walk around obstacles, ladders cost 3. Footsteps are heard under 12.</div>
+          <div class="dist-note" id="d-path-note">Shortest walk around obstacles, ladders cost 3.</div>
         </div>
         <div class="dist dist-perc">
           <div class="dist-top"><span class="dist-name"><i class="swatch block"></i>Perceptual</span><span class="dist-val" id="d-perc">0</span></div>
@@ -113,6 +118,7 @@
         <h2>Distances over this round</h2>
         <div class="legend">
           <span><i class="swatch line eu"></i>Euclidean (cells)</span>
+          <span><i class="swatch line ac"></i>Acoustic (cells)</span>
           <span><i class="swatch line path"></i>Path (cells)</span>
           <span><i class="swatch line perc"></i>Perceptual (right axis)</span>
         </div>
@@ -121,8 +127,9 @@
         <canvas id="chart" class="chart"></canvas>
         <div class="chart-tip" id="chart-tip" hidden></div>
       </div>
-      <p class="caption">Whenever the path line rises far above the Euclidean line, a wall, a hedge or a floor is between them.
-        The thief is safe from sight above the vision limit, and from being heard above the hearing limit, but the two limits are measured with different distances.</p>
+      <p class="caption">The acoustic line sits on the Euclidean line in open air and jumps up whenever bushes, rocks, trees or a floor are in between.
+        The path line rises far above both when the walk has to go around. The thief is safe from sight above the vision limit (Euclidean)
+        and from being heard above the hearing limit (acoustic).</p>
     </section>
 
     <section class="panel plans-panel" aria-label="Floor plans">
@@ -165,14 +172,23 @@
           </ul>
           <p>Because each agent has its own facing, the thief can see the police while the police does not see the thief, or the other way round.</p>
         </article>
+        <article class="rule rule-ac">
+          <h3>Hear: acoustic distance</h3>
+          <p class="formula">d<sub>A</sub>(a, b) = d<sub>E</sub>(a, b) + &Sigma;<sub>k</sub> m<sub>k</sub></p>
+          <p>Sound travels in a straight line, like light, but it is not stopped by solids: it is muffled. For every grid cell of solid material the straight line passes through, a muffling cost m<sub>k</sub> is added, in cells of open air that would make the sound just as faint:</p>
+          <ul>
+            <li>leaf clump +1, bush +1.5, tree +3, rock +6, platform floor +6.</li>
+            <li>Whenever someone moves, the other hears it if d<sub>A</sub> &le; 12, and knows where the sound came from.</li>
+            <li>Hearing has no direction: front, back, left, right, up and down all count. Through open air, d<sub>A</sub> = d<sub>E</sub>, so you can hear someone on the ground from a platform edge.</li>
+          </ul>
+        </article>
         <article class="rule rule-path">
-          <h3>Hear: path distance</h3>
+          <h3>Walk: path distance</h3>
           <p class="formula">d<sub>P</sub>(a, b) = min over walks a &rarr; b of &Sigma; step costs</p>
           <p>Step costs: 1 straight, &radic;2 diagonal, 3 for a ladder. A diagonal step may not cut the corner of an obstacle. Computed with Dijkstra's algorithm on the walkable cells of both levels.</p>
           <ul>
-            <li>Whenever someone moves, the other hears it if d<sub>P</sub> &le; 12, and knows where the sound came from.</li>
-            <li>Hearing has no direction: front, back, left, right, up and down all count.</li>
-            <li>Sound follows the path, not the straight line: two agents on either side of a hedge, or one right above the other, can be close in d<sub>E</sub> but far in d<sub>P</sub>.</li>
+            <li>It is how far an agent really has to go: both AIs move along these shortest paths, and the thief only flees to cells it reaches before the police.</li>
+            <li>Two agents on either side of a hedge, or one right above the other, can be close in d<sub>E</sub> but far in d<sub>P</sub>.</li>
           </ul>
         </article>
         <article class="rule rule-perc">
@@ -226,10 +242,10 @@
     <section class="panel wide" aria-label="Assignment">
       <h2>How this answers the assignment</h2>
       <ol class="brief">
-        <li><b>At least two metrics, computed between two positions and between two agents.</b> Three are used: Euclidean, path and perceptual distance. The distance panel shows all three between the two agents at every step; the metric check computes them between thousands of pairs of positions.</li>
-        <li><b>Visualize and compare them graphically.</b> In 3D, the solid line is the Euclidean distance, the dashed line is the shortest path, and the rays show the fingerprint. The chart plots all three over the round against the vision and hearing limits.</li>
-        <li><b>Far in one metric, near in another.</b> The automatic hint describes these moments as they happen: stacked on two levels, a hedge in between, back to back, or far apart in places that look alike. The game itself depends on them: the thief can be within earshot but out of sight, or the other way round.</li>
-        <li><b>Bonus: distance around obstacles.</b> The path distance is a shortest walk around solid cells and over ladders between two levels (Dijkstra, 8 directions), and it is what decides hearing.</li>
+        <li><b>At least two metrics, computed between two positions and between two agents.</b> Four distances are used: Euclidean, acoustic, path and perceptual. The distance panel shows all four between the two agents at every step; the metric check computes them between thousands of pairs of positions, and shows which ones really are metrics.</li>
+        <li><b>Visualize and compare them graphically.</b> In 3D, the solid line is the Euclidean distance, the dots on it mark where the sound is muffled (acoustic distance), the dashed line is the shortest path, and the rays show the fingerprint. The chart plots all four over the round against the vision and hearing limits.</li>
+        <li><b>Far in one metric, near in another.</b> The automatic hint describes these moments as they happen: stacked on two levels, a hedge in between, near but muffled, back to back, in view but a long walk away, or far apart in places that look alike. The game itself depends on them: the thief can be within earshot but out of sight, or the other way round.</li>
+        <li><b>Bonus: distance around obstacles.</b> The path distance is a shortest walk around solid cells and over ladders between two levels (Dijkstra, 8 directions). Both AIs move along it, and the thief uses it to find escape cells it reaches first.</li>
       </ol>
     </section>
   </main>

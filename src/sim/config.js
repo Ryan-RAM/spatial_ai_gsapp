@@ -32,8 +32,13 @@ export const CONFIG = {
   coneHorizontalDeg: 120,  // full horizontal opening
   coneVerticalDeg: 60,     // up and down from the horizon
 
-  // Hearing: 360 degrees, path distance along walkable cells
+  // Hearing: 360 degrees, acoustic distance (straight line plus muffling by what it passes through)
   hearingRange: 12,
+  // Extra cells of distance added for every grid cell of material the straight line passes through:
+  // a footstep heard through one cell of rock sounds as faint as one 6 cells farther away in open air.
+  muffling: { leaves: 1, bush: 1.5, tree: 3, rock: 6, floor: 6, wall: 100 },
+
+  // Walking: path distance along walkable cells (the bonus metric)
   ladderCost: 3,
 
   // 3D rays cast from every walkable cell (visibility fingerprint)
@@ -52,11 +57,11 @@ export const CONFIG = {
     policeScanSteps: 8,           // a full turn in 45 degree steps
     policePatrolLookEvery: 2,     // on patrol, glance sideways every n steps
     thiefHideQuantile: 0.25,      // hiding spots: the 25% of cells with the smallest view
-    thiefHideMin: 60,
-    thiefHideMax: 120,
+    thiefHideMin: 100,
+    thiefHideMax: 200,
     thiefLookEvery: 6,            // while hiding, turn the head every n steps
     thiefSneakEvery: 2,           // sneaking: one cell every two steps
-    thiefHoldBreath: 6,           // steps of silence after hearing a distant police officer
+    thiefHoldBreath: 10,          // steps of silence after hearing a distant police officer
     thiefPanicDistance: 0,        // path distance at which hearing turns into fleeing
     thiefExposedFleeDistance: 12, // in plain view of the police (if it turned): run when it is this close
     thiefGiveawayWindow: 3,       // hearing the police within n steps of moving means "it heard me"

@@ -17,7 +17,7 @@ function readPalette() {
   const v = (name) => css.getPropertyValue(name).trim();
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches && document.documentElement.dataset.theme !== 'light';
   return {
-    police: v('--police'), thief: v('--thief'), euclidean: v('--eu'), path: v('--path'), perceptual: v('--perc'),
+    police: v('--police'), thief: v('--thief'), euclidean: v('--eu'), acoustic: v('--ac'), path: v('--path'), perceptual: v('--perc'),
     sky: v('--sky'), ground: v('--ground'), tree: v('--tree'), trunk: v('--trunk'), bush: v('--bush'), rock: v('--rock'),
     wall: v('--wall'), platform: v('--platform'), bridge: v('--bridge'), foliage: v('--foliage'), ladder: v('--ladder'),
     planFree: v('--plan-free'), planAir: v('--plan-air'), planGrid: v('--plan-grid'), planInk: v('--plan-ink'),
