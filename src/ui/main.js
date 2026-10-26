@@ -147,6 +147,12 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
   if (scene) { scene.setPalette(palette); scene.buildMap(state.ctx.world, state.ctx.rays); }
 });
 
+// The muffling table in the rules is written from the config, so it always matches the simulation.
+const MATERIAL_NAMES = { leaves: 'Leaf clump', bush: 'Bush', tree: 'Tree', rock: 'Rock', floor: 'Platform floor' };
+$('muffle-rows').innerHTML = Object.entries(MATERIAL_NAMES)
+  .map(([key, name]) => `<tr><td>${name}</td><td>+${CONFIG.muffling[key]}</td></tr>`)
+  .join('') + '<tr><td>Open air</td><td>+0</td></tr>';
+
 // ---- start ------------------------------------------------------------------
 // The 3D view is loaded separately so the rest of the page still runs if the CDN is unreachable.
 async function start() {

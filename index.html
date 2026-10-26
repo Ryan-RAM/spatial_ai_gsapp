@@ -159,7 +159,7 @@
     </section>
 
     <section class="panel wide rules" aria-label="Rules">
-      <h2>How the three senses work</h2>
+      <h2>How the four senses work</h2>
       <div class="rule-grid">
         <article class="rule rule-eu">
           <h3>See: Euclidean distance</h3>
@@ -175,9 +175,20 @@
         <article class="rule rule-ac">
           <h3>Hear: acoustic distance</h3>
           <p class="formula">d<sub>A</sub>(a, b) = d<sub>E</sub>(a, b) + &Sigma;<sub>k</sub> m<sub>k</sub></p>
-          <p>Sound travels in a straight line, like light, but it is not stopped by solids: it is muffled. For every grid cell of solid material the straight line passes through, a muffling cost m<sub>k</sub> is added, in cells of open air that would make the sound just as faint:</p>
+          <p>Sound travels in a straight line, like light, but solids do not stop it: they muffle it. For every grid cell of solid material the straight line passes through, a muffling cost m<sub>k</sub> is added. The cost is in cells: one cell of rock makes a footstep as faint as 6 more cells of open air.</p>
+          <table class="muffle">
+            <thead><tr><th>Material crossed</th><th>Muffling cost m<sub>k</sub></th></tr></thead>
+            <tbody id="muffle-rows">
+              <tr><td>Leaf clump</td><td>+1</td></tr>
+              <tr><td>Bush</td><td>+1.5</td></tr>
+              <tr><td>Tree</td><td>+3</td></tr>
+              <tr><td>Rock</td><td>+6</td></tr>
+              <tr><td>Platform floor</td><td>+6</td></tr>
+              <tr><td>Open air</td><td>+0</td></tr>
+            </tbody>
+          </table>
+          <p class="muffle-example">Example: 5 cells apart with one bush and one rock in between gives d<sub>A</sub> = 5 + 1.5 + 6 = 12.5, just too far to hear.</p>
           <ul>
-            <li>leaf clump +1, bush +1.5, tree +3, rock +6, platform floor +6.</li>
             <li>Whenever someone moves, the other hears it if d<sub>A</sub> &le; 12, and knows where the sound came from.</li>
             <li>Hearing has no direction: front, back, left, right, up and down all count. Through open air, d<sub>A</sub> = d<sub>E</sub>, so you can hear someone on the ground from a platform edge.</li>
           </ul>

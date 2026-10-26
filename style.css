@@ -257,6 +257,11 @@ main {
 .rule li, .ai-grid li { margin: 0.25em 0; }
 .formula { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.85rem; background: var(--surface-2); border-radius: 6px; padding: 8px 10px; overflow-wrap: anywhere; }
 .sub { margin: 18px 0 6px; }
+.muffle { border-collapse: collapse; font-size: 0.85rem; margin: 6px 0; min-width: 60%; }
+.muffle th, .muffle td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--border); }
+.muffle th { font-weight: 650; color: var(--muted); font-size: 0.78rem; }
+.muffle td:last-child { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--c); }
+.muffle-example { color: var(--muted); font-size: 0.82rem; }
 .ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.88rem; }
 .ai-name { display: flex; align-items: center; gap: 6px; font-weight: 650; color: var(--c); margin: 0; }
 
