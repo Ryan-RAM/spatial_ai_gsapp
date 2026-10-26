@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Misty Forest Chase</title>
+  <meta name="description" content="A self-running police-and-thief chase in a two-level misty forest, where three distances drive three senses: Euclidean distance for sight, path distance for hearing, perceptual distance for how alike two places look.">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="page-head">
+    <p class="eyebrow">Spatial AI &middot; Columbia GSAPP &middot; Distance + Proximity</p>
+    <h1>Misty Forest Chase</h1>
+    <p class="lede">
+      A police officer patrols a foggy forest with a canopy walkway three cells up; a thief tries to stay unseen
+      for 500 steps. Nobody plays: both are simple AIs, and each step they act once. The game is a way to compare
+      three distances, because each one drives a different sense.
+    </p>
+    <div class="senses">
+      <div class="sense sense-eu"><span class="sense-name">Sight</span><span class="sense-metric">Euclidean distance</span><span class="sense-rule">Straight 3D line, up to 9 cells, only forward, blocked by solid volumes.</span></div>
+      <div class="sense sense-path"><span class="sense-name">Hearing</span><span class="sense-metric">Path distance</span><span class="sense-rule">Footsteps travel along walkable paths and ladders, up to 12 cells, all around.</span></div>
+      <div class="sense sense-perc"><span class="sense-name">Sense of place</span><span class="sense-metric">Perceptual distance</span><span class="sense-rule">How different two positions look, from all 362 rays cast around each one.</span></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stage" aria-label="Simulation">
+      <div class="viewer" id="viewer">
+        <div class="overlay overlay-tl"><span id="ov-round">Round 1</span> &middot; <span id="ov-step">Step 0 / 500</span></div>
+        <div class="overlay overlay-tr" id="ov-hint">Drag to rotate &middot; scroll to zoom</div>
+        <div class="banner" id="banner" hidden></div>
+        <div class="viewer-fallback" id="viewer-fallback" hidden>The 3D view could not start (three.js did not load). The plans, panels and chart below still run.</div>
+      </div>
+      <div class="controls">
+        <div class="control-row">
+          <button type="button" id="btn-pause" class="btn btn-primary">Pause</button>
+          <div class="seg" role="group" aria-label="Speed">
+            <button type="button" data-speed="slow">Slow</button>
+            <button type="button" data-speed="medium" class="on">Medium</button>
+            <button type="button" data-speed="fast">Fast</button>
+          </div>
+          <button type="button" id="btn-next" class="btn">Next round</button>
+          <button type="button" id="btn-map" class="btn">New map</button>
+          <button type="button" id="btn-top" class="btn">Top view</button>
+        </div>
+        <div class="control-row toggles">
+          <label><input type="checkbox" id="tg-cones" checked> Vision cones</label>
+          <label><input type="checkbox" id="tg-omni" checked> All-around view (rays)</label>
+          <label><input type="checkbox" id="tg-lines" checked> Distance lines</label>
+          <label><input type="checkbox" id="tg-canopy" checked> Canopy platforms</label>
+          <span class="map-seed" id="map-seed"></span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-label="Status">
+        <div class="score">
+          <div class="score-side police"><span class="dot"></span>Police <b id="score-police">0</b></div>
+          <div class="score-vs">score</div>
+          <div class="score-side thief"><b id="score-thief">0</b> Thief<span class="dot"></span></div>
+        </div>
+        <div class="progress" aria-label="Round progress"><div class="progress-bar" id="progress"></div></div>
+        <div class="agents">
+          <div class="agent-card police">
+            <div class="agent-head"><span class="dot"></span>Police</div>
+            <div class="agent-mode" id="police-mode">Patrolling</div>
+            <div class="tags"><span class="tag" id="police-hears">Hears the thief</span><span class="tag" id="police-sees">Sees the thief</span></div>
+          </div>
+          <div class="agent-card thief">
+            <div class="agent-head"><span class="dot"></span>Thief</div>
+            <div class="agent-mode" id="thief-mode">Hiding</div>
+            <div class="tags"><span class="tag" id="thief-hears">Hears the police</span><span class="tag" id="thief-sees">Sees the police</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Distances">
+        <h2>Distance between them</h2>
+        <div class="dist dist-eu">
+          <div class="dist-top"><span class="dist-name"><i class="swatch line"></i>Euclidean</span><span class="dist-val" id="d-eu">0</span></div>
+          <div class="dist-note" id="d-eu-note">Straight 3D line. Sight needs this under 9, a clear line and the target inside the cone.</div>
+        </div>
+        <div class="dist dist-path">
+          <div class="dist-top"><span class="dist-name"><i class="swatch dashed"></i>Path</span><span class="dist-val" id="d-path">0</span></div>
+          <div class="dist-note" id="d-path-note">Shortest walk around obstacles, ladders cost 3. Footsteps are heard under 12.</div>
+        </div>
+        <div class="dist dist-perc">
+          <div class="dist-top"><span class="dist-name"><i class="swatch block"></i>Perceptual</span><span class="dist-val" id="d-perc">0</span></div>
+          <div class="dist-note" id="d-perc-note">Difference between the two visibility fingerprints. Small means the two places look alike.</div>
+        </div>
+        <div class="hint" id="hint" aria-live="polite">
+          <div class="hint-title" id="hint-title"></div>
+          <div class="hint-text" id="hint-text"></div>
+        </div>
+        <div class="hint hint-last" id="hint-last" hidden>
+          <div class="hint-title" id="hint-last-title"></div>
+          <div class="hint-text" id="hint-last-text"></div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="panel wide" aria-label="Distance chart">
+      <div class="panel-head">
+        <h2>Distances over this round</h2>
+        <div class="legend">
+          <span><i class="swatch line eu"></i>Euclidean (cells)</span>
+          <span><i class="swatch line path"></i>Path (cells)</span>
+          <span><i class="swatch line perc"></i>Perceptual (right axis)</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="chart" class="chart"></canvas>
+        <div class="chart-tip" id="chart-tip" hidden></div>
+      </div>
+      <p class="caption">Whenever the path line rises far above the Euclidean line, a wall, a hedge or a floor is between them.
+        The thief is safe from sight above the vision limit, and from being heard above the hearing limit, but the two limits are measured with different distances.</p>
+    </section>
+
+    <section class="panel plans-panel" aria-label="Floor plans">
+      <div class="panel-head">
+        <h2>Floor plans</h2>
+        <div class="legend small">
+          <span><i class="swatch block c-tree"></i>Tree</span>
+          <span><i class="swatch block c-bush"></i>Bush</span>
+          <span><i class="swatch block c-rock"></i>Rock</span>
+          <span><i class="swatch block c-platform"></i>Platform</span>
+          <span><i class="swatch block c-bridge"></i>Bridge</span>
+          <span><i class="swatch block c-foliage"></i>Leaves</span>
+          <span><i class="swatch block c-air"></i>Open air</span>
+          <span><i class="swatch block c-ladder"></i>Ladder</span>
+        </div>
+      </div>
+      <div class="plans">
+        <figure><canvas id="plan-ground"></canvas><figcaption>Ground level</figcaption></figure>
+        <figure><canvas id="plan-canopy"></canvas><figcaption>Canopy level (3 cells up)</figcaption></figure>
+      </div>
+      <p class="caption">Solid arrows are on that level; a dashed arrow means the agent is on the other level. The shaded wedge is the horizontal slice of the vision cone, clipped by obstacles. Rings are footsteps that were heard.</p>
+    </section>
+
+    <section class="panel log-panel" aria-label="Event log">
+      <h2>Event log</h2>
+      <ol class="log" id="log"></ol>
+    </section>
+
+    <section class="panel wide rules" aria-label="Rules">
+      <h2>How the three senses work</h2>
+      <div class="rule-grid">
+        <article class="rule rule-eu">
+          <h3>See: Euclidean distance</h3>
+          <p class="formula">d<sub>E</sub>(a, b) = &radic;((x<sub>a</sub> &minus; x<sub>b</sub>)&sup2; + (y<sub>a</sub> &minus; y<sub>b</sub>)&sup2; + (z<sub>a</sub> &minus; z<sub>b</sub>)&sup2;)</p>
+          <p>Measured between eye points, 1.5 cells above the floor; the canopy floor is 3 cells above the ground. An agent sees the other when all three hold:</p>
+          <ul>
+            <li>d<sub>E</sub> &le; 9: farther than that, the fog hides everything.</li>
+            <li>The other is inside the forward cone: 120&deg; wide and 60&deg; up and down from the direction the agent faces. Vision only looks forward; whatever is behind or beside the cone is not seen.</li>
+            <li>The 3D segment between the eyes does not pass through a solid volume: tree, bush, rock, leaf clump or platform floor. Open air in the canopy blocks nothing, so you can look down from a platform edge, or up through a gap.</li>
+          </ul>
+          <p>Because each agent has its own facing, the thief can see the police while the police does not see the thief, or the other way round.</p>
+        </article>
+        <article class="rule rule-path">
+          <h3>Hear: path distance</h3>
+          <p class="formula">d<sub>P</sub>(a, b) = min over walks a &rarr; b of &Sigma; step costs</p>
+          <p>Step costs: 1 straight, &radic;2 diagonal, 3 for a ladder. A diagonal step may not cut the corner of an obstacle. Computed with Dijkstra's algorithm on the walkable cells of both levels.</p>
+          <ul>
+            <li>Whenever someone moves, the other hears it if d<sub>P</sub> &le; 12, and knows where the sound came from.</li>
+            <li>Hearing has no direction: front, back, left, right, up and down all count.</li>
+            <li>Sound follows the path, not the straight line: two agents on either side of a hedge, or one right above the other, can be close in d<sub>E</sub> but far in d<sub>P</sub>.</li>
+          </ul>
+        </article>
+        <article class="rule rule-perc">
+          <h3>Sense of place: perceptual distance</h3>
+          <p class="formula">d<sub>V</sub>(a, b) = &radic;(&Sigma;<sub>i</sub> (r<sub>i</sub>(a) &minus; r<sub>i</sub>(b))&sup2;)</p>
+          <p>From the eye point of every walkable cell, 362 rays are cast in 3D: 72 directions (every 5&deg;) on five elevation rings (&minus;60&deg;, &minus;30&deg;, 0&deg;, +30&deg;, +60&deg;), plus straight up and straight down. Each ray stops at the first solid volume or at 9 cells.</p>
+          <ul>
+            <li>The list of the 362 ray lengths r<sub>i</sub> is the cell's <b>visibility fingerprint</b>. It covers all 360&deg; and does not depend on facing: it describes the space around a position.</li>
+            <li>Because the fog cuts every ray at 9, open places have very similar fingerprints, while every nook in the thicket is different.</li>
+            <li>The same rays draw the faint all-around view in the 3D scene; the bright cone is the subset of rays the agent is looking along right now.</li>
+          </ul>
+        </article>
+      </div>
+      <h3 class="sub">The two AIs</h3>
+      <div class="ai-grid">
+        <div>
+          <p class="ai-name police"><span class="dot"></span>Police</p>
+          <ul>
+            <li><b>Patrolling</b>: walks to random targets in the more open half of the map, glancing to the side every other step.</li>
+            <li><b>Investigating a sound</b>: on hearing the thief, turns toward the sound and takes the shortest path to where it came from.</li>
+            <li><b>Scanning around</b>: at the sound's location with nobody in sight, turns a full circle, then goes back to patrolling.</li>
+          </ul>
+        </div>
+        <div>
+          <p class="ai-name thief"><span class="dot"></span>Thief</p>
+          <ul>
+            <li><b>Sneaking</b> / <b>Hiding</b>: picks a spot among the 25% of cells with the smallest view, preferring spots that few cells can see and that are far from where it last noticed the police; sneaks there one cell every two steps and waits.</li>
+            <li><b>Looking around</b>: while hiding, turns the head now and then.</li>
+            <li><b>Holding breath</b>: hears the police, but it is not close: freezes, makes no sound and turns toward the noise.</li>
+            <li><b>Fleeing</b>: the police is in plain view, or its own footsteps probably gave it away: runs to a cell it reaches before the police, far from it and out of its sight, with a first step that breaks the line of sight.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="caption">The police wins as soon as it sees the thief. The thief wins after 500 steps unseen. A new round starts about 2 seconds after the end of one.</p>
+    </section>
+
+    <section class="panel wide" aria-label="Metric check">
+      <h2>Are these distances metrics?</h2>
+      <p class="caption">Checked on the current map: every walkable cell is a point. Symmetry and the triangle inequality are tested on random triples; "identity of indiscernibles" asks whether d = 0 only when the two positions are the same cell.</p>
+      <div class="table-wrap">
+        <table class="axioms" id="axioms">
+          <thead>
+            <tr><th>Distance</th><th>Non-negativity<br><span>d(a, b) &ge; 0</span></th><th>Symmetry<br><span>d(a, b) = d(b, a)</span></th><th>Triangle inequality<br><span>d(a, c) &le; d(a, b) + d(b, c)</span></th><th>Identity of indiscernibles<br><span>d(a, b) = 0 &hArr; a = b</span></th><th>Verdict</th></tr>
+          </thead>
+          <tbody><tr><td colspan="6">Computing&hellip;</td></tr></tbody>
+        </table>
+      </div>
+      <div class="note" id="axioms-note"></div>
+    </section>
+
+    <section class="panel wide" aria-label="Assignment">
+      <h2>How this answers the assignment</h2>
+      <ol class="brief">
+        <li><b>At least two metrics, computed between two positions and between two agents.</b> Three are used: Euclidean, path and perceptual distance. The distance panel shows all three between the two agents at every step; the metric check computes them between thousands of pairs of positions.</li>
+        <li><b>Visualize and compare them graphically.</b> In 3D, the solid line is the Euclidean distance, the dashed line is the shortest path, and the rays show the fingerprint. The chart plots all three over the round against the vision and hearing limits.</li>
+        <li><b>Far in one metric, near in another.</b> The automatic hint describes these moments as they happen: stacked on two levels, a hedge in between, back to back, or far apart in places that look alike. The game itself depends on them: the thief can be within earshot but out of sight, or the other way round.</li>
+        <li><b>Bonus: distance around obstacles.</b> The path distance is a shortest walk around solid cells and over ladders between two levels (Dijkstra, 8 directions), and it is what decides hearing.</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="page-foot">
+    <p>Ryan Fu &middot; Lu Liu &middot; Yifan Zhao</p>
+    <p>Spatial AI, Columbia GSAPP, fall 2026. Built with three.js 0.160.0.</p>
+  </footer>
+
+  <script type="module" src="src/ui/main.js"></script>
+</body>
+</html>

@@ -8,3 +8,4 @@ Each folder holds the contents of one former branch:
 
 - [`20261001_robot/`](20261001_robot/) — semantic model and 3D scene of a delivery robot on a retail street during a flood.
 - [`20261008_location/`](20261008_location/) — LLM-only spatial model prompt, trial runs, and interactive lab page.
+- [`20261022_distance/`](20261022_distance/) — Misty Forest Chase, a 3D police-and-thief simulation comparing Euclidean, path and perceptual distance ([live page](https://ryan-ram.github.io/spatial_ai_gsapp/20261022_distance/) once GitHub Pages is on).
