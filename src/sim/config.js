@@ -61,10 +61,10 @@ export const CONFIG = {
     thiefExposedFleeDistance: 12, // in plain view of the police (if it turned): run when it is this close
     thiefGiveawayWindow: 3,       // hearing the police within n steps of moving means "it heard me"
     thiefFleeMargin: 2,           // the thief must reach the escape cell this much sooner
-    thiefExposureWeight: 2,    // how much the thief avoids spots that can be seen from many cells
+    thiefExposureWeight: 2,       // how much the thief avoids spots that can be seen from many cells
     thiefAvoidPoliceWeight: 0.3,  // how much the thief prefers spots far from where it last noticed the police
     thiefHideSearchRadius: 26,    // look for hiding spots within this path distance
-    policeTurnOnHear: true,
-    policeRetarget: false,        // follow every new sound while investigating, or finish the current one       // the officer turns the head toward a sound at once
+    policeTurnOnHear: true,       // the officer turns the head toward a sound at once
+    policeRetarget: false,        // follow every new sound while investigating, or finish the current one
   },
 };
