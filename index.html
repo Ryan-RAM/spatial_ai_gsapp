@@ -5,12 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Misty Forest Chase</title>
   <meta name="description" content="A self-running police-and-thief chase in a two-level misty forest, where each distance drives one sense: Euclidean distance for sight, acoustic distance for hearing, path distance for walking, perceptual distance for how alike two places look.">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261026a">
+  <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "./src/render/plans2d.js": "./src/render/plans2d.js?v=20261026a",
+        "./src/render/scene3d.js": "./src/render/scene3d.js?v=20261026a",
+        "./src/sim/ai.js": "./src/sim/ai.js?v=20261026a",
+        "./src/sim/config.js": "./src/sim/config.js?v=20261026a",
+        "./src/sim/context.js": "./src/sim/context.js?v=20261026a",
+        "./src/sim/game.js": "./src/sim/game.js?v=20261026a",
+        "./src/sim/hints.js": "./src/sim/hints.js?v=20261026a",
+        "./src/sim/los.js": "./src/sim/los.js?v=20261026a",
+        "./src/sim/metrics.js": "./src/sim/metrics.js?v=20261026a",
+        "./src/sim/paths.js": "./src/sim/paths.js?v=20261026a",
+        "./src/sim/rays.js": "./src/sim/rays.js?v=20261026a",
+        "./src/sim/rng.js": "./src/sim/rng.js?v=20261026a",
+        "./src/sim/world.js": "./src/sim/world.js?v=20261026a",
+        "./src/ui/chart.js": "./src/ui/chart.js?v=20261026a",
+        "./src/ui/main.js": "./src/ui/main.js?v=20261026a",
+        "./src/ui/panels.js": "./src/ui/panels.js?v=20261026a"
       }
     }
   </script>
@@ -266,6 +283,6 @@
     <p>Spatial AI, Columbia GSAPP, fall 2026. Built with three.js 0.160.0.</p>
   </footer>
 
-  <script type="module" src="src/ui/main.js"></script>
+  <script type="module" src="src/ui/main.js?v=20261026a"></script>
 </body>
 </html>

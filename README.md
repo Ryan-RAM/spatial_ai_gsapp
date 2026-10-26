@@ -120,6 +120,8 @@ python3 -m http.server 8000
 # open http://localhost:8000
 ```
 
+After changing any file, change the `?v=` version stamp in `index.html` (it appears on `style.css` and on every module in the import map). Otherwise browsers may keep old copies of the CSS and JS for a few minutes and mix them with the new page.
+
 Tests and the balance run use Node 18 or newer, with no dependencies:
 
 ```sh
