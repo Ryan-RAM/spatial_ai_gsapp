@@ -35,15 +35,15 @@ export function makeContext(config, seed = config.seed) {
   }
   const exposure = (n) => exposureArr[world.nodeIndex[n]];
 
-  // Four exits on the ground, one per side of the map: the walkable cell along the inside of the
-  // boundary wall closest to the middle of that side.
+  // Exits on the ground, one per side listed in config.exitSides: the walkable cell along the inside
+  // of the boundary wall closest to the middle of that side.
   const exits = [];
   const sides = [
     { side: 'north', cells: (k) => [k, 1], len: world.W, mid: world.W / 2 },
     { side: 'south', cells: (k) => [k, world.H - 2], len: world.W, mid: world.W / 2 },
     { side: 'west', cells: (k) => [1, k], len: world.H, mid: world.H / 2 },
     { side: 'east', cells: (k) => [world.W - 2, k], len: world.H, mid: world.H / 2 },
-  ];
+  ].filter((s) => config.exitSides.includes(s.side));
   for (const { side, cells, len, mid } of sides) {
     let best = null;
     for (let k = 1; k < len - 1; k++) {

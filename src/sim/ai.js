@@ -1,6 +1,7 @@
 // Behaviour of the police officer and the thief. Each function performs one action
 // (move one cell, or stay and turn the head) and returns true if the agent moved, which makes a sound.
 // The thief wants the diamond and then an exit; the police guards the diamond and chases what it sees.
+// Once the diamond is taken, its tracker tells the police where it is at every step.
 
 import { canSee, eyePoint, segmentClear } from './los.js';
 import { nodeXYL, forEachNeighbour } from './world.js';
@@ -10,7 +11,7 @@ export const POLICE_MODES = {
   investigate: 'Investigating a sound',
   scan: 'Scanning around',
   chase: 'Chasing the thief',
-  guardExit: 'Guarding an exit',
+  track: 'Tracking the diamond',
 };
 export const THIEF_MODES = {
   sneak: 'Sneaking',
@@ -84,6 +85,16 @@ export function policeAct(ctx, game, rng) {
   const p = game.police;
   const ai = ctx.config.ai;
 
+  // The diamond's tracker: once it is taken, the officer always knows where it is and runs to it
+  // along the shortest path, whether or not it can see or hear the thief.
+  if (game.diamond.carried) {
+    p.mode = 'track';
+    p.target = game.thief.node;
+    p.heardAt = null;
+    if (ai.policeTrackRestEvery > 0 && ++p.chaseTick % ai.policeTrackRestEvery === 0) return false;
+    return moveTo(ctx, p, ctx.pf.nextStep(p.node, p.target));
+  }
+
   // Seeing the thief beats everything: run to where it is.
   if (p.seesThief) {
     if (p.mode !== 'chase') game.log('police', 'chase', 'Police spotted the thief and gives chase.');
@@ -121,15 +132,7 @@ export function policeAct(ctx, game, rng) {
   if (p.mode === 'scan') {
     p.facing += p.scanDir * TURN;
     p.scanLeft--;
-    if (p.scanLeft <= 0) { p.mode = p.knowsTheft ? 'guardExit' : 'patrol'; p.target = null; }
-    return false;
-  }
-
-  if (p.mode === 'guardExit') {
-    // stand at the exit the thief is most likely to use and look around
-    if (p.target === null) p.target = nearestExit(ctx, p.thiefAt ?? game.diamond.home).node;
-    if (p.node !== p.target) return moveTo(ctx, p, ctx.pf.nextStep(p.node, p.target));
-    p.facing += p.scanDir * TURN;
+    if (p.scanLeft <= 0) { p.mode = 'patrol'; p.target = null; }
     return false;
   }
 

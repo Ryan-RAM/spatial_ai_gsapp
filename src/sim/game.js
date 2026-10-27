@@ -113,16 +113,6 @@ function checkSight(game) {
   p.seesThief = ps.visible;
   if (ps.visible) {
     p.thiefAt = t.node;
-    if (t.carrying && !p.knowsTheft) {
-      p.knowsTheft = true;
-      game.log('police', 'theft', 'Police sees the thief carrying the diamond.');
-    }
-  }
-  // the officer notices the empty spot when it looks at where the diamond was
-  if (game.diamond.carried && !p.knowsTheft && canSee(world, p.node, p.facing, game.diamond.home).visible) {
-    p.knowsTheft = true;
-    game.log('police', 'theft', 'Police finds the diamond gone and heads for an exit.');
-    if (p.mode !== 'chase') { p.mode = 'guardExit'; p.target = null; }
   }
   const ts = canSee(world, t.node, t.facing, p.node);
   if (ts.visible) {
@@ -164,6 +154,8 @@ export function stepGame(game) {
       t.carrying = true;
       game.diamond.carried = true;
       game.log('thief', 'steal', 'The thief took the diamond! Now it needs an exit.');
+      game.police.knowsTheft = true;
+      game.log('police', 'track', 'The diamond\u2019s tracker goes off: the police now knows where it is at every step.');
     }
     if (!game.over && t.carrying && game.ctx.exits.some((e) => e.node === t.node)) {
       const side = game.ctx.exits.find((e) => e.node === t.node).side;

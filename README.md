@@ -6,7 +6,7 @@ Instructor: [William Martin](https://awmartin.xyz/spatial-computing/course/)
 
 Group: **Ryan Fu, Lu Liu, Yifan Zhao**
 
-A self-running 3D heist in a two-level misty forest. A thief must steal a diamond and get out through an exit; a police officer guards the diamond and chases the thief on sight. Each of four distances drives one sense:
+A self-running 3D heist in a two-level misty forest. A thief must steal a diamond and get out through an exit; a police officer guards the diamond, chases the thief on sight, and follows the diamond's tracker once it is taken. Each of four distances drives one sense:
 
 | Sense | Distance | Used for |
 |---|---|---|
@@ -21,8 +21,10 @@ Live page: https://ryan-ram.github.io/spatial_ai_gsapp/ (once GitHub Pages is on
 
 - A 36 &times; 26 grid with two levels. **Ground level**: single trees, rows of bushes, 2&times;2 or 3&times;2 rocks, a boundary wall. **Canopy level**, 3 cells up: five platforms joined by narrow bridges, with leaf clumps. Between platforms is open air: you can see through it but not walk on it.
 - Five ladders join the levels. Maps come from a fixed seed (`20261022`); **New map** draws a new seed. After generation, every walkable cell that cannot be reached from the main area is removed, so any two walkable cells are connected.
+- **No dead ends.** A dead end is a part of the network that hangs on a single connection (a *bridge* of the graph, found with Tarjan's algorithm): you can only leave it the way you came in. Alcoves of up to 3 cells are filled in; larger dead ends get a new opening, carved through bushes, trees or rocks on the ground, or as a new walkway on the canopy. This repeats until no bridge is left, so every walkable cell lies on a loop and every path can be run through (`noDeadEnds` in the config).
 - **The diamond** is placed at random each round, on a fairly hidden cell (seen from fewer cells than the median), on the ground or on a platform, at least 10 cells from any exit.
-- **Four exits**, one in the middle of each side of the boundary wall, are fixed for each map.
+- **Two exits**, in the middle of the west and east sides of the boundary wall (`exitSides` in the config).
+- **The tracker.** From the moment the thief picks up the diamond, the police knows where it is at every step and runs for it along the shortest path. The thief gets no such help: it still only knows where the police is when it sees or hears it.
 - **The thief wins** by leaving through an exit with the diamond. **The police wins** by catching the thief (same or neighbouring cell), or if the diamond is still in the forest after 500 steps. Seeing the thief does not end the round: it starts a chase.
 - The police starts 3 to 10 cells from the diamond; the thief starts at least 22 cells from the diamond and from the police, out of sight. Both act once per step. A new round starts about 2 seconds after the end of one, and the score is kept.
 
@@ -95,7 +97,7 @@ The perceptual distance compares what two places look like, not where they are. 
 - *Investigating a sound*: turns toward the thief's footsteps and walks the shortest path to where they came from, without changing course for new sounds on the way.
 - *Chasing the thief*: on seeing the thief, it runs to where it saw it. In heavy gear it covers 3 cells in 4 steps, a little slower than a running thief. It catches the thief on the same or a neighbouring cell.
 - *Scanning around*: at a sound, or where it lost sight of the thief, it turns a full circle, then patrols again.
-- *Guarding an exit*: once it knows the diamond is gone (it sees the empty spot, or the thief carrying it), it guards the exit nearest to where it last saw the thief.
+- *Tracking the diamond*: from the moment the diamond is taken, its tracker gives the police its position at every step. The officer runs straight for it along the shortest path, at full speed.
 
 **Thief**
 - *Sneaking*: heads for a hidden spot within 8 cells of the diamond, one cell every two steps, with soft steps.
@@ -112,13 +114,13 @@ The perceptual distance compares what two places look like, not where they are. 
 | Result | Value |
 |---|---|
 | Rounds | 320 |
-| Police win rate | **51.2%** (164 of 320) |
-| Average round length | 176.5 steps |
-| Average length of a police win | 169.7 steps |
+| Police win rate | **49.7%** (159 of 320) |
+| Average round length | 201.5 steps |
+| Average length of a police win | 204.1 steps |
 
-How the 320 rounds end: the police catches the thief before the theft in 49%, and with the diamond in 3%. The thief escapes after being chased in 25%, and without ever being seen in 24%. No round reaches the 500-step limit: the thief is always on the move.
+How the 320 rounds end: the police catches the thief before the theft in 39%, and with the diamond, thanks to the tracker, in 10%. The thief escapes after being chased in 20%, and without ever being seen in 30%. Only 1 round reaches the 500-step limit: the thief is always on the move.
 
-Win rates vary from map to map (32.5% to 65% per map over 40 rounds). On the default map alone, 200 rounds give a 35.0% police win rate and an average of 156 steps, so the default map leans toward the thief.
+Win rates vary from map to map (22.5% to 65% per map over 40 rounds). On the default map alone, 200 rounds give a 34.0% police win rate and an average of 225 steps, so the default map leans toward the thief.
 
 ## Run it locally
 
@@ -138,7 +140,7 @@ npm test               # node --test tests/*.test.mjs
 npm run balance        # node tests/balance.mjs [rounds] [maps]
 ```
 
-The tests cover 3D line of sight (clear view on one level, blocked by a tree, hidden by a platform floor, seen through open air from above and from below, beyond 9 cells, target behind the viewer, one-sided sight), the vision cone limits, ray lengths, acoustic muffling (open air, bush and rock, floor slab versus open air, symmetry), path distance (diagonals, corner cutting, detours, ladders), map connectivity, the metric axioms, and the round loop (exits, diamond placement, theft, catches and escapes).
+The tests cover 3D line of sight (clear view on one level, blocked by a tree, hidden by a platform floor, seen through open air from above and from below, beyond 9 cells, target behind the viewer, one-sided sight), the vision cone limits, ray lengths, acoustic muffling (open air, bush and rock, floor slab versus open air, symmetry), path distance (diagonals, corner cutting, detours, ladders), map connectivity, no dead ends (bridge detection), the metric axioms, and the round loop (exits, diamond placement, theft, catches and escapes).
 
 ## Files
 

@@ -146,6 +146,7 @@ export function generateWorld(config, seed = config.seed) {
 
   const world = buildWorld(config, W, H, ground, canopy, platforms);
   removeUnreachable(world);
+  if (config.noDeadEnds) removeDeadEnds(config, W, H, world.ground, world.canopy, platforms, rng);
   return buildWorld(config, W, H, world.ground, world.canopy, platforms, seed);
 }
 
@@ -251,4 +252,120 @@ function removeUnreachable(world) {
     if (world.ground[i] === G.LADDER && world.canopy[i] !== C.LADDER) world.ground[i] = G.FREE;
     if (world.canopy[i] === C.LADDER && world.ground[i] !== G.LADDER) world.canopy[i] = C.PLATFORM;
   }
+}
+
+// ---- no dead ends ----------------------------------------------------------
+// A dead end is a part of the walkable network that hangs on a single connection (a bridge in the
+// graph): you can only leave it the way you came in. Small alcoves (up to 3 cells) are filled in;
+// larger ones get a new opening, carved through the obstacles (ground) or as a new walkway (canopy)
+// to some other part of the network. Repeats until no bridge is left.
+
+// Finds one bridge edge of the walkable graph (iterative Tarjan), or null.
+export function findBridge(world) {
+  const disc = new Int32Array(2 * world.N).fill(-1);
+  const low = new Int32Array(2 * world.N);
+  let time = 0;
+  for (const root of world.nodes) {
+    if (disc[root] !== -1) continue;
+    const stack = [{ n: root, parent: -1, nbrs: null, i: 0 }];
+    disc[root] = low[root] = time++;
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      if (!top.nbrs) { top.nbrs = []; forEachNeighbour(world, top.n, (m) => top.nbrs.push(m)); }
+      if (top.i < top.nbrs.length) {
+        const m = top.nbrs[top.i++];
+        if (m === top.parent) continue;
+        if (disc[m] === -1) {
+          disc[m] = low[m] = time++;
+          stack.push({ n: m, parent: top.n, nbrs: null, i: 0 });
+        } else {
+          low[top.n] = Math.min(low[top.n], disc[m]);
+        }
+      } else {
+        stack.pop();
+        if (top.parent !== -1) {
+          low[top.parent] = Math.min(low[top.parent], low[top.n]);
+          if (low[top.n] > disc[top.parent]) return [top.parent, top.n];
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function removeDeadEnds(config, W, H, ground, canopy, platforms, rng) {
+  const N = W * H;
+  for (let iter = 0; iter < 400; iter++) {
+    const world = buildWorld(config, W, H, ground, canopy, platforms);
+    const bridge = findBridge(world);
+    if (!bridge) return;
+    const [u, v] = bridge;
+
+    // the two sides of the bridge; the smaller one is the dead end
+    const side = new Set([u]);
+    const stack = [u];
+    while (stack.length) {
+      const n = stack.pop();
+      forEachNeighbour(world, n, (m) => {
+        if ((n === u && m === v) || side.has(m)) return;
+        side.add(m);
+        stack.push(m);
+      });
+    }
+    const pocket = side.size * 2 <= world.nodes.length ? [...side] : world.nodes.filter((n) => !side.has(n));
+    const inPocket = new Set(pocket);
+    const hasLadder = pocket.some((n) => world.ground[n % N] === G.LADDER);
+
+    if (pocket.length > 3 || hasLadder) {
+      if (carveOpening(world, ground, canopy, pocket, inPocket, rng)) continue;
+    }
+    // fill the alcove in
+    for (const n of pocket) {
+      const i = n % N;
+      if (n < N) ground[i] = G.BUSH; else canopy[i] = C.AIR;
+      if (ground[i] === G.LADDER && canopy[i] !== C.LADDER) ground[i] = G.FREE;
+      if (canopy[i] === C.LADDER && ground[i] !== G.LADDER) canopy[i] = C.PLATFORM;
+    }
+  }
+}
+
+// Opens the shortest passage from the pocket to the rest of its level, through obstacles that may
+// be cleared (ground: trees, bushes, rocks; canopy: open air, which becomes a walkway).
+function carveOpening(world, ground, canopy, pocket, inPocket, rng) {
+  const { W, H, N } = world;
+  const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (const level of rng.chance(0.5) ? [0, 1] : [1, 0]) {
+    const cells = pocket.filter((n) => (n >= N ? 1 : 0) === level).map((n) => n % N);
+    if (!cells.length) continue;
+    const carvable = (i) => {
+      const x = i % W;
+      const y = Math.floor(i / W);
+      if (x < 1 || y < 1 || x > W - 2 || y > H - 2) return false;
+      return level === 0 ? [G.TREE, G.BUSH, G.ROCK].includes(ground[i]) : canopy[i] === C.AIR;
+    };
+    const walkableOther = (i) => world.walk[level * N + i] === 1 && !inPocket.has(level * N + i);
+    const prev = new Map();
+    const queue = [];
+    for (const i of cells) {
+      for (const [dx, dy] of DIRS4) {
+        const j = i + dy * W + dx;
+        if (carvable(j) && !prev.has(j)) { prev.set(j, -1); queue.push(j); }
+      }
+    }
+    for (let q = 0; q < queue.length; q++) {
+      const i = queue[q];
+      const reaches = DIRS4.some(([dx, dy]) => walkableOther(i + dy * W + dx));
+      if (reaches) {
+        for (let k = i; k !== -1; k = prev.get(k)) {
+          if (level === 0) ground[k] = G.FREE; else canopy[k] = C.BRIDGE;
+        }
+        return true;
+      }
+      for (const [dx, dy] of DIRS4) {
+        const j = i + dy * W + dx;
+        if (carvable(j) && !prev.has(j)) { prev.set(j, i); queue.push(j); }
+      }
+    }
+  }
+  return false;
 }

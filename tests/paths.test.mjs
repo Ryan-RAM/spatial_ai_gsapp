@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makePathfinder } from '../src/sim/paths.js';
-import { generateWorld, forEachNeighbour } from '../src/sim/world.js';
+import { generateWorld, forEachNeighbour, findBridge } from '../src/sim/world.js';
 import { CONFIG } from '../src/sim/config.js';
 import { makeTestWorld } from './helpers.mjs';
 
@@ -86,6 +86,37 @@ test('generated maps are fully connected', () => {
     for (const n of world.nodes) if (n >= world.N) canopyCells++;
     assert.ok(canopyCells > 40, `seed ${seed} canopy ${canopyCells}`);
   }
+});
+
+test('generated maps have no dead ends: every walkable cell lies on a loop', () => {
+  for (let seed = 0; seed < 12; seed++) {
+    const world = generateWorld(CONFIG, CONFIG.seed + seed);
+    assert.equal(findBridge(world), null, `seed ${CONFIG.seed + seed}`);
+  }
+});
+
+test('findBridge spots a dead-end corridor and accepts a loop', () => {
+  // a loop with a two-cell corridor hanging off it at (3,3): the corridor can only be left the way in
+  const { world: deadEnd, at } = makeTestWorld([
+    '#######',
+    '#.....#',
+    '#.bbb.#',
+    '#.....#',
+    '#bb.bb#',
+    '#bb.bb#',
+    '#######',
+  ]);
+  const corridor = [at(0, 3, 3), at(0, 3, 4), at(0, 3, 5)];
+  const bridge = findBridge(deadEnd);
+  assert.ok(bridge && bridge.every((n) => corridor.includes(n)), String(bridge));
+  const { world: loop } = makeTestWorld([
+    '#######',
+    '#.....#',
+    '#.bbb.#',
+    '#.....#',
+    '#######',
+  ]);
+  assert.equal(findBridge(loop), null);
 });
 
 test('the same seed always gives the same map', () => {

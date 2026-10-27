@@ -11,8 +11,8 @@ import { nodeXYL } from '../src/sim/world.js';
 const ctx = makeContext(CONFIG);
 const isExit = (n) => ctx.exits.some((e) => e.node === n);
 
-test('four exits, one on each side, on walkable ground cells along the wall', () => {
-  assert.deepEqual(ctx.exits.map((e) => e.side).sort(), ['east', 'north', 'south', 'west']);
+test('one exit per configured side, on walkable ground cells along the wall', () => {
+  assert.deepEqual(ctx.exits.map((e) => e.side).sort(), [...CONFIG.exitSides].sort());
   for (const e of ctx.exits) {
     const { x, y, level } = nodeXYL(ctx.world, e.node);
     assert.equal(level, 0);

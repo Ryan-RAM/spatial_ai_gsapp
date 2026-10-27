@@ -26,6 +26,7 @@ export const CONFIG = {
   platformCount: 5,
   ladderCount: 5,
   foliageClumpsPerPlatform: 2,
+  noDeadEnds: true,               // every walkable cell lies on a loop: no path is a dead end
 
   // Vision: forward cone, 3D Euclidean distance, blocked by solid volumes
   visionRange: 9,
@@ -51,6 +52,7 @@ export const CONFIG = {
   maxSteps: 500,
   minStartPathDistance: 22,
   catchDistance: 1.5,            // the police catches the thief on the same or a neighbouring cell
+  exitSides: ['west', 'east'],   // one exit in the middle of each of these sides of the boundary wall
   diamondMinFromExit: 10,        // the diamond is never placed right next to an exit
   thiefStartFromDiamond: 22,     // the thief starts at least this far (path) from the diamond
   policeStartFromDiamond: [3, 10],
@@ -58,7 +60,7 @@ export const CONFIG = {
   // AI behaviour (the only block changed while balancing)
   ai: {
     policeGuardRadius: 10,        // patrol targets around the diamond lie within this path distance
-    policeRoamChance: 0.6,        // chance that a patrol target is anywhere on the map instead
+    policeRoamChance: 0.45,       // chance that a patrol target is anywhere on the map instead
     thiefStageRadius: 8,          // the thief waits for its chance within this path distance of the diamond
     thiefQuietSteps: 8,           // ... until it has not heard the police for this many steps
     thiefWaitMax: 60,             // ... or for at most this long
@@ -81,6 +83,7 @@ export const CONFIG = {
     thiefExposureWeight: 2,       // how much the thief avoids spots that can be seen from many cells
     thiefAvoidPoliceWeight: 0.3,  // how much the thief prefers spots far from where it last noticed the police
     policeTurnOnHear: true,       // the officer turns the head toward a sound at once
+    policeTrackRestEvery: 0,      // following the tracker: rest every n steps (0: full speed, it knows where to go)
     policeChaseRestEvery: 4,      // while chasing, the officer covers 3 cells in 4 steps (0: never rests)
     policeChaseFollowsSound: false, // while chasing, follow footsteps too (true) or only what it sees
     policeRetarget: false,        // follow every new sound while investigating, or finish the current one
