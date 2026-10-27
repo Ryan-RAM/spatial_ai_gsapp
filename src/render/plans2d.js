@@ -6,6 +6,7 @@ export function makePlans(groundCanvas, canopyCanvas) {
   let world = null;
   let rays = null;
   let palette = null;
+  let exits = [];
   const backgrounds = [null, null];
   const sounds = [];
 
@@ -74,6 +75,27 @@ export function makePlans(groundCanvas, canopyCanvas) {
         }
       }
     }
+    // exits: a lit cell with an arrow pointing out of the map
+    if (level === 0) {
+      const OUT = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
+      for (const e of exits) {
+        const x = e.node % W;
+        const y = Math.floor(e.node / W);
+        const [dx, dy] = OUT[e.side];
+        g.fillStyle = palette.exit;
+        g.fillRect(x * cs, y * cs, cs, cs);
+        g.fillRect((x + dx) * cs, (y + dy) * cs, cs, cs);
+        g.fillStyle = palette.planInk;
+        g.beginPath();
+        const cx = (x + 0.5 + dx * 0.5) * cs;
+        const cy = (y + 0.5 + dy * 0.5) * cs;
+        g.moveTo(cx + dx * cs * 0.45, cy + dy * cs * 0.45);
+        g.lineTo(cx - dy * cs * 0.3 - dx * cs * 0.1, cy + dx * cs * 0.3 - dy * cs * 0.1);
+        g.lineTo(cx + dy * cs * 0.3 - dx * cs * 0.1, cy - dx * cs * 0.3 - dy * cs * 0.1);
+        g.closePath();
+        g.fill();
+      }
+    }
     // a light grid on walkable cells
     g.strokeStyle = palette.planGrid;
     g.lineWidth = 1;
@@ -84,10 +106,11 @@ export function makePlans(groundCanvas, canopyCanvas) {
     backgrounds[level] = off;
   }
 
-  function setMap(newWorld, newRays, newPalette) {
+  function setMap(newWorld, newRays, newPalette, newExits = []) {
     world = newWorld;
     rays = newRays;
     palette = newPalette;
+    exits = newExits;
     sounds.length = 0;
     drawBackground(0, groundCanvas);
     drawBackground(1, canopyCanvas);
@@ -161,6 +184,22 @@ export function makePlans(groundCanvas, canopyCanvas) {
         g.arc((x + 0.5) * cs, (y + 0.5) * cs, cs * (0.4 + age * 4), 0, Math.PI * 2);
         g.stroke();
         g.globalAlpha = 1;
+      }
+      // the diamond on its cell, or above the thief once stolen
+      const dn = game.diamond.carried ? game.thief.node : game.diamond.home;
+      const dp = nodeXYL(world, dn);
+      if (dp.level === level) {
+        const r = cs * (game.diamond.carried ? 0.32 : 0.45);
+        const cx = (dp.x + 0.5) * cs + (game.diamond.carried ? cs * 0.55 : 0);
+        const cy = (dp.y + 0.5) * cs - (game.diamond.carried ? cs * 0.55 : 0);
+        g.fillStyle = palette.diamond;
+        g.strokeStyle = palette.planInk;
+        g.lineWidth = Math.max(1, cs * 0.07);
+        g.beginPath();
+        g.moveTo(cx, cy - r * 1.25); g.lineTo(cx + r, cy); g.lineTo(cx, cy + r * 1.25); g.lineTo(cx - r, cy);
+        g.closePath();
+        g.fill();
+        g.stroke();
       }
       drawAgent(g, cs, game.police, palette.police, level, showCone);
       drawAgent(g, cs, game.thief, palette.thief, level, showCone);

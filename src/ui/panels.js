@@ -22,6 +22,8 @@ export function makePanels() {
     $('police-sees').classList.toggle('on', per.policeSees.visible);
     $('thief-hears').classList.toggle('on', per.thiefHears);
     $('thief-sees').classList.toggle('on', per.thiefSees.visible);
+    $('thief-diamond').classList.toggle('on', game.diamond.carried);
+    $('police-knows').classList.toggle('on', game.police.knowsTheft);
   }
 
   function distances(game) {

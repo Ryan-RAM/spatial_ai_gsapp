@@ -35,8 +35,27 @@ export function makeContext(config, seed = config.seed) {
   }
   const exposure = (n) => exposureArr[world.nodeIndex[n]];
 
+  // Four exits on the ground, one per side of the map: the walkable cell along the inside of the
+  // boundary wall closest to the middle of that side.
+  const exits = [];
+  const sides = [
+    { side: 'north', cells: (k) => [k, 1], len: world.W, mid: world.W / 2 },
+    { side: 'south', cells: (k) => [k, world.H - 2], len: world.W, mid: world.W / 2 },
+    { side: 'west', cells: (k) => [1, k], len: world.H, mid: world.H / 2 },
+    { side: 'east', cells: (k) => [world.W - 2, k], len: world.H, mid: world.H / 2 },
+  ];
+  for (const { side, cells, len, mid } of sides) {
+    let best = null;
+    for (let k = 1; k < len - 1; k++) {
+      const [x, y] = cells(k);
+      if (!world.walk[y * world.W + x]) continue;
+      if (!best || Math.abs(k + 0.5 - mid) < Math.abs(best.k + 0.5 - mid)) best = { k, node: y * world.W + x };
+    }
+    if (best) exits.push({ side, node: best.node });
+  }
+
   return {
-    config, seed, world, rays, pf, metrics, open, exposure, hideSet, openSet,
+    config, seed, world, rays, pf, metrics, open, exposure, hideSet, openSet, exits,
     perceptualQ: sampleQuantiles(world, metrics, 'perceptual'),
   };
 }

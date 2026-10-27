@@ -5,29 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Misty Forest Chase</title>
   <meta name="description" content="A self-running police-and-thief chase in a two-level misty forest, where each distance drives one sense: Euclidean distance for sight, acoustic distance for hearing, path distance for walking, perceptual distance for how alike two places look.">
-  <link rel="stylesheet" href="style.css?v=20261026a">
+  <link rel="stylesheet" href="style.css?v=20261027a">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
         "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-        "./src/render/plans2d.js": "./src/render/plans2d.js?v=20261026a",
-        "./src/render/scene3d.js": "./src/render/scene3d.js?v=20261026a",
-        "./src/sim/ai.js": "./src/sim/ai.js?v=20261026a",
-        "./src/sim/config.js": "./src/sim/config.js?v=20261026a",
-        "./src/sim/context.js": "./src/sim/context.js?v=20261026a",
-        "./src/sim/game.js": "./src/sim/game.js?v=20261026a",
-        "./src/sim/hints.js": "./src/sim/hints.js?v=20261026a",
-        "./src/sim/los.js": "./src/sim/los.js?v=20261026a",
-        "./src/sim/metrics.js": "./src/sim/metrics.js?v=20261026a",
-        "./src/sim/paths.js": "./src/sim/paths.js?v=20261026a",
-        "./src/sim/rays.js": "./src/sim/rays.js?v=20261026a",
-        "./src/sim/rng.js": "./src/sim/rng.js?v=20261026a",
-        "./src/sim/world.js": "./src/sim/world.js?v=20261026a",
-        "./src/ui/chart.js": "./src/ui/chart.js?v=20261026a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261026a",
-        "./src/ui/panels.js": "./src/ui/panels.js?v=20261026a"
+        "./src/render/plans2d.js": "./src/render/plans2d.js?v=20261027a",
+        "./src/render/scene3d.js": "./src/render/scene3d.js?v=20261027a",
+        "./src/sim/ai.js": "./src/sim/ai.js?v=20261027a",
+        "./src/sim/config.js": "./src/sim/config.js?v=20261027a",
+        "./src/sim/context.js": "./src/sim/context.js?v=20261027a",
+        "./src/sim/game.js": "./src/sim/game.js?v=20261027a",
+        "./src/sim/hints.js": "./src/sim/hints.js?v=20261027a",
+        "./src/sim/los.js": "./src/sim/los.js?v=20261027a",
+        "./src/sim/metrics.js": "./src/sim/metrics.js?v=20261027a",
+        "./src/sim/paths.js": "./src/sim/paths.js?v=20261027a",
+        "./src/sim/rays.js": "./src/sim/rays.js?v=20261027a",
+        "./src/sim/rng.js": "./src/sim/rng.js?v=20261027a",
+        "./src/sim/world.js": "./src/sim/world.js?v=20261027a",
+        "./src/ui/chart.js": "./src/ui/chart.js?v=20261027a",
+        "./src/ui/main.js": "./src/ui/main.js?v=20261027a",
+        "./src/ui/panels.js": "./src/ui/panels.js?v=20261027a"
       }
     }
   </script>
@@ -37,9 +37,10 @@
     <p class="eyebrow">Spatial AI &middot; Columbia GSAPP &middot; Distance + Proximity</p>
     <h1>Misty Forest Chase</h1>
     <p class="lede">
-      A police officer patrols a foggy forest with a canopy walkway three cells up; a thief tries to stay unseen
-      for 500 steps. Nobody plays: both are simple AIs, and each step they act once. The game is a way to compare
-      four distances, because each one drives a different sense.
+      A diamond lies somewhere in a foggy forest with a canopy walkway three cells up. A thief must steal it and get
+      out through one of four exits in the boundary wall; a police officer patrols around the diamond, chases the thief
+      on sight and has to catch it. Nobody plays: both are simple AIs, and each step they act once. The game is a way
+      to compare four distances, because each one drives a different sense.
     </p>
     <div class="senses">
       <div class="sense sense-eu"><span class="sense-name">Sight</span><span class="sense-metric">Euclidean distance</span><span class="sense-rule">Straight 3D line, up to 9 cells, only forward, blocked by solid volumes.</span></div>
@@ -91,12 +92,12 @@
           <div class="agent-card police">
             <div class="agent-head"><span class="dot"></span>Police</div>
             <div class="agent-mode" id="police-mode">Patrolling</div>
-            <div class="tags"><span class="tag" id="police-hears">Hears the thief</span><span class="tag" id="police-sees">Sees the thief</span></div>
+            <div class="tags"><span class="tag" id="police-hears">Hears the thief</span><span class="tag" id="police-sees">Sees the thief</span><span class="tag" id="police-knows">Knows it is stolen</span></div>
           </div>
           <div class="agent-card thief">
             <div class="agent-head"><span class="dot"></span>Thief</div>
             <div class="agent-mode" id="thief-mode">Hiding</div>
-            <div class="tags"><span class="tag" id="thief-hears">Hears the police</span><span class="tag" id="thief-sees">Sees the police</span></div>
+            <div class="tags"><span class="tag" id="thief-hears">Hears the police</span><span class="tag" id="thief-sees">Sees the police</span><span class="tag" id="thief-diamond">Has the diamond</span></div>
           </div>
         </div>
       </section>
@@ -161,6 +162,8 @@
           <span><i class="swatch block c-foliage"></i>Leaves</span>
           <span><i class="swatch block c-air"></i>Open air</span>
           <span><i class="swatch block c-ladder"></i>Ladder</span>
+          <span><i class="swatch block c-diamond diamond-shape"></i>Diamond</span>
+          <span><i class="swatch block c-exit"></i>Exit</span>
         </div>
       </div>
       <div class="plans">
@@ -235,22 +238,26 @@
         <div>
           <p class="ai-name police"><span class="dot"></span>Police</p>
           <ul>
-            <li><b>Patrolling</b>: walks to random targets in the more open half of the map, glancing to the side every other step.</li>
+            <li><b>Patrolling</b>: guards the diamond. Walks to open spots, usually within 10 cells of the diamond and sometimes anywhere on the map, glancing to the side every other step.</li>
             <li><b>Investigating a sound</b>: on hearing the thief, turns toward the sound and takes the shortest path to where it came from.</li>
-            <li><b>Scanning around</b>: at the sound's location with nobody in sight, turns a full circle, then goes back to patrolling.</li>
+            <li><b>Chasing the thief</b>: on seeing the thief, runs to where it saw it, a bit slower than the thief (3 cells in 4 steps, in heavy gear). It catches the thief on the same or a neighbouring cell.</li>
+            <li><b>Scanning around</b>: at a sound, or where it lost sight of the thief, turns a full circle, then goes back to patrolling.</li>
+            <li><b>Guarding an exit</b>: once it knows the diamond is gone (it sees the empty spot, or the thief carrying it), it guards the exit nearest to where the thief was last seen.</li>
           </ul>
         </div>
         <div>
           <p class="ai-name thief"><span class="dot"></span>Thief</p>
           <ul>
-            <li><b>Sneaking</b> / <b>Hiding</b>: picks a spot among the 25% of cells with the smallest view, preferring spots that few cells can see and that are far from where it last noticed the police; sneaks there one cell every two steps and waits.</li>
-            <li><b>Looking around</b>: while hiding, turns the head now and then.</li>
+            <li><b>Sneaking</b>: heads for a hidden spot within 8 cells of the diamond, one cell every two steps. Sneaking steps are soft: they are heard only within an acoustic distance of 7 instead of 12.</li>
+            <li><b>Waiting for a chance</b> / <b>Looking around</b>: near the diamond, waits until it has not heard the police for 8 steps, turning the head now and then.</li>
+            <li><b>Going for the diamond</b>: runs to it, one cell per step. Taking it is instant.</li>
+            <li><b>Escaping with the diamond</b>: runs for the exit with the biggest head start over the police.</li>
             <li><b>Holding breath</b>: hears the police, but it is not close: freezes, makes no sound and turns toward the noise.</li>
-            <li><b>Fleeing</b>: the police is in plain view, or its own footsteps probably gave it away: runs to a cell it reaches before the police, far from it and out of its sight, with a first step that breaks the line of sight.</li>
+            <li><b>Fleeing</b> / <b>Hiding</b>: when seen, about to be seen, or hearing the police come closer, runs to a cell it reaches first, out of the police's sight, then lies low before trying again.</li>
           </ul>
         </div>
       </div>
-      <p class="caption">The police wins as soon as it sees the thief. The thief wins after 500 steps unseen. A new round starts about 2 seconds after the end of one.</p>
+      <p class="caption">The thief wins by leaving through an exit with the diamond. The police wins by catching the thief, or if the diamond is still in the forest after 500 steps. A new round starts about 2 seconds after the end of one.</p>
     </section>
 
     <section class="panel wide" aria-label="Metric check">
@@ -283,6 +290,6 @@
     <p>Spatial AI, Columbia GSAPP, fall 2026. Built with three.js 0.160.0.</p>
   </footer>
 
-  <script type="module" src="src/ui/main.js?v=20261026a"></script>
+  <script type="module" src="src/ui/main.js?v=20261027a"></script>
 </body>
 </html>

@@ -21,7 +21,7 @@ function readPalette() {
     sky: v('--sky'), ground: v('--ground'), tree: v('--tree'), trunk: v('--trunk'), bush: v('--bush'), rock: v('--rock'),
     wall: v('--wall'), platform: v('--platform'), bridge: v('--bridge'), foliage: v('--foliage'), ladder: v('--ladder'),
     planFree: v('--plan-free'), planAir: v('--plan-air'), planGrid: v('--plan-grid'), planInk: v('--plan-ink'),
-    grid: v('--grid'), muted: v('--muted'),
+    grid: v('--grid'), muted: v('--muted'), diamond: v('--diamond'), exit: v('--exit'),
     fogDensity: dark ? 0.022 : 0.024,
     light: dark ? 2.4 : 1.1,
   };
@@ -46,8 +46,8 @@ function loadMap(seed) {
   state.ctx = makeContext(CONFIG, seed);
   state.round = 0;
   $('map-seed').textContent = `Map seed ${seed}`;
-  plans.setMap(state.ctx.world, state.ctx.rays, palette);
-  scene?.buildMap(state.ctx.world, state.ctx.rays);
+  plans.setMap(state.ctx.world, state.ctx.rays, palette, state.ctx.exits);
+  scene?.buildMap(state.ctx.world, state.ctx.rays, state.ctx.exits);
   document.querySelector('#axioms tbody').innerHTML = '<tr><td colspan="6">Computing&hellip;</td></tr>';
   setTimeout(() => {
     const ctx = state.ctx;
@@ -64,7 +64,8 @@ function startRound() {
   state.restartAt = null;
   $('banner').hidden = true;
   panels.resetHint();
-  panels.roundMarker(`Round ${state.round} begins. The thief starts ${state.game.distances.path.toFixed(0)} cells (path) from the police.`);
+  const g = state.game;
+  panels.roundMarker(`Round ${state.round} begins. The thief starts ${state.ctx.pf.distance(g.thief.node, g.diamond.home).toFixed(0)} cells (path) from the diamond, the police ${state.ctx.pf.distance(g.police.node, g.diamond.home).toFixed(0)}.`);
   scene?.resetAgents();
   afterStep(performance.now());
 }
@@ -87,8 +88,8 @@ function endRound(now) {
   const banner = $('banner');
   banner.style.setProperty('--c', g.winner === 'police' ? palette.police : palette.thief);
   banner.innerHTML = g.winner === 'police'
-    ? `Police wins<small>Spotted the thief at step ${g.step}, ${g.distances.euclidean.toFixed(1)} cells away.</small>`
-    : `Thief wins<small>Unseen for all ${CONFIG.maxSteps} steps.</small>`;
+    ? `Police wins<small>${g.step >= CONFIG.maxSteps ? `The diamond is still safe after ${CONFIG.maxSteps} steps.` : `Caught the thief at step ${g.step}${g.diamond.carried ? ', diamond and all' : ''}.`}</small>`
+    : `Thief wins<small>Escaped with the diamond at step ${g.step}.</small>`;
   banner.hidden = false;
   panels.status(g, state.score);
   state.restartAt = now + RESTART_MS;
@@ -144,7 +145,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
   palette = readPalette();
   chart.setPalette(palette);
   plans.redrawBackgrounds(palette);
-  if (scene) { scene.setPalette(palette); scene.buildMap(state.ctx.world, state.ctx.rays); }
+  if (scene) { scene.setPalette(palette); scene.buildMap(state.ctx.world, state.ctx.rays, state.ctx.exits); }
 });
 
 // The muffling table in the rules is written from the config, so it always matches the simulation.

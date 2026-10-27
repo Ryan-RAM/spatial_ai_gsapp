@@ -1,8 +1,9 @@
-// One round of the chase: both agents act once per step; sight decides the winner.
+// One round: the thief tries to steal the diamond and get out through an exit; the police guards
+// the diamond and must catch the thief (same or neighbouring cell). Both act once per step.
 
 import { makeRng } from './rng.js';
 import { canSee } from './los.js';
-import { newPolice, newThief, policeAct, thiefAct, headingTo, POLICE_MODES, THIEF_MODES } from './ai.js';
+import { newPolice, newThief, policeAct, thiefAct, headingTo, nearestExit, POLICE_MODES, THIEF_MODES } from './ai.js';
 import { describeDistances } from './hints.js';
 
 const FACINGS = [0, 1, 2, 3, 4, 5, 6, 7].map((k) => (k * Math.PI) / 4);
@@ -11,15 +12,30 @@ export function newGame(ctx, round = 1, seed = ctx.seed * 7919 + round) {
   const rng = makeRng(seed);
   const { world, pf, metrics, config } = ctx;
 
-  // Start far apart and out of each other's sight.
+  // The diamond: a fairly hidden cell (exposure below the median), not next to an exit.
+  const exposures = world.nodes.map((n) => ctx.exposure(n)).sort((a, b) => a - b);
+  const medianExposure = exposures[Math.floor(exposures.length / 2)];
+  const exitNodes = new Set(ctx.exits.map((e) => e.node));
+  const diamondOptions = world.nodes.filter((n) => !exitNodes.has(n)
+    && ctx.exposure(n) <= medianExposure
+    && pf.distance(n, nearestExit(ctx, n).node) >= config.diamondMinFromExit);
+  const diamondNode = rng.pick(diamondOptions);
+  const fromDiamond = pf.row(diamondNode);
+  const [pMin, pMax] = config.policeStartFromDiamond;
+  const policeOptions = world.nodes.filter((n) => {
+    const d = fromDiamond[world.nodeIndex[n]];
+    return d >= pMin && d <= pMax;
+  });
+
+  // The police starts near the diamond; the thief starts far from both, out of each other's sight.
   let police;
   let thief;
   for (let attempt = 0; attempt < 500; attempt++) {
-    police = newPolice(rng.pick(world.nodes), rng.pick(FACINGS));
+    police = newPolice(rng.pick(policeOptions), rng.pick(FACINGS));
     const row = pf.row(police.node);
-    const options = world.nodes.filter(
-      (n) => row[world.nodeIndex[n]] >= config.minStartPathDistance && metrics.euclidean(n, police.node) > config.visionRange,
-    );
+    const options = world.nodes.filter((n) => row[world.nodeIndex[n]] >= config.minStartPathDistance
+      && fromDiamond[world.nodeIndex[n]] >= config.thiefStartFromDiamond
+      && metrics.euclidean(n, police.node) > config.visionRange);
     if (!options.length) continue;
     thief = newThief(rng.pick(options), rng.pick(FACINGS));
     if (!canSee(world, police.node, police.facing, thief.node).visible
@@ -29,6 +45,7 @@ export function newGame(ctx, round = 1, seed = ctx.seed * 7919 + round) {
   const game = {
     ctx, rng, round, step: 0, over: false, winner: null,
     police, thief,
+    diamond: { home: diamondNode, carried: false },
     events: [],
     sounds: [],          // sounds made during the latest step: { who, node, heard }
     perception: null,    // who heard / saw whom during the latest step
@@ -58,7 +75,9 @@ function makeSound(game, who) {
   const { metrics, config } = game.ctx;
   const mover = who === 'police' ? game.police : game.thief;
   const listener = who === 'police' ? game.thief : game.police;
-  const heard = metrics.acoustic(mover.node, listener.node) <= config.hearingRange;
+  // soft steps: a sneaking thief is quieter, as if it were `sneakQuietness` cells farther away
+  const soft = who === 'thief' && (mover.mode === 'sneak' || mover.mode === 'wait' || mover.mode === 'look');
+  const heard = metrics.acoustic(mover.node, listener.node) + (soft ? config.sneakQuietness : 0) <= config.hearingRange;
   game.sounds.push({ who, node: mover.node, heard });
   if (!heard) return false;
   listener.heardAt = mover.node;
@@ -74,20 +93,40 @@ function makeSound(game, who) {
   return true;
 }
 
+// Same or neighbouring cell on the same level.
+function caught(game) {
+  return game.ctx.pf.distance(game.police.node, game.thief.node) <= game.ctx.config.catchDistance;
+}
+
+function endRound(game, winner, kind, text) {
+  game.over = true;
+  game.winner = winner;
+  game.log(winner, kind, text);
+}
+
+// Updates what each agent sees. Seeing the thief does not end the round: it starts a chase.
 function checkSight(game) {
   const { world } = game.ctx;
   const p = game.police;
   const t = game.thief;
   const ps = canSee(world, p.node, p.facing, t.node);
+  p.seesThief = ps.visible;
   if (ps.visible) {
-    game.over = true;
-    game.winner = 'police';
-    game.log('police', 'win', `Police spotted the thief at ${ps.dist.toFixed(1)} cells. Police wins.`);
-    return;
+    p.thiefAt = t.node;
+    if (t.carrying && !p.knowsTheft) {
+      p.knowsTheft = true;
+      game.log('police', 'theft', 'Police sees the thief carrying the diamond.');
+    }
+  }
+  // the officer notices the empty spot when it looks at where the diamond was
+  if (game.diamond.carried && !p.knowsTheft && canSee(world, p.node, p.facing, game.diamond.home).visible) {
+    p.knowsTheft = true;
+    game.log('police', 'theft', 'Police finds the diamond gone and heads for an exit.');
+    if (p.mode !== 'chase') { p.mode = 'guardExit'; p.target = null; }
   }
   const ts = canSee(world, t.node, t.facing, p.node);
   if (ts.visible) {
-    if (!t.seesPolice) game.log('thief', 'see', `Thief spotted the police at ${ts.dist.toFixed(1)} cells (the police did not see it).`);
+    if (!t.seesPolice) game.log('thief', 'see', `Thief spotted the police at ${ts.dist.toFixed(1)} cells.`);
     t.seesPolice = true;
     t.lastPolice = p.node;
     t.policeFacing = p.facing;
@@ -113,17 +152,28 @@ export function stepGame(game) {
       game.thief.policeFacing = game.police.facing;
     }
   }
-  checkSight(game);
+  if (caught(game)) endRound(game, 'police', 'win', 'Police caught the thief. Police wins.');
+  else checkSight(game);
 
   if (!game.over) {
     if (thiefAct(game.ctx, game, game.rng)) policeHears = makeSound(game, 'thief');
-    checkSight(game);
+    const t = game.thief;
+    if (caught(game)) {
+      endRound(game, 'police', 'win', 'The thief ran into the police. Police wins.');
+    } else if (!t.carrying && t.node === game.diamond.home) {
+      t.carrying = true;
+      game.diamond.carried = true;
+      game.log('thief', 'steal', 'The thief took the diamond! Now it needs an exit.');
+    }
+    if (!game.over && t.carrying && game.ctx.exits.some((e) => e.node === t.node)) {
+      const side = game.ctx.exits.find((e) => e.node === t.node).side;
+      endRound(game, 'thief', 'win', `The thief escaped with the diamond through the ${side} exit. Thief wins.`);
+    }
+    if (!game.over) checkSight(game);
   }
 
   if (!game.over && game.step >= config.maxSteps) {
-    game.over = true;
-    game.winner = 'thief';
-    game.log('thief', 'win', `The thief stayed unseen for ${config.maxSteps} steps. Thief wins.`);
+    endRound(game, 'police', 'win', `Time is up after ${config.maxSteps} steps: the diamond is safe. Police wins.`);
   }
 
   game.perception = { ...perceive(game), policeHears, thiefHears };

@@ -6,7 +6,7 @@ Instructor: [William Martin](https://awmartin.xyz/spatial-computing/course/)
 
 Group: **Ryan Fu, Lu Liu, Yifan Zhao**
 
-A self-running 3D chase in a two-level misty forest. A police officer patrols; a thief hides. Each of four distances drives one sense:
+A self-running 3D heist in a two-level misty forest. A thief must steal a diamond and get out through an exit; a police officer guards the diamond and chases the thief on sight. Each of four distances drives one sense:
 
 | Sense | Distance | Used for |
 |---|---|---|
@@ -21,7 +21,10 @@ Live page: https://ryan-ram.github.io/spatial_ai_gsapp/ (once GitHub Pages is on
 
 - A 36 &times; 26 grid with two levels. **Ground level**: single trees, rows of bushes, 2&times;2 or 3&times;2 rocks, a boundary wall. **Canopy level**, 3 cells up: five platforms joined by narrow bridges, with leaf clumps. Between platforms is open air: you can see through it but not walk on it.
 - Five ladders join the levels. Maps come from a fixed seed (`20261022`); **New map** draws a new seed. After generation, every walkable cell that cannot be reached from the main area is removed, so any two walkable cells are connected.
-- The police wins as soon as it sees the thief. The thief wins after 500 steps unseen. Both act once per step. A new round starts about 2 seconds after the end of one, and the score is kept.
+- **The diamond** is placed at random each round, on a fairly hidden cell (seen from fewer cells than the median), on the ground or on a platform, at least 10 cells from any exit.
+- **Four exits**, one in the middle of each side of the boundary wall, are fixed for each map.
+- **The thief wins** by leaving through an exit with the diamond. **The police wins** by catching the thief (same or neighbouring cell), or if the diamond is still in the forest after 500 steps. Seeing the thief does not end the round: it starts a chase.
+- The police starts 3 to 10 cells from the diamond; the thief starts at least 22 cells from the diamond and from the police, out of sight. Both act once per step. A new round starts about 2 seconds after the end of one, and the score is kept.
 
 ## The four distances
 
@@ -43,7 +46,7 @@ The line of sight is a 2D grid DDA (Amanatides & Woo) over the columns of the ma
 
 d<sub>A</sub>(a, b) = d<sub>E</sub>(a, b) + &Sigma;<sub>k</sub> m<sub>k</sub>
 
-Sound travels along the same straight line as sight, but solids muffle it instead of stopping it. For every grid cell of solid material the line passes through, a muffling cost m<sub>k</sub> is added. The cost is in cells of open air that would make the sound just as faint: leaf clump +1, bush +1.5, tree +3, rock +6, platform floor +6 (`config.muffling`). Whenever an agent moves, the other hears it if d<sub>A</sub> &le; 12, and knows where the sound came from. Hearing works in every direction. Through open air d<sub>A</sub> = d<sub>E</sub>, so someone on a platform edge hears footsteps on the ground below (`acousticDistance` in `src/sim/los.js`).
+Sound travels along the same straight line as sight, but solids muffle it instead of stopping it. For every grid cell of solid material the line passes through, a muffling cost m<sub>k</sub> is added. The cost is in cells of open air that would make the sound just as faint: leaf clump +1, bush +1.5, tree +3, rock +6, platform floor +6 (`config.muffling`). Whenever an agent moves, the other hears it if d<sub>A</sub> &le; 12, and knows where the sound came from. A sneaking thief steps softly: its steps count as 5 cells farther away (`config.sneakQuietness`), so they are heard only within d<sub>A</sub> &le; 7. Running steps and the police's steps are heard at 12. Hearing works in every direction. Through open air d<sub>A</sub> = d<sub>E</sub>, so someone on a platform edge hears footsteps on the ground below (`acousticDistance` in `src/sim/los.js`).
 
 ### 3. Path distance (walking, the bonus)
 
@@ -88,28 +91,34 @@ The perceptual distance compares what two places look like, not where they are. 
 ## The AIs
 
 **Police**
-- *Patrolling*: walks to random targets in the more open half of the map, glancing to the side every other step.
+- *Patrolling*: guards the diamond. It walks to open spots, usually within 10 cells of the diamond and sometimes anywhere on the map, glancing to the side every other step.
 - *Investigating a sound*: turns toward the thief's footsteps and walks the shortest path to where they came from, without changing course for new sounds on the way.
-- *Scanning around*: at that spot, with nobody in sight, turns a full circle, then patrols again.
+- *Chasing the thief*: on seeing the thief, it runs to where it saw it. In heavy gear it covers 3 cells in 4 steps, a little slower than a running thief. It catches the thief on the same or a neighbouring cell.
+- *Scanning around*: at a sound, or where it lost sight of the thief, it turns a full circle, then patrols again.
+- *Guarding an exit*: once it knows the diamond is gone (it sees the empty spot, or the thief carrying it), it guards the exit nearest to where it last saw the thief.
 
 **Thief**
-- *Sneaking / Hiding*: picks a spot among the 25% of cells with the smallest view. It prefers spots that few cells can see and that are far from where it last noticed the police. It sneaks there one cell every two steps and waits.
-- *Looking around*: while hiding, turns its head now and then.
+- *Sneaking*: heads for a hidden spot within 8 cells of the diamond, one cell every two steps, with soft steps.
+- *Waiting for a chance* / *Looking around*: near the diamond, it waits until it has not heard the police for 8 steps, turning its head now and then.
+- *Going for the diamond*: runs to it, one cell per step. Close to the time limit, it goes whatever the risk.
+- *Escaping with the diamond*: runs for the exit with the biggest head start over the police.
 - *Holding breath*: hears the police, but the police is not close. It freezes, makes no sound and turns toward the noise.
-- *Fleeing*: the police is in plain view, or its own footsteps probably gave it away. It runs to a cell it reaches before the police, far from the police and out of its sight, with a first step that breaks the line of sight.
+- *Fleeing* / *Hiding*: when seen, about to be seen, or hearing the police come closer, it runs to a cell it reaches first, out of the police's sight. Then it lies low before trying again.
 
 ## Balance
 
-`node tests/balance.mjs` plays 320 rounds without rendering: 40 rounds on each of 8 maps (seeds 20261022 to 20261029). Only AI behaviour was tuned. Vision range (9), the vision cone (120&deg;, &plusmn;60&deg;), hearing range (12) and the muffling costs were never changed for balance.
+`node tests/balance.mjs` plays 320 rounds without rendering: 40 rounds on each of 8 maps (seeds 20261022 to 20261029). Only AI behaviour was tuned, plus the soft sneaking steps. Vision range (9), the vision cone (120&deg;, &plusmn;60&deg;), hearing range (12) and the muffling costs were never changed for balance.
 
 | Result | Value |
 |---|---|
 | Rounds | 320 |
-| Police win rate | **50.9%** (163 of 320) |
-| Average round length | 334.3 steps |
-| Average length of a police win | 174.7 steps |
+| Police win rate | **51.2%** (164 of 320) |
+| Average round length | 176.5 steps |
+| Average length of a police win | 169.7 steps |
 
-Win rates vary from map to map (20% to 67.5% per map over 40 rounds). On the default map alone, 200 rounds give a 38.0% police win rate and an average of 376 steps, so the default map leans slightly toward the thief.
+How the 320 rounds end: the police catches the thief before the theft in 49%, and with the diamond in 3%. The thief escapes after being chased in 25%, and without ever being seen in 24%. No round reaches the 500-step limit: the thief is always on the move.
+
+Win rates vary from map to map (32.5% to 65% per map over 40 rounds). On the default map alone, 200 rounds give a 35.0% police win rate and an average of 156 steps, so the default map leans toward the thief.
 
 ## Run it locally
 
@@ -129,7 +138,7 @@ npm test               # node --test tests/*.test.mjs
 npm run balance        # node tests/balance.mjs [rounds] [maps]
 ```
 
-The tests cover 3D line of sight (clear view on one level, blocked by a tree, hidden by a platform floor, seen through open air from above and from below, beyond 9 cells, target behind the viewer, one-sided sight), the vision cone limits, ray lengths, acoustic muffling (open air, bush and rock, floor slab versus open air, symmetry), path distance (diagonals, corner cutting, detours, ladders), map connectivity, the metric axioms, and the round loop.
+The tests cover 3D line of sight (clear view on one level, blocked by a tree, hidden by a platform floor, seen through open air from above and from below, beyond 9 cells, target behind the viewer, one-sided sight), the vision cone limits, ray lengths, acoustic muffling (open air, bush and rock, floor slab versus open air, symmetry), path distance (diagonals, corner cutting, detours, ladders), map connectivity, the metric axioms, and the round loop (exits, diamond placement, theft, catches and escapes).
 
 ## Files
 

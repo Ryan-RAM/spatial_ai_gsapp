@@ -165,8 +165,19 @@ export function makeScene3D(container, palette) {
     ripples.push({ mesh, born: now });
   }
 
+  // ---- the diamond -------------------------------------------------------
+  const diamond = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.5, 0),
+    new THREE.MeshStandardMaterial({ color: palette.diamond, emissive: palette.diamond, emissiveIntensity: 0.6, roughness: 0.15, metalness: 0.3, flatShading: true, fog: false }),
+  );
+  diamond.scale.set(1, 1.4, 1);
+  const glow = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.8, 32), new THREE.MeshBasicMaterial({ color: palette.diamond, transparent: true, opacity: 0.6, side: THREE.DoubleSide, fog: false }));
+  glow.rotation.x = -Math.PI / 2;
+  scene.add(diamond, glow);
+  let diamondState = null;
+
   // ---- map ---------------------------------------------------------------
-  function buildMap(newWorld, newRays) {
+  function buildMap(newWorld, newRays, exits = []) {
     world = newWorld;
     rays = newRays;
     if (mapGroup) {
@@ -188,8 +199,33 @@ export function makeScene3D(container, palette) {
     floor.position.set(W / 2, 0, H / 2);
     mapGroup.add(floor);
 
-    mapGroup.add(instanced(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 1 }), cells(ground, G.WALL),
+    // exits: an opening in the boundary wall with a lit gate frame
+    const OUT = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] };
+    const gaps = new Set(exits.map((e) => { const [dx, dy] = OUT[e.side]; return e.node + dy * W + dx; }));
+    mapGroup.add(instanced(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: palette.wall, roughness: 1 }), cells(ground, G.WALL).filter(([x, y]) => !gaps.has(y * W + x)),
       ([x, y], p, s, q) => { p.set(x + 0.5, 1.1, y + 0.5); s.set(1, 2.2, 1); ident(q); }));
+    const gateMat = new THREE.MeshStandardMaterial({ color: palette.exit, emissive: palette.exit, emissiveIntensity: 0.5, fog: false });
+    const padMat = new THREE.MeshBasicMaterial({ color: palette.exit, transparent: true, opacity: 0.45, side: THREE.DoubleSide, fog: false });
+    for (const e of exits) {
+      const x = e.node % W;
+      const y = Math.floor(e.node / W);
+      const [dx, dy] = OUT[e.side];
+      const gate = new THREE.Group();
+      for (const side of [-0.5, 0.5]) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.4, 0.14), gateMat);
+        post.position.set(side, 1.2, 0);
+        gate.add(post);
+      }
+      const lintel = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.16, 0.16), gateMat);
+      lintel.position.set(0, 2.4, 0);
+      gate.add(lintel);
+      gate.position.set(x + 0.5 + dx * 0.5, 0, y + 0.5 + dy * 0.5);
+      gate.rotation.y = dx !== 0 ? Math.PI / 2 : 0;
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(0.96, 0.96), padMat);
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(x + 0.5, 0.03, y + 0.5);
+      mapGroup.add(gate, pad);
+    }
 
     const trees = cells(ground, G.TREE);
     mapGroup.add(instanced(new THREE.CylinderGeometry(0.1, 0.16, 1, 8), new THREE.MeshStandardMaterial({ color: palette.trunk }), trees,
@@ -298,6 +334,7 @@ export function makeScene3D(container, palette) {
       a.t0 = now;
       a.dur = stepMs * 0.9;
     }
+    diamondState = { home: game.diamond.home, carried: game.diamond.carried };
     for (const snd of game.sounds) if (snd.heard) addRipple(snd.node, snd.who === 'police' ? palette.police : palette.thief, now);
 
     const pe = eyePoint(world, game.police.node);
@@ -339,6 +376,23 @@ export function makeScene3D(container, palette) {
       a.mesh.position.set(a.current.x, a.current.z, a.current.y);
       a.mesh.rotation.y = -a.current.facing;
       updateVision(a, a.node, a.current.facing, [a.current.x - a.to.x, a.current.y - a.to.y, a.current.z - a.to.z]);
+    }
+    if (diamondState) {
+      const spin = now / 900;
+      if (diamondState.carried && agents.thief.current) {
+        const c = agents.thief.current;
+        diamond.position.set(c.x, c.z + 1.85, c.y);
+        diamond.scale.set(0.7, 1, 0.7);
+        glow.visible = false;
+      } else {
+        const { x, y, level } = nodeXYL(world, diamondState.home);
+        const base = level * world.config.levelHeight;
+        diamond.position.set(x + 0.5, base + 0.75 + 0.08 * Math.sin(spin * 2), y + 0.5);
+        diamond.scale.set(1, 1.4, 1);
+        glow.position.set(x + 0.5, base + 0.04, y + 0.5);
+        glow.visible = true;
+      }
+      diamond.rotation.y = spin;
     }
     straight.visible = options.lines;
     muffleDots.visible = options.lines;

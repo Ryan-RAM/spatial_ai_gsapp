@@ -37,6 +37,7 @@ export const CONFIG = {
   // Extra cells of distance added for every grid cell of material the straight line passes through:
   // a footstep heard through one cell of rock sounds as faint as one 6 cells farther away in open air.
   muffling: { leaves: 1, bush: 1.5, tree: 3, rock: 6, floor: 6, wall: 100 },
+  sneakQuietness: 5,       // sneaking steps are soft: heard as if 5 cells farther away
 
   // Walking: path distance along walkable cells (the bonus metric)
   ladderCost: 3,
@@ -49,27 +50,39 @@ export const CONFIG = {
   // Round
   maxSteps: 500,
   minStartPathDistance: 22,
+  catchDistance: 1.5,            // the police catches the thief on the same or a neighbouring cell
+  diamondMinFromExit: 10,        // the diamond is never placed right next to an exit
+  thiefStartFromDiamond: 22,     // the thief starts at least this far (path) from the diamond
+  policeStartFromDiamond: [3, 10],
 
   // AI behaviour (the only block changed while balancing)
   ai: {
+    policeGuardRadius: 10,        // patrol targets around the diamond lie within this path distance
+    policeRoamChance: 0.6,        // chance that a patrol target is anywhere on the map instead
+    thiefStageRadius: 8,          // the thief waits for its chance within this path distance of the diamond
+    thiefQuietSteps: 8,           // ... until it has not heard the police for this many steps
+    thiefWaitMax: 60,             // ... or for at most this long
+    thiefHideAfterFlee: 20,       // after fleeing, lie low this long before sneaking back
+    thiefLateMargin: 15,          // go for the diamond whatever the risk when time is this short
     policeOpenQuantile: 0.5,      // patrol targets are drawn from the more open half of the map
     policePatrolMin: 8,           // patrol targets are at least this far (path distance)
     policeScanSteps: 8,           // a full turn in 45 degree steps
     policePatrolLookEvery: 2,     // on patrol, glance sideways every n steps
-    thiefHideQuantile: 0.25,      // hiding spots: the 25% of cells with the smallest view
-    thiefHideMin: 100,
-    thiefHideMax: 200,
-    thiefLookEvery: 6,            // while hiding, turn the head every n steps
+    thiefHideQuantile: 0.25,      // waiting spots: among the 25% of cells with the smallest view
+    thiefLookEvery: 6,            // while waiting, turn the head every n steps
     thiefSneakEvery: 2,           // sneaking: one cell every two steps
     thiefHoldBreath: 10,          // steps of silence after hearing a distant police officer
-    thiefPanicDistance: 0,        // path distance at which hearing turns into fleeing
+    thiefPanicDistance: 0,        // police this close (path distance): run (0: off)
+    thiefMemorySteps: 2,          // the thief remembers where the police was for this many steps
     thiefExposedFleeDistance: 12, // in plain view of the police (if it turned): run when it is this close
+    thiefApproachFlee: 8,         // footsteps coming closer within this path distance: run
     thiefGiveawayWindow: 3,       // hearing the police within n steps of moving means "it heard me"
     thiefFleeMargin: 2,           // the thief must reach the escape cell this much sooner
     thiefExposureWeight: 2,       // how much the thief avoids spots that can be seen from many cells
     thiefAvoidPoliceWeight: 0.3,  // how much the thief prefers spots far from where it last noticed the police
-    thiefHideSearchRadius: 26,    // look for hiding spots within this path distance
     policeTurnOnHear: true,       // the officer turns the head toward a sound at once
+    policeChaseRestEvery: 4,      // while chasing, the officer covers 3 cells in 4 steps (0: never rests)
+    policeChaseFollowsSound: false, // while chasing, follow footsteps too (true) or only what it sees
     policeRetarget: false,        // follow every new sound while investigating, or finish the current one
   },
 };

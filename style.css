@@ -12,6 +12,8 @@
   --thief: #d9621f;
   --eu: #a77a00;
   --ac: #c2185b;
+  --diamond: #0ea5c6;
+  --exit: #6fae00;
   --path: #9a3fc2;
   --perc: #178a64;
 
@@ -50,6 +52,8 @@
     --thief: #ff9a5a;
     --eu: #e6c04a;
     --ac: #ff79ab;
+    --diamond: #5fe3ff;
+    --exit: #a6e22e;
     --path: #d08cf0;
     --perc: #4fd1a0;
 
@@ -84,6 +88,8 @@
   --thief: #ff9a5a;
   --eu: #e6c04a;
   --ac: #ff79ab;
+  --diamond: #5fe3ff;
+  --exit: #a6e22e;
   --path: #d08cf0;
   --perc: #4fd1a0;
   --sky: #1f2a2a;
@@ -221,6 +227,8 @@ main {
 .c-tree { --c: var(--tree); } .c-bush { --c: var(--bush); } .c-rock { --c: var(--rock); }
 .c-platform { --c: var(--platform); } .c-bridge { --c: var(--bridge); } .c-foliage { --c: var(--foliage); }
 .c-air { --c: var(--plan-air); outline: 1px solid var(--border); } .c-ladder { --c: var(--ladder); }
+.c-diamond { --c: var(--diamond); } .c-exit { --c: var(--exit); }
+.diamond-shape { transform: rotate(45deg) scale(0.8); border-radius: 1px; }
 
 .hint { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); }
 .hint-title { font-weight: 650; font-size: 0.9rem; }
