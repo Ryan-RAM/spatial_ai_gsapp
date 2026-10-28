@@ -17,6 +17,10 @@ A self-running 3D heist in a two-level misty forest. A thief must steal a diamon
 
 Live page: https://ryan-ram.github.io/spatial_ai_gsapp/ (once GitHub Pages is on). Locally, open `index.html` through a web server (see below). The 3D scene starts on its own.
 
+## Slides
+
+A four-slide presentation of the project is in [`slides/`](slides/): open [`slides/index.html`](slides/index.html) in a browser (arrow keys or click to move, **N** for speaker notes), or use the PDF, [`slides/misty-forest-chase.pdf`](slides/misty-forest-chase.pdf). The fonts and images are in the folder, so it works offline.
+
 ## The scene
 
 - A 36 &times; 26 grid with two levels. **Ground level**: single trees, rows of bushes, 2&times;2 or 3&times;2 rocks, a boundary wall. **Canopy level**, 3 cells up: five platforms joined by narrow bridges, with leaf clumps. Between platforms is open air: you can see through it but not walk on it.
@@ -146,6 +150,7 @@ The tests cover 3D line of sight (clear view on one level, blocked by a tree, hi
 
 ```
 index.html, style.css        page and styles (light and dark, phone width)
+slides/                      the presentation (HTML and PDF)
 src/sim/                     simulation core, no DOM, runs in Node
   config.js                  every parameter in one object
   world.js                   two-level map generation and connectivity
