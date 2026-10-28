@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Misty Forest Chase: slides</title>
+<style>
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-sans-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 400; font-display: swap; src: url(fonts/ibm-plex-sans-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 600; font-display: swap; src: url(fonts/ibm-plex-sans-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'IBM Plex Sans'; font-weight: 600; font-display: swap; src: url(fonts/ibm-plex-sans-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 500; font-display: swap; src: url(fonts/jetbrains-mono-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'JetBrains Mono'; font-weight: 500; font-display: swap; src: url(fonts/jetbrains-mono-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Space Grotesk'; font-weight: 500; font-display: swap; src: url(fonts/space-grotesk-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Space Grotesk'; font-weight: 500; font-display: swap; src: url(fonts/space-grotesk-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Space Grotesk'; font-weight: 700; font-display: swap; src: url(fonts/space-grotesk-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Space Grotesk'; font-weight: 700; font-display: swap; src: url(fonts/space-grotesk-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+html, body { margin: 0; height: 100%; background: #0d1310; overflow: hidden; }
+/* each slide is a fixed 1920 x 1080 canvas, scaled to fit the window */
+.deck { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+.deck > section { position: absolute; inset: 0; width: 1920px; height: 1080px; box-sizing: border-box; overflow: hidden; }
+/* every slide sets its own display inline, so hiding the others needs !important */
+.deck > section:not(.on) { display: none !important; }
+section * { margin: 0; box-sizing: border-box; }
+section h1 { line-height: 1.1; } section h2 { line-height: 1.15; } section h3 { line-height: 1.2; } section p { line-height: 1.4; }
+section svg, section img { display: block; }
+/* flow content paints above a pinned backdrop listed before it, as in the slide editor */
+section > *:not([style*="position:absolute"]) { position: relative; }
+section aside { display: none; }
+.hud { position: fixed; right: 16px; bottom: 12px; font: 14px system-ui, sans-serif; color: #8fa197; user-select: none; }
+.hud button { font: inherit; color: inherit; background: none; border: 1px solid #2c3a33; border-radius: 6px; padding: 2px 10px; cursor: pointer; }
+.notes { position: fixed; left: 16px; right: 16px; bottom: 44px; max-height: 30vh; overflow: auto; padding: 12px 16px; background: rgba(13,19,16,0.92); color: #dfe7e2; font: 16px/1.5 system-ui, sans-serif; border-radius: 8px; display: none; }
+body.show-notes .notes { display: block; }
+@media print {
+  @page { size: 1920px 1080px; margin: 0; }
+  html, body { height: auto; overflow: visible; background: none; }
+  .deck { position: static; transform: none !important; width: 1920px; height: auto; }
+  .deck > section { position: relative; page-break-after: always; break-after: page; }
+  .deck > section:not(.on) { display: flex !important; }
+  .hud, .notes { display: none !important; }
+}
+</style>
+</head>
+<body>
+<!-- Arrow keys, space or click to move; N shows the speaker notes. Print to PDF gives one slide per page. -->
+<div class="deck" id="deck">
+<section id="cover" data-transition="fade" style="background:#15201b;color:#eef1ec;font-family:'IBM Plex Sans', Arial, sans-serif;padding:84px 128px 128px;display:flex;flex-direction:column;align-items:center;gap:22px">
+<img src="assets/cover-stage.jpg" alt="A frontal, half-overhead view of the forest sandbox: the thief carries the cyan diamond toward the west exit while the police officer looks around near the canopy platforms; rays, a straight line and a dashed path connect them." style="position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover">
+<p style="font-size:24px;letter-spacing:4px;text-transform:uppercase;color:#5fe3ff;text-align:center">Spatial AI · Columbia GSAPP · Distance + Proximity</p>
+<h1 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:128px;font-weight:700;line-height:1.02;color:#eef1ec;text-align:center">Misty Forest Chase</h1>
+<p style="font-size:40px;line-height:1.3;color:#cfd9d3;text-align:center">A diamond heist where four distances drive four senses</p>
+<div style="display:flex;flex-direction:row;gap:20px;justify-content:center">
+<p style="font-size:26px;color:#e6c04a;border:2px solid #e6c04a;border-radius:999px;padding:6px 24px">Sight · Euclidean</p>
+<p style="font-size:26px;color:#ff79ab;border:2px solid #ff79ab;border-radius:999px;padding:6px 24px">Hearing · Acoustic</p>
+<p style="font-size:26px;color:#d08cf0;border:2px solid #d08cf0;border-radius:999px;padding:6px 24px">Walking · Path</p>
+<p style="font-size:26px;color:#4fd1a0;border:2px solid #4fd1a0;border-radius:999px;padding:6px 24px">Sense of place · Perceptual</p>
+</div>
+<p style="position:absolute;left:128px;right:128px;bottom:40px;font-size:26px;letter-spacing:1px;color:#a9b8af;text-align:center">Ryan Fu · Lu Liu · Yifan Zhao</p>
+<aside>Misty Forest Chase is a self-running 3D simulation built for the Distance + Proximity assignment. A thief has to steal a diamond and escape through an exit; a police officer guards it and gives chase. Nobody plays: both are AIs, and each one knows the world only through distances. Each of four distances drives one sense: sight, hearing, walking and the sense of place.</aside>
+</section>
+<section id="sight-hearing" data-transition="fade" style="background:#f4f3ee;color:#18241e;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.1;color:#18241e">Seeing and hearing</h2>
+<div style="display:flex;flex-direction:row;gap:56px;align-items:center">
+<div style="width:680px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#8a6400">Sight</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:700;color:#18241e">Euclidean distance</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#18241e">√(Δx² + Δy² + Δz²)</p>
+<p style="font-size:26px;line-height:1.4;color:#4e5d55">Seen only within 9 cells (the fog), inside a 120° forward cone, with nothing solid on the 3D line between the eyes.</p>
+</div>
+<div style="position:relative;width:928px;height:320px;background:#fbfbf8;border:1px solid #dcdfd9;border-radius:16px">
+<svg aria-label="Top view of sight: a police officer faces right with a 120 degree cone, cut by a 9-cell fog circle. A thief inside the cone is seen; one behind a tree is blocked; one behind the officer and one beyond the fog are not seen." width="928" height="320" viewBox="0 0 928 320">
+<circle cx="330" cy="160" r="140" fill="none" stroke="#8a6400" stroke-width="2" stroke-dasharray="8 7"/>
+<path d="M330,160 L400.0,38.8 A140,140 0 0 1 400.0,281.2 Z" fill="#8a6400" fill-opacity="0.14" stroke="#8a6400" stroke-width="2"/>
+<line x1="330" y1="160" x2="440" y2="122" stroke="#8a6400" stroke-width="4"/>
+<line x1="330" y1="160" x2="392" y2="203" stroke="#8a6400" stroke-width="4"/>
+<line x1="392" y1="203" x2="440" y2="236" stroke="#9aa39d" stroke-width="3" stroke-dasharray="6 6"/>
+<line x1="330" y1="160" x2="214" y2="160" stroke="#9aa39d" stroke-width="3" stroke-dasharray="6 6"/>
+<line x1="330" y1="160" x2="566" y2="160" stroke="#9aa39d" stroke-width="3" stroke-dasharray="6 6"/>
+<circle cx="392" cy="203" r="17" fill="#2f5d3a"/>
+<circle cx="330" cy="160" r="14" fill="#2563d6"/>
+<path d="M342,152 L360,160 L342,168 Z" fill="#2563d6"/>
+<circle cx="440" cy="122" r="11" fill="#d9621f"/>
+<circle cx="440" cy="236" r="11" fill="#d9621f"/>
+<circle cx="214" cy="160" r="11" fill="#d9621f"/>
+<circle cx="566" cy="160" r="11" fill="#d9621f"/>
+</svg>
+<p style="position:absolute;left:460px;top:96px;width:120px;font-size:24px;font-weight:600;color:#18241e">Seen</p>
+<p style="position:absolute;left:460px;top:222px;width:220px;font-size:24px;color:#4e5d55">Behind a tree</p>
+<p style="position:absolute;left:40px;top:182px;width:220px;font-size:24px;color:#4e5d55">Behind the officer</p>
+<p style="position:absolute;left:588px;top:144px;width:300px;font-size:24px;color:#4e5d55">Beyond 9 cells: fog</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:56px;align-items:center">
+<div style="width:680px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#b0124f">Hearing</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:700;color:#18241e">Acoustic distance</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#18241e">Euclidean + Σ muffling</p>
+<p style="font-size:26px;line-height:1.4;color:#4e5d55">Heard within 12, in every direction. Each cell of material on the line adds: leaves 1, bush 1.5, tree 3, rock or floor 6.</p>
+</div>
+<div style="position:relative;width:928px;height:320px;background:#fbfbf8;border:1px solid #dcdfd9;border-radius:16px">
+<svg aria-label="Two pairs compared. Top: 10 cells of open air between the officer and the thief, heard. Bottom: 7 cells with a bush and a rock in between; muffling makes it 14.5, not heard." width="928" height="320" viewBox="0 0 928 320">
+<line x1="96" y1="92" x2="596" y2="92" stroke="#b0124f" stroke-width="4"/>
+<circle cx="96" cy="92" r="14" fill="#2563d6"/>
+<circle cx="596" cy="92" r="12" fill="#d9621f"/>
+<path d="M614,74 A26,26 0 0 1 614,110" fill="none" stroke="#b0124f" stroke-width="3"/>
+<path d="M626,62 A42,42 0 0 1 626,122" fill="none" stroke="#b0124f" stroke-width="3" stroke-opacity="0.5"/>
+<line x1="96" y1="230" x2="446" y2="230" stroke="#b0124f" stroke-width="4" stroke-dasharray="10 7"/>
+<circle cx="216" cy="230" r="25" fill="#5b8a4a"/>
+<path d="M334,202 L358,214 L358,244 L334,258 L310,244 L310,214 Z" fill="#8c8f8a"/>
+<circle cx="96" cy="230" r="14" fill="#2563d6"/>
+<circle cx="446" cy="230" r="12" fill="#d9621f"/>
+</svg>
+<p style="position:absolute;left:650px;top:58px;width:250px;font-size:24px;line-height:1.35;color:#18241e"><b>10</b> in open air<br>≤ 12: heard</p>
+<p style="position:absolute;left:196px;top:262px;width:80px;font-size:24px;font-weight:600;color:#b0124f">+1.5</p>
+<p style="position:absolute;left:318px;top:262px;width:60px;font-size:24px;font-weight:600;color:#b0124f">+6</p>
+<p style="position:absolute;left:480px;top:196px;width:420px;font-size:24px;line-height:1.35;color:#18241e"><b>7 + 1.5 + 6 = 14.5</b><br>&gt; 12: not heard</p>
+</div>
+</div>
+<aside>Sight uses the straight 3D distance between the eyes. You see someone only if they are within 9 cells, inside your 120 degree forward cone, and nothing solid is on the line: a tree, a bush, a rock or a platform floor. So the officer here sees the first thief, but not the one behind the tree, the one behind its back, or the one lost in the fog. Hearing uses the same straight line, but a wall does not stop sound, it muffles it. Every cell of material the line crosses adds a cost: a bush adds 1.5, a rock adds 6. Ten cells of open air are heard; seven cells through a bush and a rock count as 14.5, beyond the 12-cell hearing range.</aside>
+</section>
+<section id="walk-place" data-transition="fade" style="background:#f4f3ee;color:#18241e;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:40px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.1;color:#18241e">Walking and the sense of place</h2>
+<div style="display:flex;flex-direction:row;gap:56px;align-items:center">
+<div style="width:680px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#7e2fa6">Walking · the bonus</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:700;color:#18241e">Path distance</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#18241e">shortest walk (Dijkstra)</p>
+<p style="font-size:26px;line-height:1.4;color:#4e5d55">Around obstacles and up ladders: 1 straight, √2 diagonal, 3 per ladder. Both AIs move along it.</p>
+</div>
+<div style="position:relative;width:928px;height:320px;background:#fbfbf8;border:1px solid #dcdfd9;border-radius:16px;overflow:hidden">
+<svg aria-label="A small grid with a wall of bushes in the middle. The straight line between two points crosses the bushes and is 6 cells long; the shortest walk goes around the end of the bushes and is 11.7 cells long." width="928" height="320" viewBox="0 0 928 320">
+<rect x="0" y="0" width="680" height="320" fill="#4c564f"/>
+<rect x="40" y="40" width="600" height="240" fill="#e9ece4"/>
+<rect x="320" y="40" width="40" height="200" fill="#5b8a4a"/>
+<path d="M80 40V280M120 40V280M160 40V280M200 40V280M240 40V280M280 40V280M320 40V280M360 40V280M400 40V280M440 40V280M480 40V280M520 40V280M560 40V280M600 40V280M40 80H640M40 120H640M40 160H640M40 200H640M40 240H640" stroke="#000000" stroke-opacity="0.07" stroke-width="1"/>
+<line x1="220" y1="100" x2="460" y2="100" stroke="#8a6400" stroke-width="4" stroke-dasharray="10 7"/>
+<polyline points="220,100 220,140 220,180 260,220 300,260 340,260 380,260 380,220 380,180 420,140 460,100" fill="none" stroke="#7e2fa6" stroke-width="5" stroke-linejoin="round"/>
+<circle cx="220" cy="100" r="13" fill="#2563d6"/>
+<circle cx="460" cy="100" r="12" fill="#d9621f"/>
+</svg>
+<p style="position:absolute;left:708px;top:60px;width:200px;font-size:24px;line-height:1.35;color:#8a6400">Straight line<br><b>6 cells</b></p>
+<p style="position:absolute;left:708px;top:176px;width:200px;font-size:24px;line-height:1.35;color:#7e2fa6">Shortest walk<br><b>11.7 cells</b></p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:56px;align-items:center">
+<div style="width:680px;display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#11704f">Sense of place</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:700;color:#18241e">Perceptual distance</h3>
+<p style="font-family:'JetBrains Mono', 'Courier New', monospace;font-size:26px;color:#18241e">‖r(a) − r(b)‖ over 362 rays</p>
+<p style="font-size:26px;line-height:1.4;color:#4e5d55">A and B are 15.5 cells apart, yet their fingerprints differ by only 22. A and a nook differ by 78.</p>
+</div>
+<div style="position:relative;width:928px;height:320px;background:#fbfbf8;border:1px solid #dcdfd9;border-radius:16px">
+<svg aria-label="Three visibility fingerprints from the default map, drawn as barcodes of 362 ray lengths. Places A and B, 15.5 cells apart, have nearly the same barcode; a nook has a clearly different one." width="928" height="320" viewBox="0 0 928 320">
+<path d="M96 92v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-11m2.2 11v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-11m2.2 11v-10m2.2 10v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-7m2.2 7v-7m2.2 7v-8m2.2 8v-10m2.2 10v-12m2.2 12v-16m2.2 16v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-20m2.2 20v-18m2.2 18v-20m2.2 20v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-12m2.2 12v-10m2.2 10v-8m2.2 8v-7m2.2 7v-7m2.2 7v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-7m2.2 7v-9m2.2 9v-11m2.2 11v-14m2.2 14v-21m2.2 21v-40m2.2 40v-40m2.2 40v-40m2.2 40v-56m2.2 56v-66m2.2 66v-32m2.2 32v-26m2.2 26v-22m2.2 22v-19m2.2 19v-17m2.2 17v-16m2.2 16v-17m2.2 17v-19m2.2 19v-55m2.2 55v-66m2.2 66v-51m2.2 51v-49m2.2 49v-66m2.2 66v-26m2.2 26v-26m2.2 26v-26m2.2 26v-66m2.2 66v-43m2.2 43v-11m2.2 11v-9m2.2 9v-7m2.2 7v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-50m2.2 50v-51m2.2 51v-54m2.2 54v-57m2.2 57v-61m2.2 61v-18m2.2 18v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-66m2.2 66v-66m2.2 66v-66m2.2 66v-22m2.2 22v-20m2.2 20v-18m2.2 18v-20m2.2 20v-22m2.2 22v-25m2.2 25v-30m2.2 30v-41m2.2 41v-49m2.2 49v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-12m2.2 12v-10m2.2 10v-8m2.2 8v-7m2.2 7v-7m2.2 7v-6m2.2 6v-7m2.2 7v-7m2.2 7v-8m2.2 8v-10m2.2 10v-12m2.2 12v-4m2.2 4v-4m2.2 4v-4m2.2 4v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-31m2.2 31v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-10m2.2 10v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-11" stroke="#178a64" stroke-width="1.6" fill="none"/>
+<path d="M96 192v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-11m2.2 11v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-11m2.2 11v-10m2.2 10v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-7m2.2 7v-7m2.2 7v-8m2.2 8v-10m2.2 10v-12m2.2 12v-16m2.2 16v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-12m2.2 12v-10m2.2 10v-8m2.2 8v-7m2.2 7v-7m2.2 7v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-7m2.2 7v-9m2.2 9v-11m2.2 11v-14m2.2 14v-21m2.2 21v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-51m2.2 51v-49m2.2 49v-51m2.2 51v-47m2.2 47v-24m2.2 24v-22m2.2 22v-22m2.2 22v-26m2.2 26v-32m2.2 32v-57m2.2 57v-56m2.2 56v-55m2.2 55v-55m2.2 55v-66m2.2 66v-66m2.2 66v-57m2.2 57v-11m2.2 11v-9m2.2 9v-7m2.2 7v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-18m2.2 18v-17m2.2 17v-16m2.2 16v-15m2.2 15v-14m2.2 14v-14m2.2 14v-16m2.2 16v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-12m2.2 12v-10m2.2 10v-8m2.2 8v-7m2.2 7v-7m2.2 7v-6m2.2 6v-7m2.2 7v-7m2.2 7v-8m2.2 8v-10m2.2 10v-12m2.2 12v-4m2.2 4v-4m2.2 4v-4m2.2 4v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-10m2.2 10v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-66m2.2 66v-11" stroke="#178a64" stroke-width="1.6" fill="none"/>
+<path d="M96 292v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-11m2.2 11v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-13m2.2 13v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-7m2.2 7v-7m2.2 7v-8m2.2 8v-10m2.2 10v-12m2.2 12v-22m2.2 22v-21m2.2 21v-21m2.2 21v-21m2.2 21v-21m2.2 21v-21m2.2 21v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-20m2.2 20v-18m2.2 18v-20m2.2 20v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-22m2.2 22v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-7m2.2 7v-9m2.2 9v-11m2.2 11v-19m2.2 19v-19m2.2 19v-18m2.2 18v-18m2.2 18v-18m2.2 18v-19m2.2 19v-19m2.2 19v-20m2.2 20v-20m2.2 20v-21m2.2 21v-19m2.2 19v-17m2.2 17v-16m2.2 16v-17m2.2 17v-19m2.2 19v-38m2.2 38v-36m2.2 36v-35m2.2 35v-34m2.2 34v-34m2.2 34v-33m2.2 33v-33m2.2 33v-33m2.2 33v-34m2.2 34v-34m2.2 34v-32m2.2 32v-26m2.2 26v-22m2.2 22v-22m2.2 22v-24m2.2 24v-26m2.2 26v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-6m2.2 6v-6m2.2 6v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-4m2.2 4v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-18m2.2 18v-54m2.2 54v-6m2.2 6v-5m2.2 5v-5m2.2 5v-5m2.2 5v-5m2.2 5v-4m2.2 4v-4m2.2 4v-4m2.2 4v-7m2.2 7v-7m2.2 7v-7m2.2 7v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-9m2.2 9v-10m2.2 10v-10m2.2 10v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-11m2.2 11v-10m2.2 10v-9m2.2 9v-8m2.2 8v-8m2.2 8v-8m2.2 8v-8m2.2 8v-7m2.2 7v-7m2.2 7v-9m2.2 9v-11" stroke="#6b5e7a" stroke-width="1.6" fill="none"/>
+<line x1="94" y1="92.5" x2="894" y2="92.5" stroke="#18241e" stroke-opacity="0.2"/>
+<line x1="94" y1="192.5" x2="894" y2="192.5" stroke="#18241e" stroke-opacity="0.2"/>
+<line x1="94" y1="292.5" x2="894" y2="292.5" stroke="#18241e" stroke-opacity="0.2"/>
+</svg>
+<p style="position:absolute;left:20px;top:52px;width:70px;font-size:26px;font-weight:600;color:#178a64">A</p>
+<p style="position:absolute;left:20px;top:152px;width:70px;font-size:26px;font-weight:600;color:#178a64">B</p>
+<p style="position:absolute;left:14px;top:252px;width:80px;font-size:24px;font-weight:600;color:#6b5e7a">Nook</p>
+</div>
+</div>
+<aside>Walking uses the path distance, the bonus metric: the shortest walk around obstacles, computed with Dijkstra’s algorithm. Here the straight line crosses a wall of bushes and is 6 cells; the walk around its end is 11.7. Both AIs move along these paths. The sense of place uses the perceptual distance. From every cell we cast 362 rays in 3D and record how far each one gets before hitting something, up to 9 cells. That list is the cell’s visibility fingerprint, drawn here as a barcode. These are real cells from the default map: A and B are 15.5 cells apart but their barcodes are almost the same, a difference of 22. A nook looks very different: 78. For comparison, a typical pair of cells differs by about 69.</aside>
+</section>
+<section id="findings" data-transition="fade" style="background:#15201b;color:#eef1ec;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:48px">
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:700;line-height:1.1;color:#eef1ec">What the distances showed</h2>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:24px">
+<div style="display:flex;flex-direction:column;gap:14px;background:#1d2a24;border-top:6px solid #e6c04a;border-radius:14px;padding:30px 32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#e6c04a">Euclidean</p>
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:44px;font-weight:700;color:#eef1ec">Metric</p>
+<svg aria-label="A triangle with three solid sides: the triangle inequality holds." width="160" height="90" viewBox="0 0 160 90"><path d="M20 78 L80 12 L140 78 Z" fill="none" stroke="#e6c04a" stroke-width="4" stroke-linejoin="round"/><circle cx="20" cy="78" r="8" fill="#e6c04a"/><circle cx="80" cy="12" r="8" fill="#e6c04a"/><circle cx="140" cy="78" r="8" fill="#e6c04a"/></svg>
+<p style="font-size:24px;line-height:1.35;color:#a9b8af">All four axioms hold</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#1d2a24;border-top:6px solid #d08cf0;border-radius:14px;padding:30px 32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#d08cf0">Path</p>
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:44px;font-weight:700;color:#eef1ec">Metric</p>
+<svg aria-label="A triangle with three solid sides: the triangle inequality holds." width="160" height="90" viewBox="0 0 160 90"><path d="M20 78 L80 12 L140 78 Z" fill="none" stroke="#d08cf0" stroke-width="4" stroke-linejoin="round"/><circle cx="20" cy="78" r="8" fill="#d08cf0"/><circle cx="80" cy="12" r="8" fill="#d08cf0"/><circle cx="140" cy="78" r="8" fill="#d08cf0"/></svg>
+<p style="font-size:24px;line-height:1.35;color:#a9b8af">All four axioms hold</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#1d2a24;border-top:6px solid #ff79ab;border-radius:14px;padding:30px 32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#ff79ab">Acoustic</p>
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:44px;font-weight:700;color:#eef1ec">Semimetric</p>
+<svg aria-label="A triangle whose base passes through a rock: going straight sounds farther than going around, so the triangle inequality fails." width="160" height="90" viewBox="0 0 160 90"><path d="M20 78 L80 12 L140 78" fill="none" stroke="#ff79ab" stroke-width="4" stroke-linejoin="round"/><line x1="20" y1="78" x2="140" y2="78" stroke="#ff79ab" stroke-width="4" stroke-dasharray="7 6"/><path d="M80 62 L94 70 L94 86 L80 94 L66 86 L66 70 Z" fill="#8c8f8a"/><circle cx="20" cy="78" r="8" fill="#ff79ab"/><circle cx="80" cy="12" r="8" fill="#ff79ab"/><circle cx="140" cy="78" r="8" fill="#ff79ab"/></svg>
+<p style="font-size:24px;line-height:1.35;color:#a9b8af">Triangle fails in 598 of 4,000 tests</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#1d2a24;border-top:6px solid #4fd1a0;border-radius:14px;padding:30px 32px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#4fd1a0">Perceptual</p>
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:44px;font-weight:700;color:#eef1ec">Pseudometric</p>
+<svg aria-label="Two identical barcodes with an equals sign: two different places can have distance zero." width="160" height="90" viewBox="0 0 160 90"><path d="M10 80v-30m6 30v-50m6 50v-20m6 20v-60m6 60v-40m6 40v-25M106 80v-30m6 30v-50m6 50v-20m6 20v-60m6 60v-40m6 40v-25" stroke="#4fd1a0" stroke-width="4" fill="none"/><path d="M70 46h20M70 58h20" stroke="#eef1ec" stroke-width="4"/></svg>
+<p style="font-size:24px;line-height:1.35;color:#a9b8af">Two places can look identical</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:72px;align-items:center">
+<div style="width:440px;display:flex;flex-direction:column;gap:6px">
+<p style="font-family:'Space Grotesk', Arial, sans-serif;font-size:120px;font-weight:700;line-height:1;color:#5fe3ff">49.7%</p>
+<p style="font-size:26px;color:#a9b8af">police wins over 320 rounds</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<svg aria-label="How 320 rounds end: police catches the thief before the theft 39 percent, with the diamond 10 percent; the thief escapes after a chase 20 percent, unseen 30 percent." width="1152" height="56" viewBox="0 0 1152 56"><rect x="0" y="0" width="455" height="56" fill="#6b9bff"/><rect x="455" y="0" width="116" height="56" fill="#3d6bd0"/><rect x="571" y="0" width="231" height="56" fill="#ff9a5a"/><rect x="802" y="0" width="350" height="56" fill="#c75a1c"/></svg>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 32px">
+<p style="font-size:24px;color:#eef1ec"><span style="color:#6b9bff">■</span> Caught before the theft · 39%</p>
+<p style="font-size:24px;color:#eef1ec"><span style="color:#ff9a5a">■</span> Escaped after a chase · 20%</p>
+<p style="font-size:24px;color:#eef1ec"><span style="color:#3d6bd0">■</span> Caught with the diamond · 10%</p>
+<p style="font-size:24px;color:#eef1ec"><span style="color:#c75a1c">■</span> Escaped without being seen · 30%</p>
+</div>
+</div>
+</div>
+<aside>Checking the axioms on every map: Euclidean and path distance are true metrics. The acoustic distance is only a semimetric: the triangle inequality fails in 598 of 4,000 random tests, because a straight line through a rock sounds farther than a detour around it. The perceptual distance is a pseudometric: two different places can have identical fingerprints, which is exactly what getting lost means. The game itself is balanced: over 320 simulated rounds on 8 maps the police wins 49.7 percent. Half of the police wins come before the theft; the tracker in the diamond accounts for the 10 percent caught carrying it. One round in 320 ran out of time.</aside>
+</section>
+</div>
+<div class="notes" id="notes"></div>
+<div class="hud"><button id="prev" aria-label="Previous slide">&#8249;</button> <span id="count"></span> <button id="next" aria-label="Next slide">&#8250;</button> <button id="notes-btn">Notes</button></div>
+<script>
+const deck = document.getElementById('deck');
+const slides = [...deck.querySelectorAll(':scope > section')];
+let i = Math.max(0, Math.min(slides.length - 1, (parseInt(location.hash.replace('#slide-', ''), 10) || 1) - 1));
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+  deck.style.transform = `translate(-50%, -50%) scale(${s})`;
+}
+function show(n) {
+  i = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, k) => s.classList.toggle('on', k === i));
+  document.getElementById('count').textContent = `${i + 1} / ${slides.length}`;
+  const aside = slides[i].querySelector('aside');
+  document.getElementById('notes').textContent = aside ? aside.textContent : '';
+  history.replaceState(null, '', `#slide-${i + 1}`);
+}
+addEventListener('resize', fit);
+addEventListener('keydown', (e) => {
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); show(i + 1); }
+  if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+  if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('show-notes');
+});
+deck.addEventListener('click', () => show(i + 1));
+document.getElementById('prev').onclick = () => show(i - 1);
+document.getElementById('next').onclick = () => show(i + 1);
+document.getElementById('notes-btn').onclick = () => document.body.classList.toggle('show-notes');
+fit(); show(i);
+</script>
+</body>
+</html>
