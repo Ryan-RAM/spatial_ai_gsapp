@@ -34,6 +34,20 @@ export function headingTo(ctx, a, b) {
   return Math.atan2(q.y - p.y, q.x - p.x);
 }
 
+// Runs toward `target` at `speed` cells per step. Fractions carry over between steps, so a speed
+// of 1.2 moves one extra cell every fifth step. Returns the number of cells moved.
+function runToward(ctx, agent, target, speed) {
+  agent.budget = (agent.budget ?? 0) + speed;
+  let cells = 0;
+  while (agent.budget >= 1 && agent.node !== target) {
+    agent.budget -= 1;
+    moveTo(ctx, agent, ctx.pf.nextStep(agent.node, target));
+    cells++;
+  }
+  if (agent.node === target) agent.budget = 0;
+  return cells;
+}
+
 function moveTo(ctx, agent, next) {
   if (next === agent.node) return false;
   const h = headingTo(ctx, agent.node, next);
@@ -62,7 +76,7 @@ export function nearestExit(ctx, from) {
 export function newPolice(node, facing) {
   return {
     node, facing, mode: 'patrol', target: null, scanLeft: 0, scanDir: 1, heardAt: null, sinceLook: 0,
-    seesThief: false, thiefAt: null, knowsTheft: false, chaseTick: 0,
+    seesThief: false, thiefAt: null, knowsTheft: false, budget: 0, stamina: 0, sprinting: false,
   };
 }
 
@@ -84,6 +98,23 @@ function pickPatrolTarget(ctx, game, rng) {
 export function policeAct(ctx, game, rng) {
   const p = game.police;
   const ai = ctx.config.ai;
+  const sp = ctx.config.speeds;
+  p.sprinting = false;
+
+  // Running after a known position: a sprint when the thief is within reach (no stamina needed),
+  // or right after the theft while stamina lasts; otherwise the normal running speed.
+  const run = (target) => {
+    const close = ctx.pf.distance(p.node, target) <= sp.policeCloseSprint;
+    const fresh = p.mode === 'track' && p.stamina > 0;
+    p.sprinting = close || fresh;
+    const cruise = p.mode === 'chase' ? sp.policeChase : sp.run;
+    const cells = runToward(ctx, p, target, p.sprinting ? sp.policeSprint : cruise);
+    if (fresh && !close) {
+      p.stamina = Math.max(0, p.stamina - cells);
+      if (p.stamina === 0) game.log('police', 'tired', 'The officer runs out of breath and slows to normal speed.');
+    }
+    return cells > 0;
+  };
 
   // The diamond's tracker: once it is taken, the officer always knows where it is and runs to it
   // along the shortest path, whether or not it can see or hear the thief.
@@ -91,8 +122,7 @@ export function policeAct(ctx, game, rng) {
     p.mode = 'track';
     p.target = game.thief.node;
     p.heardAt = null;
-    if (ai.policeTrackRestEvery > 0 && ++p.chaseTick % ai.policeTrackRestEvery === 0) return false;
-    return moveTo(ctx, p, ctx.pf.nextStep(p.node, p.target));
+    return run(p.target);
   }
 
   // Seeing the thief beats everything: run to where it is.
@@ -115,8 +145,6 @@ export function policeAct(ctx, game, rng) {
   }
 
   if (p.mode === 'chase' || p.mode === 'investigate') {
-    // heavy gear: when running after the thief, the officer stops to catch its breath now and then
-    if (p.mode === 'chase' && ai.policeChaseRestEvery > 0 && ++p.chaseTick % ai.policeChaseRestEvery === 0) return false;
     if (p.node === p.target) {
       game.log('police', 'arrive', p.mode === 'chase'
         ? 'Police lost sight of the thief and scans around.'
@@ -124,10 +152,13 @@ export function policeAct(ctx, game, rng) {
       p.mode = 'scan';
       p.scanLeft = ai.policeScanSteps;
       p.scanDir = rng.chance(0.5) ? 1 : -1;
+    } else if (p.mode === 'chase') {
+      return run(p.target);
     } else {
       return moveTo(ctx, p, ctx.pf.nextStep(p.node, p.target));
     }
   }
+  p.budget = 0;
 
   if (p.mode === 'scan') {
     p.facing += p.scanDir * TURN;
@@ -252,7 +283,7 @@ function thiefDecide(ctx, game, rng) {
   if (t.carrying) {
     if (t.mode !== 'escape' || heard !== null || t.seesPolice || t.target === null) t.target = pickExit(ctx, t);
     t.mode = 'escape';
-    return moveTo(ctx, t, pf.nextStep(t.node, t.target));
+    return runToward(ctx, t, t.target, ctx.config.speeds.thiefCarrying) > 0;
   }
 
   // ---- danger: the police is right there, or could see this cell just by turning around
