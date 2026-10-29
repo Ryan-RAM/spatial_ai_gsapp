@@ -155,6 +155,7 @@ export function stepGame(game) {
       game.diamond.carried = true;
       game.log('thief', 'steal', 'The thief took the diamond! Now it needs an exit.');
       game.police.knowsTheft = true;
+      game.police.stamina = game.ctx.config.speeds.policeSprintStamina;
       game.log('police', 'track', 'The diamond\u2019s tracker goes off: the police now knows where it is at every step.');
     }
     if (!game.over && t.carrying && game.ctx.exits.some((e) => e.node === t.node)) {

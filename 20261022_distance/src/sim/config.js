@@ -57,6 +57,17 @@ export const CONFIG = {
   thiefStartFromDiamond: 22,     // the thief starts at least this far (path) from the diamond
   policeStartFromDiamond: [3, 10],
 
+  // Running speeds in cells per step (fractions add up: 1.2 = one extra cell every 5 steps).
+  // These are rules of the game, not AI tuning: balancing does not change them.
+  speeds: {
+    run: 1,                  // everyone's normal running speed
+    thiefCarrying: 0.8,      // the diamond slows the thief down
+    policeChase: 1,          // chasing by sight, before the theft, when not sprinting
+    policeSprint: 1.2,       // the officer's sprint
+    policeSprintStamina: 15, // after the theft the officer sprints for 15 cells, then tires back to 1
+    policeCloseSprint: 5,    // within 5 cells (path) of the thief it knows about, the officer sprints anyway
+  },
+
   // AI behaviour (the only block changed while balancing)
   ai: {
     policeGuardRadius: 10,        // patrol targets around the diamond lie within this path distance
@@ -83,8 +94,6 @@ export const CONFIG = {
     thiefExposureWeight: 2,       // how much the thief avoids spots that can be seen from many cells
     thiefAvoidPoliceWeight: 0.3,  // how much the thief prefers spots far from where it last noticed the police
     policeTurnOnHear: true,       // the officer turns the head toward a sound at once
-    policeTrackRestEvery: 0,      // following the tracker: rest every n steps (0: full speed, it knows where to go)
-    policeChaseRestEvery: 4,      // while chasing, the officer covers 3 cells in 4 steps (0: never rests)
     policeChaseFollowsSound: false, // while chasing, follow footsteps too (true) or only what it sees
     policeRetarget: false,        // follow every new sound while investigating, or finish the current one
   },

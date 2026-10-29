@@ -99,32 +99,32 @@ The perceptual distance compares what two places look like, not where they are. 
 **Police**
 - *Patrolling*: guards the diamond. It walks to open spots, usually within 10 cells of the diamond and sometimes anywhere on the map, glancing to the side every other step.
 - *Investigating a sound*: turns toward the thief's footsteps and walks the shortest path to where they came from, without changing course for new sounds on the way.
-- *Chasing the thief*: on seeing the thief, it runs to where it saw it. In heavy gear it covers 3 cells in 4 steps, a little slower than a running thief. It catches the thief on the same or a neighbouring cell.
+- *Chasing the thief*: on seeing the thief, it runs to where it saw it. Within 5 cells of the thief it sprints at 1.2 times the normal speed. It catches the thief on the same or a neighbouring cell.
 - *Scanning around*: at a sound, or where it lost sight of the thief, it turns a full circle, then patrols again.
-- *Tracking the diamond*: from the moment the diamond is taken, its tracker gives the police its position at every step. The officer runs straight for it along the shortest path, at full speed.
+- *Tracking the diamond*: from the moment the diamond is taken, its tracker gives the police its position at every step. The officer runs straight for it along the shortest path, sprinting at 1.2 times the normal speed for the first 15 cells, then tiring back to normal speed (it still sprints whenever it is within 5 cells).
 
 **Thief**
 - *Sneaking*: heads for a hidden spot within 8 cells of the diamond, one cell every two steps, with soft steps.
 - *Waiting for a chance* / *Looking around*: near the diamond, it waits until it has not heard the police for 8 steps, turning its head now and then.
 - *Going for the diamond*: runs to it, one cell per step. Close to the time limit, it goes whatever the risk.
-- *Escaping with the diamond*: runs for the exit with the biggest head start over the police.
+- *Escaping with the diamond*: runs for the exit with the biggest head start over the police, at 0.8 times the normal speed: the diamond is heavy.
 - *Holding breath*: hears the police, but the police is not close. It freezes, makes no sound and turns toward the noise.
 - *Fleeing* / *Hiding*: when seen, about to be seen, or hearing the police come closer, it runs to a cell it reaches first, out of the police's sight. Then it lies low before trying again.
 
 ## Balance
 
-`node tests/balance.mjs` plays 320 rounds without rendering: 40 rounds on each of 8 maps (seeds 20261022 to 20261029). Only AI behaviour was tuned, plus the soft sneaking steps. Vision range (9), the vision cone (120&deg;, &plusmn;60&deg;), hearing range (12) and the muffling costs were never changed for balance.
+`node tests/balance.mjs` plays 320 rounds without rendering: 40 rounds on each of 8 maps (seeds 20261022 to 20261029). Only AI behaviour was tuned, plus the soft sneaking steps; the running speeds in `config.speeds` are rules of the game. Vision range (9), the vision cone (120&deg;, &plusmn;60&deg;), hearing range (12) and the muffling costs were never changed for balance.
 
 | Result | Value |
 |---|---|
 | Rounds | 320 |
-| Police win rate | **49.7%** (159 of 320) |
-| Average round length | 201.5 steps |
-| Average length of a police win | 204.1 steps |
+| Police win rate | **80.3%** (257 of 320) |
+| Average round length | 155.2 steps |
+| Average length of a police win | 156.8 steps |
 
-How the 320 rounds end: the police catches the thief before the theft in 39%, and with the diamond, thanks to the tracker, in 10%. The thief escapes after being chased in 20%, and without ever being seen in 30%. Only 1 round reaches the 500-step limit: the thief is always on the move.
+How the 320 rounds end: the police catches the thief before the theft in 54%, and with the diamond in 26%. The thief escapes after being chased in 4%, and without ever being seen in 16%.
 
-Win rates vary from map to map (22.5% to 65% per map over 40 rounds). On the default map alone, 200 rounds give a 34.0% police win rate and an average of 225 steps, so the default map leans toward the thief.
+**This is outside the 40–60% target.** The sprint rules (1.2 times the normal speed within 5 cells of the thief, and for 15 cells after the theft) and the slower thief carrying the diamond give the police a clear edge; tuning the AI alone brings it down to about 71%. On the default map alone, 200 rounds give a 74.0% police win rate and an average of 157 steps.
 
 ## Run it locally
 
