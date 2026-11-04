@@ -4,7 +4,7 @@
 
 import * as THREE from 'three';
 import { G, C, nodeXYL } from '../sim/world.js';
-import { eyePoint, inCone } from '../sim/los.js';
+import { eyePoint, inCone, segmentClear } from '../sim/los.js';
 import { actionFor, treeNextTo } from '../sim/escape.js';
 
 const tmpMatrix = new THREE.Matrix4();
@@ -497,6 +497,9 @@ export function makeScene3D(container, palette) {
   // ---- per tick / per frame -------------------------------------------------------------------
   const pose = (node, facing) => { const { x, y, level } = nodeXYL(world, node); return { x: x + 0.5, y: y + 0.5, z: floorY(level), facing }; };
   const anim = { player: {}, creature: {} };
+  let creatureVisTarget = 0;
+  let creatureVis = 0;
+  for (const m of [bark, ice, ember]) m.transparent = true;
   let state = null;
 
   function onTick(game, now, tickMs) {
@@ -505,11 +508,20 @@ export function makeScene3D(container, palette) {
       const a = anim[who];
       const s = game[who];
       const to = pose(s.node, s.facing);
+      const moved = !a.to || a.to.x !== to.x || a.to.y !== to.y;
       a.from = a.current ?? to;
       a.to = to;
       a.t0 = now;
-      a.dur = tickMs * 0.95;
+      // glide at the walker's real speed (cells per tick) instead of hopping cell to cell
+      const speed = who === 'player' ? game.ctx.config.game.walkSpeed
+        : game.speeds[{ chase: 'chase', track: 'track', investigate: 'investigate', ambush: 'investigate' }[s.mode] ?? 'patrol'];
+      a.dur = moved ? (tickMs / Math.min(1, Math.max(0.2, speed))) * 0.98 : tickMs;
     }
+    // how much of the creature you can make out: clear when you see it, a faint shape with glowing
+    // eyes in the fog a little farther out, nothing when something solid is in between
+    const e = game.distances.euclidean;
+    const clear = segmentClear(world, eyePoint(world, game.player.node), eyePoint(world, game.creature.node));
+    creatureVisTarget = game.over || game.player.seesCreature ? 1 : (clear && e <= 14 ? 0.3 * (1 - (e - 9) / 5) + 0.12 : 0);
     while (crowMeshes.length < game.crows.length) crowMeshes.push(makeCrow());
     crowMeshes.forEach((m, i) => {
       const c = game.crows[i];
@@ -657,9 +669,15 @@ export function makeScene3D(container, palette) {
       snow.position.set(camLook.x, 0, camLook.z);
     }
     // the creature is drawn only when you can see it
+    // fade in and out instead of popping up
+    creatureVis += (creatureVisTarget - creatureVis) * (creatureVisTarget > creatureVis ? 0.06 : 0.1);
     const visible = g.player.seesCreature || g.over;
-    creature.visible = visible && !!Q;
-    fan.visible = visible && g.creature.frozenLeft === 0 && !g.over;
+    creature.visible = creatureVis > 0.02 && !!Q;
+    bark.opacity = Math.min(1, creatureVis * 1.1);
+    ice.opacity = bark.opacity;
+    ember.opacity = Math.min(1, 0.35 + creatureVis); // the eyes show first
+    creatureLight.intensity = 4 * creatureVis;
+    fan.visible = visible && creatureVis > 0.6 && g.creature.frozenLeft === 0 && !g.over;
     if (Q) {
       creature.position.set(Q.x, Q.z, Q.y);
       creature.rotation.y = -Q.facing + Math.sin(now / 300) * 0.08;
@@ -759,6 +777,8 @@ export function makeScene3D(container, palette) {
     reset() {
       for (const a of Object.values(anim)) { a.current = null; a.from = null; a.to = null; }
       state = null;
+      creatureVis = 0;
+      creatureVisTarget = 0;
     },
     snapCamera() { if (anim.player.to) { const p = anim.player.to; camTarget.set(p.x, p.z, p.y); camLook.copy(camTarget); } },
   };

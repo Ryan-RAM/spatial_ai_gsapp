@@ -28,8 +28,9 @@ A prompt at the bottom of the screen always says what Space will do.
 - **Sight** (Euclidean distance): it sees ahead in a 120° cone, 6 to 9 cells by difficulty, blocked by trees, bushes and rocks. You only see it within 9 cells with a clear line; otherwise the minimap shows a fading **?** where you last saw or heard it.
 - **Hearing** (acoustic distance): your footsteps are heard within 7, shots within 20; you hear it move within 12.
 - **The case alarm:** when you pick up the case it beeps for 6 seconds and it knows where you are.
+- **Seeing it coming:** it glides at its real speed, and fades in out of the fog: first a faint shape with glowing eyes (up to 14 cells, with a clear line), then fully when you can see it (9 cells).
 - **Fear:** synthesized sound (wind, a heartbeat that speeds up as it closes in, its creaking, a screech when it sees you), a red vignette, a flickering flashlight and camera shake when it is near, and a lunge when it gets you.
-- **Difficulty:** its speed and sight, and your bullets (Easy 3, Normal 1, Hard 1). With a scripted player (`src/sim/bot.js`, which only knows what a player could see and hear) the win rate is about **86% on Easy, 63% on Normal, 39% on Hard** (300 runs on 6 maps each).
+- **Difficulty:** its speed and sight, and your bullets (Easy 3, Normal 1, Hard 1). With a scripted player (`src/sim/bot.js`, which only knows what a player could see and hear) the win rate is about **86% on Easy, 65% on Normal, 44% on Hard** (300 runs on 6 maps each).
 
 ## Position (Part 1)
 

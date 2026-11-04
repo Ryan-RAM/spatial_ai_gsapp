@@ -91,9 +91,9 @@ export const CONFIG = {
     searchTicks: 8,          // the creature turns a full circle where it lost you
     difficulty: {
       // creature speeds in cells per tick (yours is 0.5), how far it sees, and your bullets
-      easy:   { patrol: 0.28, investigate: 0.4, chase: 0.42, track: 0.4, sight: 6, ammo: 3 },
-      normal: { patrol: 0.32, investigate: 0.48, chase: 0.55, track: 0.5, sight: 8, ammo: 1 },
-      hard:   { patrol: 0.36, investigate: 0.55, chase: 0.72, track: 0.65, sight: 9, ammo: 1 },
+      easy:   { patrol: 0.22, investigate: 0.32, chase: 0.34, track: 0.34, sight: 6, ammo: 3 },
+      normal: { patrol: 0.25, investigate: 0.36, chase: 0.45, track: 0.42, sight: 9, ammo: 1 },
+      hard:   { patrol: 0.3, investigate: 0.45, chase: 0.6, track: 0.55, sight: 9, ammo: 1 },
     },
   },
 
