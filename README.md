@@ -3,6 +3,7 @@
 ARCH6956-1
 
 Instructor: [William Martin](https://awmartin.xyz/spatial-computing/course/)
+Group: [Ryan Fu](https://github.com/Ryan-RAM), [Lu Liu](https://github.com/9725lu-alt), [Yifan Zhao](https://github.com/yz5149-stack)
 
 Each folder holds the contents of one former branch:
 
