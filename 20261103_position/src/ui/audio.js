@@ -206,6 +206,8 @@ export function makeAudio() {
 
   return {
     start,
+    suspend() { if (ac && ac.state === 'running') ac.suspend(); },
+    resume() { if (ac && ac.state === 'suspended') ac.resume(); },
     danger,
     play,
     setMuted(m) { muted = m; if (master) master.gain.setTargetAtTime(m ? 0 : 0.8, ac.currentTime, 0.05); },

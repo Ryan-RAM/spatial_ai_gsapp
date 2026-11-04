@@ -149,6 +149,7 @@ function showEnd(g) {
 
 function start() {
   audio.start();
+  audio.resume();
   $('screen-start').hidden = true;
   $('screen-end').hidden = true;
   newGame();
@@ -240,8 +241,16 @@ function togglePause() {
   if (!state.started) return;
   state.paused = !state.paused;
   $('btn-pause').textContent = state.paused ? 'Resume' : 'Pause';
-  if (state.paused) panels.toast('Paused. Press P to go on.');
+  if (state.paused) { panels.toast('Paused. Press P to go on.'); audio.suspend(); } else audio.resume();
 }
+// leaving the page (another tab, a minimized window, a hidden pane) pauses the game and the sound
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (state.started && !state.paused) togglePause();
+    audio.suspend();
+  } else if (!state.started || !state.paused) audio.resume();
+});
+window.addEventListener('pagehide', () => audio.suspend());
 function toggleMap() {
   if (!scene) return;
   const on = !scene.isMapView();
