@@ -126,35 +126,35 @@ export function makePlans(groundCanvas, canopyCanvas) {
     }
   }
 
-  const colorOf = (who) => ({ police: palette.police, thief: palette.thief, owl: palette.owl }[who] ?? palette.planInk);
+  const colorOf = (who) => ({ creature: palette.creature, player: palette.player, crow: palette.crow, shot: '#ffffff' }[who] ?? palette.planInk);
   const centre = (n, cs) => { const { x, y, level } = nodeXYL(world, n); return { x: (x + 0.5) * cs, y: (y + 0.5) * cs, level }; };
 
-  // A small owl: round body, two ear tufts, two eyes that light up while it watches the thief.
-  function drawOwl(g, cs, owl, level) {
-    const c = centre(owl.node, cs);
+  // A crow: a dark body, a beak toward where it looks, eyes that light up while it watches you.
+  function drawOwl(g, cs, crow, level) {
+    const c = centre(crow.node, cs);
     if (c.level !== level) return;
-    const r = cs * 0.42;
+    const r = cs * 0.38;
     g.save();
     g.translate(c.x, c.y);
-    if (owl.watching) {
-      g.strokeStyle = palette.owl;
+    if (crow.watching) {
+      g.strokeStyle = palette.crow;
       g.lineWidth = Math.max(1.5, cs * 0.12);
       g.setLineDash([cs * 0.2, cs * 0.14]);
       g.strokeRect(-cs * 1.5, -cs * 1.5, cs * 3, cs * 3);
       g.setLineDash([]);
     }
-    g.fillStyle = palette.owl;
-    g.strokeStyle = palette.planInk;
-    g.lineWidth = Math.max(1, cs * 0.07);
+    g.rotate(crow.facing);
+    g.fillStyle = '#15171c';
+    g.strokeStyle = palette.crow;
+    g.lineWidth = Math.max(1, cs * 0.08);
     g.beginPath();
-    g.moveTo(-r * 0.85, -r * 0.55); g.lineTo(-r * 0.55, -r * 1.15); g.lineTo(-r * 0.2, -r * 0.75);
-    g.lineTo(r * 0.2, -r * 0.75); g.lineTo(r * 0.55, -r * 1.15); g.lineTo(r * 0.85, -r * 0.55);
-    g.arc(0, 0, r, -0.6, Math.PI + 0.6);
-    g.closePath();
+    g.ellipse(0, 0, r * 1.2, r * 0.8, 0, 0, Math.PI * 2);
     g.fill();
     g.stroke();
-    g.fillStyle = owl.watching ? palette.rel : palette.planFree;
-    for (const sx of [-1, 1]) { g.beginPath(); g.arc(sx * r * 0.38, -r * 0.2, r * 0.27, 0, Math.PI * 2); g.fill(); g.stroke(); }
+    g.fillStyle = '#9a9286';
+    g.beginPath(); g.moveTo(r * 1.15, -r * 0.2); g.lineTo(r * 1.75, 0); g.lineTo(r * 1.15, r * 0.2); g.closePath(); g.fill();
+    g.fillStyle = crow.watching ? palette.crow : '#777';
+    g.beginPath(); g.arc(r * 0.6, 0, r * 0.22, 0, Math.PI * 2); g.fill();
     g.restore();
   }
 
@@ -200,7 +200,12 @@ export function makePlans(groundCanvas, canopyCanvas) {
 
   // Position relations that hold right now, drawn on the plan of each level.
   function drawRelations(g, cs, game, level, now) {
-    const rel = game.relations;
+    const seen = game.player.seesCreature || game.over;
+    const rel = {
+      position: game.relations.position.filter((r) => seen || !(r.kind === 'above' || r.kind === 'between'
+        || (r.kind === 'behind' && r.who === 'creature') || (r.kind === 'adjacent' && r.b === 'creature'))),
+      movement: game.relations.movement.filter((m) => seen || m.who === 'player'),
+    };
     const pulse = 0.6 + 0.4 * Math.sin(now / 220);
     for (const r of rel.position) {
       if (r.kind === 'above') {
@@ -248,12 +253,12 @@ export function makePlans(groundCanvas, canopyCanvas) {
         g.roundRect(x0 * cs - 2, y0 * cs - 2, (x1 - x0) * cs + 4, (y1 - y0) * cs + 4, cs * 0.3);
         g.stroke();
       } else if (r.kind === 'between') {
-        // the line from the thief to what it wants, crossed out where the officer stands
-        const a = centre(game.thief.node, cs);
+        // the line from you to what you need, crossed out where the creature stands
+        const a = centre(game.player.node, cs);
         const b = centre(r.node, cs);
-        const m = centre(game.police.node, cs);
+        const m = centre(game.creature.node, cs);
         if (m.level !== level && a.level !== level) continue;
-        g.strokeStyle = palette.police;
+        g.strokeStyle = palette.creature;
         g.globalAlpha = 0.85;
         g.lineWidth = Math.max(1.5, cs * 0.12);
         g.setLineDash([cs * 0.35, cs * 0.25]);
@@ -267,7 +272,7 @@ export function makePlans(groundCanvas, canopyCanvas) {
           g.moveTo(m.x - k, m.y - k); g.lineTo(m.x + k, m.y + k);
           g.moveTo(m.x + k, m.y - k); g.lineTo(m.x - k, m.y + k);
           g.stroke();
-          label(g, cs, m.x, m.y - cs * 1.5, r.b === 'exit' ? 'CUT OFF' : 'IN THE WAY', palette.police);
+          label(g, cs, m.x, m.y - cs * 1.5, 'IN THE WAY', palette.creature);
         }
       } else if (r.kind === 'among') {
         // a dotted 3 by 3 frame: the agent is surrounded by solid cover
@@ -313,10 +318,10 @@ export function makePlans(groundCanvas, canopyCanvas) {
       } else if (f.kind === 'past') {
         const c = centre(f.node, cs);
         if (c.level === level) {
-          g.strokeStyle = palette.thief;
+          g.strokeStyle = palette.player;
           g.lineWidth = Math.max(2, cs * 0.16);
           g.beginPath(); g.arc(c.x, c.y, cs * (0.6 + age * 1.5), 0, Math.PI * 2); g.stroke();
-          label(g, cs, c.x, c.y - cs * 1.5, '\u00BB PAST', palette.thief);
+          label(g, cs, c.x, c.y - cs * 1.5, '\u00BB PAST', palette.player);
         }
       }
       g.globalAlpha = 1;
@@ -388,26 +393,52 @@ export function makePlans(groundCanvas, canopyCanvas) {
         g.stroke();
         g.globalAlpha = 1;
       }
-      // the diamond on its cell, or above the thief once stolen
-      const dn = game.diamond.carried ? game.thief.node : game.diamond.home;
+      // the vaccine case on its cell (a small box), or next to you once you carry it
+      const dn = game.caseItem.carried ? game.player.node : game.caseItem.node;
       const dp = nodeXYL(world, dn);
       if (dp.level === level) {
-        const r = cs * (game.diamond.carried ? 0.32 : 0.45);
-        const cx = (dp.x + 0.5) * cs + (game.diamond.carried ? cs * 0.55 : 0);
-        const cy = (dp.y + 0.5) * cs - (game.diamond.carried ? cs * 0.55 : 0);
-        g.fillStyle = palette.diamond;
+        const k = game.caseItem.carried ? 0.6 : 1;
+        const cx = (dp.x + 0.5) * cs + (game.caseItem.carried ? cs * 0.6 : 0);
+        const cy = (dp.y + 0.5) * cs - (game.caseItem.carried ? cs * 0.6 : 0);
+        if (!game.caseItem.carried) {
+          g.strokeStyle = palette.caseGlow;
+          g.globalAlpha = 0.5 + 0.4 * Math.sin(now / 250);
+          g.lineWidth = Math.max(1.5, cs * 0.12);
+          g.beginPath(); g.arc(cx, cy, cs * 0.95, 0, Math.PI * 2); g.stroke();
+          g.globalAlpha = 1;
+        }
+        g.fillStyle = '#d8dee4';
         g.strokeStyle = palette.planInk;
         g.lineWidth = Math.max(1, cs * 0.07);
-        g.beginPath();
-        g.moveTo(cx, cy - r * 1.25); g.lineTo(cx + r, cy); g.lineTo(cx, cy + r * 1.25); g.lineTo(cx - r, cy);
-        g.closePath();
-        g.fill();
-        g.stroke();
+        g.fillRect(cx - cs * 0.42 * k, cy - cs * 0.3 * k, cs * 0.84 * k, cs * 0.6 * k);
+        g.strokeRect(cx - cs * 0.42 * k, cy - cs * 0.3 * k, cs * 0.84 * k, cs * 0.6 * k);
+        g.fillStyle = palette.caseGlow;
+        g.fillRect(cx - cs * 0.42 * k, cy - cs * 0.06 * k, cs * 0.84 * k, cs * 0.12 * k);
       }
-      for (const o of game.owls) drawOwl(g, cs, o, level);
+      for (const o of game.crows) drawOwl(g, cs, o, level);
       if (showRelations) drawRelations(g, cs, game, level, now);
-      drawAgent(g, cs, game.police, palette.police, level, showCone);
-      drawAgent(g, cs, game.thief, palette.thief, level, showCone);
+      // the creature: drawn where it is while you can see it; otherwise a fading question mark
+      // where you last saw or heard it
+      const seen = game.player.seesCreature || game.over;
+      if (seen) drawAgent(g, cs, game.creature, palette.creature, level, showCone);
+      else if (game.player.knownCreature !== null) {
+        const age = (game.step - game.player.knownStep) / 30;
+        const c = centre(game.player.knownCreature, cs);
+        if (age < 1 && c.level === level) {
+          g.globalAlpha = 0.85 * (1 - age);
+          g.strokeStyle = palette.creature;
+          g.setLineDash([cs * 0.15, cs * 0.12]);
+          g.lineWidth = Math.max(1.5, cs * 0.1);
+          g.beginPath(); g.arc(c.x, c.y, cs * 0.55, 0, Math.PI * 2); g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = palette.creature;
+          g.font = `700 ${Math.round(cs * 0.75)}px system-ui, sans-serif`;
+          g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText('?', c.x, c.y + cs * 0.04);
+          g.globalAlpha = 1;
+        }
+      }
+      drawAgent(g, cs, game.player, palette.player, level, showCone);
     });
     for (let i = sounds.length - 1; i >= 0; i--) if (now - sounds[i].born > 1400) sounds.splice(i, 1);
     for (let i = flashes.length - 1; i >= 0; i--) if (now - flashes[i].born > FLASH_MS) flashes.splice(i, 1);

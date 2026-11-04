@@ -1,169 +1,92 @@
-// DOM updates for the status panel, distance panel, hint, event log and metric table.
+// DOM updates: the HUD over the 3D view, the position + movement panel and the log.
 
-import { modeLabel } from '../sim/game.js';
+import { statusOf } from '../sim/escape.js';
 
 const $ = (id) => document.getElementById(id);
-const f1 = (v) => (Number.isFinite(v) ? v.toFixed(1) : '∞');
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const DIFF = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
 
 export function makePanels() {
   const log = $('log');
-  let lastNotable = null;
-
-  function status(game, score) {
-    $('score-police').textContent = score.police;
-    $('score-thief').textContent = score.thief;
-    $('progress').style.width = `${(100 * game.step) / game.ctx.config.maxSteps}%`;
-    $('ov-round').textContent = `Round ${game.round}`;
-    $('ov-step').textContent = `Step ${game.step} / ${game.ctx.config.maxSteps}`;
-    $('police-mode').textContent = modeLabel('police', game.police.mode);
-    $('thief-mode').textContent = modeLabel('thief', game.thief.mode);
-    const per = game.perception;
-    $('police-hears').classList.toggle('on', per.policeHears);
-    $('police-sees').classList.toggle('on', per.policeSees.visible);
-    $('thief-hears').classList.toggle('on', per.thiefHears);
-    $('thief-sees').classList.toggle('on', per.thiefSees.visible);
-    $('thief-diamond').classList.toggle('on', game.diamond.carried);
-    $('police-knows').classList.toggle('on', game.police.knowsTheft);
-  }
-
-  function distances(game) {
-    const { config } = game.ctx;
-    const d = game.distances;
-    const per = game.perception;
-    $('d-eu').innerHTML = `${f1(d.euclidean)}<small>cells</small>`;
-    $('d-ac').innerHTML = `${f1(d.acoustic)}<small>cells</small>`;
-    $('d-path').innerHTML = `${f1(d.path)}<small>cells</small>`;
-    $('d-perc').innerHTML = `${f1(d.perceptual)}`;
-
-    const why = [];
-    if (d.euclidean > config.visionRange) why.push(`beyond the ${config.visionRange}-cell fog`);
-    else {
-      if (!per.policeSees.clear) why.push('something solid is in between');
-      else {
-        why.push('a clear line');
-        if (!per.policeSees.inCone && !per.thiefSees.inCone) why.push('but neither faces the other');
-        else if (!per.policeSees.inCone) why.push('but the police is facing away');
-        else if (!per.thiefSees.inCone) why.push('the thief is facing away');
-      }
-    }
-    $('d-eu-note').textContent = `Sight: ${why.join(', ')}.`;
-    const muffle = d.acoustic - d.euclidean;
-    $('d-ac-note').textContent = (d.acoustic <= config.hearingRange
-      ? `Within the ${config.hearingRange}-cell hearing range: any footstep is heard.`
-      : `Beyond the ${config.hearingRange}-cell hearing range: footsteps do not carry.`)
-      + (muffle > 1e-6 ? ` Muffling adds ${f1(muffle)}.` : ' Nothing solid in between.');
-    $('d-path-note').textContent = d.path > d.euclidean * 1.5
-      ? `Walking: ${f1(d.path - d.euclidean)} cells longer than the straight line.`
-      : 'Walking: close to the straight line.';
-    const q = game.ctx.perceptualQ;
-    const rank = d.perceptual <= q(0.1) ? 'very similar places (closest 10% of pairs on this map)'
-      : d.perceptual <= q(0.5) ? 'fairly similar places' : 'places that look quite different';
-    $('d-perc-note').textContent = `Fingerprint difference: ${rank}.`;
-
-    const h = game.hint;
-    $('hint-title').textContent = h.title;
-    $('hint-text').textContent = h.text;
-    $('hint').classList.toggle('strong', h.kind !== 'none');
-    if (h.kind !== 'none') lastNotable = { ...h, step: game.step, round: game.round };
-    const showLast = h.kind === 'none' && lastNotable && lastNotable.round === game.round;
-    $('hint-last').hidden = !showLast;
-    if (showLast) {
-      $('hint-last-title').textContent = `${lastNotable.title} (step ${lastNotable.step})`;
-      $('hint-last-text').textContent = lastNotable.text;
-    }
-  }
-
-  function addEvents(events) {
-    for (const e of events) {
-      const li = document.createElement('li');
-      li.className = `${e.who} ${e.kind === 'win' ? 'win' : ''}`;
-      const when = document.createElement('span');
-      when.className = 'when';
-      when.textContent = `R${e.round} · ${e.step}`;
-      const what = document.createElement('span');
-      what.className = 'what';
-      what.textContent = e.text;
-      li.append(when, what);
-      log.prepend(li);
-    }
-    while (log.children.length > 200) log.lastChild.remove();
-  }
-
-  function roundMarker(text) {
-    const li = document.createElement('li');
-    li.className = 'round';
-    li.innerHTML = '<span class="when">&mdash;</span>';
-    const what = document.createElement('span');
-    what.textContent = text;
-    li.append(what);
-    log.prepend(li);
-  }
-
-  function axioms(results) {
-    const rows = [
-      ['euclidean', 'Euclidean'],
-      ['acoustic', 'Acoustic'],
-      ['path', 'Path'],
-      ['perceptual', 'Perceptual'],
-    ];
-    const cell = (bad, total, extra = '') => (bad === 0
-      ? `<span class="ok">Pass</span><small>0 of ${total} violations${extra}</small>`
-      : `<span class="bad">Fail</span><small>${bad} of ${total}${extra}</small>`);
-    const body = rows.map(([key, label]) => {
-      const r = results[key];
-      const n = r.triples;
-      const id = key === 'perceptual'
-        ? (r.zeroPairs === 0
-          ? `<span class="ok">Pass on this map</span><small>no two cells have identical fingerprints; closest pair d = ${r.closestDistinct.d.toFixed(2)}</small>`
-          : `<span class="bad">Fails</span><small>${r.zeroPairs} pairs of different cells with d = 0</small>`)
-        : `<span class="ok">Pass</span><small>d = 0 only for the same cell (all ${results.cells} cells)</small>`;
-      const verdict = {
-        perceptual: '<b>Pseudometric</b><small>d = 0 is allowed for two different places</small>',
-        acoustic: '<b>Semimetric</b><small>no triangle inequality</small>',
-      }[key] ?? '<b>Metric</b>';
-      return `<tr><td><b>${label}</b></td><td>${cell(r.negative, n)}</td><td>${cell(r.asymmetric, n)}</td>`
-        + `<td>${cell(r.triangle, n, ' (random triples)')}</td><td>${id}</td><td>${verdict}</td></tr>`;
-    }).join('');
-    document.querySelector('#axioms tbody').innerHTML = body;
-    const r = results.perceptual;
-    $('axioms-note').innerHTML = `<b>Why the perceptual distance is only a pseudometric.</b> It compares what two positions look like,
-      not where they are. Two different cells whose 362 rays have exactly the same lengths have d = 0, for example the centres of
-      two identical rooms (one of the tests builds such a case). ${r.zeroPairs === 0
-        ? `On this map no two cells match exactly, but the closest pair differs by only ${r.closestDistinct.d.toFixed(2)}, while a typical pair differs by about ${results.typicalPerceptual.toFixed(0)}.`
-        : `On this map ${r.zeroPairs} pairs of different cells match exactly.`}
-      In space, this is what getting lost means: two places that look the same from the inside can be far apart,
-      and nothing in what you see tells you which one you are in. Symmetry and the triangle inequality always hold, because it is
-      a Euclidean distance between vectors.<br><br>
-      <b>Why the acoustic distance is only a semimetric.</b> It fails the triangle inequality in ${results.acoustic.triangle} of
-      ${results.acoustic.triples} random triples: a straight line from a to c may cross a rock, while a to b and b to c both pass
-      beside it, so going "via b" sounds closer than going straight. Real sound does exactly that: it bends around obstacles
-      (diffraction) and arrives along the least muffled route. This model only follows the straight line, which keeps it simple
-      and readable, at the price of the triangle inequality.`;
-  }
-
-  // Position + movement: a chip per relation, lit while it holds (movements stay lit for a few steps),
-  // and one line per relation that holds right now.
   const lastMove = {};
-  const MOVE_HOLD = { toward: 0, away: 0, up: 3, down: 3, around: 5, past: 5 };
+  const MOVE_HOLD = { toward: 0, away: 0, up: 6, down: 6, around: 12, past: 12 };
+  let toastTimer = null;
+  let shownEvents = 0;
+
+  function hud(game) {
+    const g = game.ctx.config.game;
+    const me = game.player;
+    const st = statusOf(game);
+    const obj = $('objective');
+    obj.textContent = me.carrying ? 'To the hospital (east)!' : 'Find the vaccine case';
+    obj.classList.toggle('urgent', me.carrying);
+    $('timer').textContent = `${clock((game.step * g.tickMs) / 1000)} · ${DIFF[game.difficulty]}${me.carrying ? '' : ' · follow the cyan light'}`;
+    const total = g.difficulty[game.difficulty].ammo;
+    $('ammo').innerHTML = `<span>Bullets</span>${Array.from({ length: total }, (_, i) => `<i class="${i < me.ammo ? '' : 'used'}"></i>`).join('')}`;
+    const st2 = $('stamina');
+    st2.firstElementChild.style.width = `${(100 * me.stamina) / g.stamina}%`;
+    st2.classList.toggle('low', me.stamina < g.stamina * 0.3);
+    $('chip-seen').classList.toggle('on', st.sees);
+    $('chip-heard').classList.toggle('on', st.hears && !st.sees);
+    $('chip-hidden').classList.toggle('on', st.hidden);
+    $('chip-alarm').classList.toggle('on', game.alarmLeft > 0);
+    $('chip-frozen').classList.toggle('on', game.creature.frozenLeft > 0 && me.seesCreature);
+    const close = me.knownCreature !== null && game.step - me.knownStep <= 3 && game.distances.path <= 6 && game.creature.frozenLeft === 0;
+    $('vignette').classList.toggle('danger', st.sees || close);
+  }
+
   function relations(game) {
-    const rel = game.relations;
-    const on = new Set(rel.position.map((r) => r.kind));
-    for (const m of rel.movement) lastMove[m.kind] = { step: game.step, round: game.round, text: m.text };
+    const seen = game.player.seesCreature || game.over;
+    const visible = (r) => seen || !(r.kind === 'above' || r.kind === 'between'
+      || (r.kind === 'behind' && r.who === 'creature') || (r.kind === 'adjacent' && r.b === 'creature'));
+    const pos = game.relations.position.filter(visible);
+    const moves = game.relations.movement.filter((m) => seen || m.who === 'player');
+    const on = new Set(pos.map((r) => r.kind));
+    for (const m of moves) lastMove[m.kind] = { step: game.step, text: m.text };
     document.querySelectorAll('#rel-chips [data-rel]').forEach((el) => {
       const k = el.dataset.rel;
       if (k in MOVE_HOLD) {
         const m = lastMove[k];
-        el.classList.toggle('on', !!m && m.round === game.round && game.step - m.step <= MOVE_HOLD[k]);
+        el.classList.toggle('on', !!m && game.step - m.step <= MOVE_HOLD[k]);
       } else el.classList.toggle('on', on.has(k));
     });
-    const lines = rel.position.map((r) => `<li class="${r.who ?? r.upper ?? r.a}">${r.text}</li>`);
-    for (const m of rel.movement) if (m.kind !== 'toward' && m.kind !== 'away') lines.push(`<li class="${m.who} move">${m.text}</li>`);
+    const lines = pos.map((r) => `<li class="${r.who ?? r.upper ?? r.a}">${r.text}</li>`);
+    for (const m of moves) if (m.kind !== 'toward' && m.kind !== 'away') lines.push(`<li class="${m.who} move">${m.text}</li>`);
     $('rel-list').innerHTML = lines.length ? lines.join('') : '<li class="none">No position relation holds right now.</li>';
-    const watching = game.owls.filter((o) => o.watching).length;
-    const hoot = game.events.filter((e) => e.kind === 'hoot').pop();
-    $('owl-status').textContent = `${game.owls.length} owls perched${watching ? `, ${watching} next to the thief` : ''}`
-      + (hoot ? `. Last hoot at step ${hoot.step}.` : '. No hoot yet this round.');
   }
 
-  return { status, distances, relations, addEvents, roundMarker, axioms, resetHint() { lastNotable = null; for (const k in lastMove) delete lastMove[k]; } };
+  function toast(text) {
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.remove('hide');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('hide'), 2600);
+  }
+
+  function events(game) {
+    const fresh = game.events.slice(shownEvents);
+    shownEvents = game.events.length;
+    for (const e of fresh) {
+      const li = document.createElement('li');
+      li.className = `${e.who} ${e.kind}`;
+      li.innerHTML = `<span class="when">${clock((e.step * game.ctx.config.game.tickMs) / 1000)}</span>`;
+      const what = document.createElement('span');
+      what.className = 'what';
+      what.textContent = e.text;
+      li.append(what);
+      log.prepend(li);
+      if (['case', 'shot', 'caw', 'spot', 'ambush', 'empty', 'noshot', 'alarm', 'thaw', 'start'].includes(e.kind)) toast(e.text);
+    }
+    while (log.children.length > 60) log.lastChild.remove();
+  }
+
+  function update(game) { hud(game); relations(game); events(game); }
+
+  function reset() {
+    shownEvents = 0;
+    for (const k in lastMove) delete lastMove[k];
+    log.innerHTML = '';
+  }
+
+  return { update, reset, toast };
 }

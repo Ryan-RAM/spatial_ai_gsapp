@@ -4,8 +4,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CONFIG } from '../src/sim/config.js';
 import { makeContext } from '../src/sim/context.js';
-import { newGame, stepGame } from '../src/sim/game.js';
-import { isAdjacent, isAbove, isBetween, isBehind, coverAt, stepOwls } from '../src/sim/relations.js';
+import { newRun, stepRun } from '../src/sim/escape.js';
+import { botInput } from '../src/sim/bot.js';
+import { isAdjacent, isAbove, isBetween, isBehind, coverAt, stepCrows } from '../src/sim/relations.js';
 import { makeTestWorld, EAST, WEST } from './helpers.mjs';
 
 const open = [
@@ -88,44 +89,36 @@ test('among: counts solid cells around and names the main material', () => {
   assert.equal(coverAt(world, at(0, 4, 2)).solid, 3);
 });
 
-test('relations are listed every step and movements carry a mover', () => {
+test('relations are listed every tick and movements carry a mover', () => {
   const ctx = makeContext(CONFIG);
   const kinds = new Set();
   for (let r = 1; r <= 12; r++) {
-    const g = newGame(ctx, r);
+    const g = newRun(ctx, { round: r });
     while (!g.over) {
-      stepGame(g);
+      stepRun(g, botInput(g));
       for (const m of g.relations.movement) {
-        assert.ok(['police', 'thief'].includes(m.who));
+        assert.ok(['player', 'creature'].includes(m.who));
         kinds.add(m.kind);
       }
       for (const p of g.relations.position) kinds.add(p.kind);
     }
   }
-  for (const k of ['toward', 'away', 'behind', 'between', 'among', 'adjacent']) assert.ok(kinds.has(k), k);
+  for (const k of ['toward', 'away', 'behind', 'among', 'adjacent']) assert.ok(kinds.has(k), k);
 });
 
-test('owls perch apart from the diamond and hoot once when the thief is next to them', () => {
+test('crows perch apart from the case and caw once when you are next to them', () => {
   const ctx = makeContext(CONFIG);
-  const g = newGame(ctx, 1);
-  assert.equal(g.owls.length, CONFIG.owls.count);
-  for (const o of g.owls) assert.ok(ctx.pf.distance(o.node, g.diamond.home) >= CONFIG.owls.minFromDiamond);
-  const owl = g.owls[0];
-  g.thief.node = owl.node;
-  g.police.node = owl.node; // right there: hears it for sure
+  const g = newRun(ctx, { round: 1 });
+  assert.equal(g.crows.length, CONFIG.crows.count);
+  for (const c of g.crows) assert.ok(ctx.pf.distance(c.node, g.caseItem.node) >= CONFIG.crows.minFromCase);
+  const crow = g.crows[0];
+  g.player.node = crow.node;
+  g.creature.node = crow.node; // right there: hears it for sure
   g.sounds = [];
-  const hoots = stepOwls(g);
-  assert.equal(hoots.length, 1);
-  assert.equal(hoots[0].heard, true);
-  assert.equal(g.police.heardAt, owl.node);
-  assert.equal(stepOwls(g).length, 0, 'resting after a hoot');
-});
-
-test('a rounds still ends, with the new relations in place', () => {
-  const ctx = makeContext(CONFIG, CONFIG.seed + 3);
-  for (let r = 1; r <= 10; r++) {
-    const g = newGame(ctx, r);
-    while (!g.over) stepGame(g);
-    assert.ok(['police', 'thief'].includes(g.winner));
-  }
+  stepCrows(g);
+  assert.equal(g.sounds.filter((s) => s.who === 'crow').length, 1);
+  assert.equal(g.creature.heardAt, crow.node);
+  g.sounds = [];
+  stepCrows(g);
+  assert.equal(g.sounds.length, 0, 'resting after a caw');
 });

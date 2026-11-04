@@ -1,4 +1,4 @@
-# Misty Forest Chase: Position + Movement
+# Frostroot: Night Run
 
 **Spatial AI (ARCH6956-1), Columbia GSAPP. Assignment: Workshop, Position + Movement.**
 
@@ -6,58 +6,66 @@ Instructor: [William Martin](https://awmartin.xyz/spatial-computing/course/)
 
 Group: **Ryan Fu, Lu Liu, Yifan Zhao**
 
-This builds on last week's [Misty Forest Chase](../20261022_distance/) (distance + proximity). The same self-running heist now also reads **prepositions of place and movement** between the occupants of the forest, shows each one as it happens, and lets some of them change what the agents do.
+A playable night escape in a snowy two-level forest, built on last week's [Misty Forest Chase](../20261022_distance/). You find a vaccine case in the forest and carry it to the hospital door on the east side while a creature made of roots hunts you. Every rule of the game is a preposition of place or movement: you hide *among* cover, stay out of its view or slip *behind* it, get past it, and it ambushes you by standing *between* you and the hospital.
 
-Open `index.html` through a web server (for example `python3 -m http.server` in this folder). Tests: `npm test`. Balance: `npm run balance`.
+Play: open `index.html` through a web server (for example `python3 -m http.server` in this folder). Tests: `npm test`. Balance: `npm run balance`.
 
-## Position (Part 1): five relations
+## Controls
 
-All rules live in [`src/sim/relations.js`](src/sim/relations.js) and are checked after every step; thresholds are in `config.relations`.
+| Key | Action |
+|---|---|
+| W A S D / arrows | move (walking is quiet) |
+| Shift + move | run: faster but loud, uses stamina (3 seconds, refills while walking) |
+| Space | shoot: if the creature is within 7 cells with a clear line, it freezes for 3 seconds |
+| E (on a ladder) | climb up to the canopy walkways or down |
+| M / P | map view / pause |
+
+On a phone, on-screen buttons appear.
+
+## Rules
+
+- **Win:** reach the hospital door with the case. Screen: *你拯救了世界 · You saved the world*.
+- **Lose:** the creature reaches you (same or neighbouring cell, not while frozen), or the night runs out after 6 minutes. Screen: *你被它融合了 · You became part of it*.
+- **Sight** (Euclidean distance): the creature sees 9 cells ahead in a 120° cone, blocked by trees, bushes, rocks, leaves and floors. You only see the creature when it is within 9 cells with a clear line; otherwise the minimap shows a fading **?** where you last saw or heard it.
+- **Hearing** (acoustic distance): your running steps are heard within 12, walking within 7; shots within 20. You hear the creature move within 12.
+- **The case alarm:** when you pick up the case it beeps for 9 seconds and the creature knows where you are.
+- **Difficulty:** creature speed and bullets. With a scripted player (`src/sim/bot.js`, which only knows what a player could see and hear) the win rate is about **84% on Easy, 51% on Normal, 24% on Hard** (300 runs on 6 maps each).
+
+## Position (Part 1)
+
+All rules live in [`src/sim/relations.js`](src/sim/relations.js) and are checked after every tick; thresholds in `config.relations`.
 
 | Relation | Rule on the grid | Indicator |
 |---|---|---|
-| **Above / below** | One agent on the canopy, the other on the ground, at most 2 columns apart on the plan | Double rings at both columns on both plans, ▲ ABOVE / ▼ BELOW tags; a vertical dashed line in 3D |
-| **Behind** | Within 9 cells (the fog) and more than 90° from where the other faces. The vision cone is 120° wide, so behind is never seen | The observer's rear half-disc is shaded and pulses, BEHIND tag (plans and 3D) |
-| **Adjacent** | No occupiable cell in between: one walking step (8 directions, no cutting a blocked corner, ladders count), or the same column on the other level | One yellow outline around both cells. Checked for thief–police, thief–diamond, thief–exit, thief–owl |
-| **Between** | On the plan, the officer projects inside the segment from the thief to the target and lies within 1.6 cells of it. Target: the diamond before the theft, each exit after it | Dashed line thief → target, crossed out at the officer, IN THE WAY / CUT OFF tag |
-| **Among** | At least 5 of the 8 cells around are solid on that level (trees, bushes, rocks; leaves on the canopy) | Dotted 3 × 3 frame around the agent |
+| **Among (hidden)** | at least 4 of the 8 cells around you are solid (trees, bushes, rocks; leaves on the canopy) | green double ring, green 3 × 3 frame on the minimap, HIDDEN chip |
+| **Behind** | within 9 cells and more than 90° from where the other faces | rear half-disc shaded, BEHIND tag |
+| **Adjacent** | no occupiable cell in between: one walking step (no cutting a blocked corner, ladders count) or the same column on the other level | one yellow outline around both cells: you and the creature, the case, the hospital door, a crow |
+| **Between** | on the plan, the creature projects inside the segment from you to your goal (case, then door) and lies within 1.6 cells of it | dashed line, crossed out at the creature, IN THE WAY tag |
+| **Above / below** | one on the canopy, the other on the ground, at most 2 columns apart | double rings, ▲ ABOVE / ▼ BELOW, vertical line in 3D |
 
-## Position (Part 2): behaviours triggered by position
+Relations that involve the creature are only shown while you can see it.
 
-- **(a) Placement → system response**
-  - **Cut-off.** While escaping with the diamond, an exit with the officer *between* it and the thief counts as 30 cells farther, so the thief turns for the other exit (logged).
-  - **Guarded.** While waiting near the diamond, if the thief can see the officer *between* itself and the diamond, it does not go for it.
-- **(b) An occupant with a built-in capability: owls.** Three owls perch on the canopy. When the thief is *adjacent* to an owl, the owl hoots (then rests 30 steps). The officer hears the hoot if the acoustic distance is 16 or less and goes to the owl, like following footsteps. The thief knows about them: it never chooses a waiting spot next to an owl. Owls show on both plans and in 3D; their eyes light up while the thief is next to them; hoots are purple rings.
+## Position (Part 2): behaviours
 
-## Movement: four notions
+- **(a) Placement → response.** *Hidden among:* the creature does not see you among cover, even inside its cone, unless it is within 2 cells. *Ambush:* when the alarm stops and it has lost you while you carry the case, it goes to stand two thirds of the way along your shortest walk to the door, between you and the hospital.
+- **(b) Intrinsic capability: crows.** Three crows perch on the canopy. When you are adjacent to one it caws; the creature hears the caw within an acoustic distance of 16 and comes to the crow.
+
+## Movement
 
 | Movement | Rule | Indicator |
 |---|---|---|
-| **Toward / away from** | After each step, the mover's path distance to where the other stood is compared with before | Arrow from the old cell to the new: solid toward, dashed away |
-| **Up / down** | The agent's level changed: it used a ladder | ↑ UP / ↓ DOWN tag that rises or sinks and fades; arrow cone in 3D; log line |
-| **Around** | Within 8 cells of the diamond, the agent's bearing from it turned through 270° or more | The trail as a thick line with an arrowhead, AROUND tag; fades |
-| **Past** | The path distance falls to 4 cells or less and grows again while the officer never saw the thief | Ring at the closest point, » PAST tag; fades |
+| **Toward / away** | the mover's path distance to the other, before and after its step | arrow on the minimap, solid toward, dashed away |
+| **Up / down** | a ladder changed the level | ↑ UP / ↓ DOWN tag, arrow cone in 3D |
+| **Around** | within 8 cells of the case, the bearing from it turned through 270° | the trail with an arrowhead, AROUND tag |
+| **Past** | the gap fell to 4 cells or less and grew again while the creature never saw you | ring at the closest point, » PAST tag |
 
-A **Position + movement** panel lights a chip for every relation that holds (movements stay lit for a few steps) and lists them in words; the **Position + movement** checkbox turns the indicators on and off. The page has a diagram for every relation and behaviour in the section *How position and movement are read*.
-
-Balance with the new rules: the police wins about 79% of rounds (320 rounds on 8 maps), against about 80% without them.
-
----
-
-*The rest of this README describes the underlying simulation from last week.*
+The page has a diagram for each relation and behaviour.
 
 ## The scene
 
-- A 36 &times; 26 grid with two levels. **Ground level**: single trees, rows of bushes, 2&times;2 or 3&times;2 rocks, a boundary wall. **Canopy level**, 3 cells up: five platforms joined by narrow bridges, with leaf clumps. Between platforms is open air: you can see through it but not walk on it.
-- Five ladders join the levels. Maps come from a fixed seed (`20261022`); **New map** draws a new seed. After generation, every walkable cell that cannot be reached from the main area is removed, so any two walkable cells are connected.
-- **No dead ends.** A dead end is a part of the network that hangs on a single connection (a *bridge* of the graph, found with Tarjan's algorithm): you can only leave it the way you came in. Alcoves of up to 3 cells are filled in; larger dead ends get a new opening, carved through bushes, trees or rocks on the ground, or as a new walkway on the canopy. This repeats until no bridge is left, so every walkable cell lies on a loop and every path can be run through (`noDeadEnds` in the config).
-- **The diamond** is placed at random each round, on a fairly hidden cell (seen from fewer cells than the median), on the ground or on a platform, at least 10 cells from any exit.
-- **Two exits**, in the middle of the west and east sides of the boundary wall (`exitSides` in the config).
-- **The tracker.** From the moment the thief picks up the diamond, the police knows where it is at every step and runs for it along the shortest path. The thief gets no such help: it still only knows where the police is when it sees or hears it.
-- **The thief wins** by leaving through an exit with the diamond. **The police wins** by catching the thief (same or neighbouring cell), or if the diamond is still in the forest after 500 steps. Seeing the thief does not end the round: it starts a chase.
-- The police starts 3 to 10 cells from the diamond; the thief starts at least 22 cells from the diamond and from the police, out of sight. Both act once per step. A new round starts about 2 seconds after the end of one, and the score is kept.
+A 46 × 32 grid with two levels: ground (pines, bushes, rocks, a boundary wall) and canopy walkways 3 cells up, joined by ladders, with no dead ends. Maps come from a seed; **New map** draws another. The creature, the case, the crows, the hospital, the night look and the story are original to this project.
 
-## The four distances
+## The four distances (from last week, where they drove a police officer and a thief)
 
 Positions are cell centres. An agent's eye point is 1.5 cells above the floor it stands on, and the canopy floor is 3 cells above the ground.
 
@@ -174,17 +182,15 @@ The tests cover 3D line of sight (clear view on one level, blocked by a tree, hi
 ## Files
 
 ```
-index.html, style.css        page and styles (light and dark, phone width)
-src/sim/                     simulation core, no DOM, runs in Node
-  config.js                  every parameter in one object
-  world.js                   two-level map generation and connectivity
-  los.js                     3D line of sight, vision cone, acoustic distance
-  rays.js                    362 rays per cell, visibility fingerprints
-  paths.js                   Dijkstra path distance
-  metrics.js                 the four distances and the axiom check
-  context.js, ai.js, game.js, hints.js   AI, round loop, explanations
-  relations.js               position + movement relations, owls (this week)
-src/render/                  three.js scene and 2D floor plans
-src/ui/                      page wiring, panels, chart
+index.html, style.css        the game page (works at phone width, touch buttons on phones)
+src/sim/                     game core, no DOM, runs in Node
+  config.js                  every parameter in one object (config.game, config.relations, config.crows)
+  escape.js                  one run: you, the case, the hospital, shots, winning and losing
+  creature.js                the creature's AI
+  relations.js               position + movement relations, crows
+  bot.js                     a scripted player for balancing and tests
+  world.js, los.js, rays.js, paths.js, metrics.js, context.js   map, sight, hearing, paths (last week)
+src/render/                  three.js night scene and the minimap
+src/ui/                      input, game loop, HUD and panels
 tests/                       node:test suites and the balance script
 ```

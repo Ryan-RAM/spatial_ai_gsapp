@@ -6,8 +6,8 @@ export const CONFIG = {
   seed: 20261022,
 
   // Grid
-  width: 36,
-  height: 26,
+  width: 46,
+  height: 32,
   levelHeight: 3,          // the canopy floor is 3 cells above the ground
   eyeHeight: 1.5,          // eye point above the floor an agent stands on
 
@@ -20,11 +20,11 @@ export const CONFIG = {
   foliageTop: 5.5,         // leaf clumps on the platforms
 
   // Map generation
-  treeCount: 115,
-  bushRows: 24,
-  rockCount: 12,
-  platformCount: 5,
-  ladderCount: 5,
+  treeCount: 185,
+  bushRows: 38,
+  rockCount: 19,
+  platformCount: 7,
+  ladderCount: 7,
   foliageClumpsPerPlatform: 2,
   noDeadEnds: true,               // every walkable cell lies on a loop: no path is a dead end
 
@@ -52,7 +52,7 @@ export const CONFIG = {
   maxSteps: 500,
   minStartPathDistance: 22,
   catchDistance: 1.5,            // the police catches the thief on the same or a neighbouring cell
-  exitSides: ['west', 'east'],   // one exit in the middle of each of these sides of the boundary wall
+  exitSides: ['east'],           // the hospital door: the middle of the east side of the boundary wall
   diamondMinFromExit: 10,        // the diamond is never placed right next to an exit
   thiefStartFromDiamond: 22,     // the thief starts at least this far (path) from the diamond
   policeStartFromDiamond: [3, 10],
@@ -60,18 +60,43 @@ export const CONFIG = {
   // Position + movement relations (this week's assignment)
   relations: {
     betweenTolerance: 1.6,   // "between": at most this far (cells, on the plan) from the segment
-    coverMin: 5,             // "among": at least this many of the 8 cells around are solid
-    aroundDeg: 270,          // "around": the bearing from the diamond turned at least this much
+    coverMin: 4,             // "among": at least this many of the 8 cells around are solid: you are hidden
+    aroundDeg: 270,          // "around": the bearing from the case turned at least this much
     aroundRadius: 8,         // ... while staying within this many cells of it (plan distance)
     pastDistance: 4,         // "past": the gap closed to at most this path distance and opened again
   },
 
-  // Owls: occupants with a built-in capability. An owl hoots when the thief is adjacent to it.
-  owls: {
+  // Crows: occupants with a built-in capability. A crow caws when you are adjacent to it.
+  crows: {
     count: 3,
-    hootRange: 16,           // a hoot carries farther than a footstep (acoustic distance)
-    cooldown: 30,            // steps an owl stays quiet after hooting
-    minFromDiamond: 5,       // owls never perch right next to the diamond
+    cawRange: 16,            // a caw carries farther than a footstep (acoustic distance)
+    cooldown: 40,            // ticks a crow stays quiet after cawing
+    minFromCase: 5,          // crows never perch right next to the case
+  },
+
+  // The game: you, the creature, the vaccine case and the hospital. One tick is one step.
+  game: {
+    tickMs: 150,             // real time per step
+    walkSpeed: 0.4,          // walking: cells per tick, quiet (heard as if sneakQuietness farther away)
+    runSpeed: 0.8,           // running (Shift): cells per tick, heard at the full hearing range
+    stamina: 20,             // ticks of running before you are out of breath (3 seconds)
+    staminaRecover: 0.3,     // stamina back per tick while not running
+    climbTicks: 3,           // a ladder takes this many ticks
+    shotRange: 7,            // the shot reaches this far (Euclidean), needs a clear line
+    shotCooldown: 4,         // ticks between shots
+    shotHeard: 20,           // a shot is heard this far (acoustic distance)
+    freezeTicks: 20,         // a hit freezes the creature for 3 seconds (20 x 150 ms)
+    hideSeenWithin: 2,       // hidden among cover, you are still seen this close (Euclidean)
+    caseAlarmTicks: 60,      // the case's alarm: after you take it the creature knows where you are this long (9 s)
+    caseFromDoor: 26,        // the case lies at least this far (path) from the hospital door
+    maxTicks: 2400,          // 6 minutes: then the night is over and it finds you
+    searchTicks: 8,          // the creature turns a full circle where it lost you
+    difficulty: {
+      // creature speeds in cells per tick (fractions add up between ticks), and your bullets
+      easy:   { patrol: 0.35, investigate: 0.55, chase: 0.95, track: 0.9, ammo: 3 },
+      normal: { patrol: 0.4, investigate: 0.65, chase: 1.05, track: 1.0, ammo: 2 },
+      hard:   { patrol: 0.45, investigate: 0.7, chase: 0.8, track: 0.75, ammo: 1 },
+    },
   },
 
   // Running speeds in cells per step (fractions add up: 1.2 = one extra cell every 5 steps).

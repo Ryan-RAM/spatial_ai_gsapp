@@ -1,39 +1,26 @@
-// Plays many rounds without rendering and reports the police win rate and average round length.
-// Usage: node tests/balance.mjs [rounds] [maps]
+// Plays many runs with the scripted player and reports the win rate per difficulty.
+// Usage: node tests/balance.mjs [runs per map] [maps] [skill]
 
 import { CONFIG } from '../src/sim/config.js';
 import { makeContext } from '../src/sim/context.js';
-import { playRound } from '../src/sim/game.js';
+import { playBotRun } from '../src/sim/bot.js';
 
-const rounds = Number(process.argv[2] || 320);
-const maps = Number(process.argv[3] || 8);
-const perMap = Math.ceil(rounds / maps);
-
-let police = 0;
-let total = 0;
-let steps = 0;
-let policeSteps = 0;
-const rows = [];
-const t0 = Date.now();
-for (let m = 0; m < maps; m++) {
-  const seed = CONFIG.seed + m;
-  const ctx = makeContext(CONFIG, seed);
-  let wins = 0;
-  for (let r = 1; r <= perMap; r++) {
-    const res = playRound(ctx, r);
-    total++;
-    steps += res.steps;
-    if (res.winner === 'police') { police++; wins++; policeSteps += res.steps; }
+const perMap = Number(process.argv[2] || 40);
+const maps = Number(process.argv[3] || 6);
+const skill = Number(process.argv[4] || 1);
+const ctxs = Array.from({ length: maps }, (_, m) => makeContext(CONFIG, CONFIG.seed + m));
+const out = {};
+for (const difficulty of Object.keys(CONFIG.game.difficulty)) {
+  let wins = 0; let total = 0; let ticks = 0; let shots = 0; const why = {};
+  for (const ctx of ctxs) {
+    for (let r = 1; r <= perMap; r++) {
+      const g = playBotRun(ctx, { difficulty, round: r, skill });
+      total++; ticks += g.step; shots += g.player.shots;
+      if (g.result === 'win') wins++;
+      const last = g.events[g.events.length - 1].text;
+      why[last] = (why[last] || 0) + 1;
+    }
   }
-  rows.push({ seed, rounds: perMap, policeWinRate: +(wins / perMap).toFixed(3) });
+  out[difficulty] = { winRate: +(wins / total).toFixed(3), avgSeconds: +((ticks / total) * CONFIG.game.tickMs / 1000).toFixed(1), shotsPerRun: +(shots / total).toFixed(2), endings: why };
 }
-console.table(rows);
-console.log(JSON.stringify({
-  rounds: total,
-  maps,
-  policeWins: police,
-  policeWinRate: +(police / total).toFixed(3),
-  averageSteps: +(steps / total).toFixed(1),
-  averageStepsWhenPoliceWins: police ? +(policeSteps / police).toFixed(1) : null,
-  seconds: (Date.now() - t0) / 1000,
-}));
+console.log(JSON.stringify(out, null, 1));
