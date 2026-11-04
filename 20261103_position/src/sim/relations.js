@@ -1,16 +1,15 @@
 // Position and movement relations between the occupants of the forest: you, the creature, the
-// vaccine case, the hospital door and the crows. Read after every tick; they drive the indicators,
-// hiding (among), the crows (adjacent) and the creature's ambush (between).
+// vaccine case, the hospital door, the trees and the crows. Read after every tick; they drive the
+// indicators, hiding (up in a tree), the crows (adjacent) and the creature's ambush (between).
 //
 // Position (prepositions of place):
-//   above / below   within 2 columns on the plan, on the other level
+//   in / above      you are up in a tree, above the ground; "below" when the creature is under it
 //   behind          within sight range, but in the rear half of someone's facing
-//   adjacent        no occupiable cell in between (walking neighbours, or stacked in the same column)
+//   adjacent        no occupiable cell in between (one walking step, no cutting a blocked corner)
 //   between         m lies on the plan segment from a to b, give or take a tolerance
-//   among           most of the 8 cells around are solid: hidden in cover
 // Movement (prepositions of movement):
 //   toward / away   one step changes the path distance to the other one
-//   up / down       a ladder took someone to the other level
+//   up / down       you climbed up into a tree or down from it
 //   around          the bearing from the case turned through 270 degrees or more
 //   past            the gap closed to a few cells and opened again while the creature never saw you
 
@@ -119,12 +118,17 @@ export function computeRelations(game, prev) {
   const position = [];
   const movement = [];
 
-  // above / below
-  if (isAbove(world, me.node, it.node)) position.push({ kind: 'above', upper: 'player', lower: 'creature', text: sentence('player', 'above the creature') });
-  else if (isAbove(world, it.node, me.node)) position.push({ kind: 'above', upper: 'creature', lower: 'player', text: sentence('creature', 'above you') });
+  // in a tree, above the ground (and the creature below, if it is under your tree)
+  if (me.inTree !== null) {
+    const T = { x: me.inTree % world.W, y: Math.floor(me.inTree / world.W) };
+    const Q = nodeXYL(world, it.node);
+    const under = Math.max(Math.abs(Q.x - T.x), Math.abs(Q.y - T.y)) <= rc.belowWithin;
+    position.push({ kind: 'above', upper: 'player', lower: 'creature', tree: me.inTree, under,
+      text: under ? 'You are up in a tree. The creature is right below you' : 'You are up in a tree, above the ground: it cannot see you' });
+  }
 
   // behind
-  if (isBehind(world, it.node, it.facing, me.node, config.visionRange)) position.push({ kind: 'behind', who: 'player', of: 'creature', text: sentence('player', 'behind the creature') });
+  if (me.inTree === null && isBehind(world, it.node, it.facing, me.node, config.visionRange)) position.push({ kind: 'behind', who: 'player', of: 'creature', text: sentence('player', 'behind the creature') });
   if (isBehind(world, me.node, me.facing, it.node, config.visionRange)) position.push({ kind: 'behind', who: 'creature', of: 'player', text: sentence('creature', 'behind you') });
 
   // adjacent
@@ -144,10 +148,6 @@ export function computeRelations(game, prev) {
       text: `The creature is between you and the ${game.caseItem.carried ? 'hospital' : 'case'}` });
   }
 
-  // among: you are hidden in cover
-  const cover = coverAt(world, me.node);
-  if (cover.solid >= rc.coverMin) position.push({ kind: 'among', who: 'player', solid: cover.solid, material: cover.kind, text: sentence('player', `hidden among the ${cover.kind} (${cover.solid} of 8 around)`) });
-
   if (prev) {
     // toward / away: each one's step, measured against where the other stood
     for (const [who, other] of [['player', 'creature'], ['creature', 'player']]) {
@@ -160,15 +160,11 @@ export function computeRelations(game, prev) {
       const verb = who === 'player' ? 'move' : 'moves';
       movement.push({ kind: delta < 0 ? 'toward' : 'away', who, other, from, to, text: `${NAME[who]} ${verb} ${delta < 0 ? 'toward' : 'away from'} ${OBJ[other]}` });
     }
-    // up / down a ladder
-    for (const who of ['player', 'creature']) {
-      const a = nodeXYL(world, prev[who]);
-      const b = nodeXYL(world, game[who].node);
-      if (a.level !== b.level) {
-        const up = b.level > a.level;
-        const verb = who === 'player' ? 'climb' : 'climbs';
-        movement.push({ kind: up ? 'up' : 'down', who, node: game[who].node, text: `${NAME[who]} ${verb} ${up ? 'up to the canopy' : 'down to the ground'}` });
-      }
+    // up / down a tree
+    if ((prev.inTree ?? null) !== me.inTree) {
+      const up = me.inTree !== null;
+      movement.push({ kind: up ? 'up' : 'down', who: 'player', node: me.node, tree: up ? me.inTree : prev.inTree,
+        text: up ? 'You climb up into a tree' : 'You climb down from the tree' });
     }
     if (!game.caseItem.carried) {
       for (const who of ['player', 'creature']) {
@@ -226,15 +222,23 @@ function trackPast(game, rc) {
 
 // ---------------------------------------------------------------- crows
 
-// Crows perch on canopy cells, spread out and away from the case: occupants whose built-in
-// capability is to raise the alarm.
+// Crows perch in trees, spread out and away from the case: occupants whose built-in capability
+// is to raise the alarm.
 export function placeCrows(ctx, rng, caseNode) {
-  const { world, config, pf } = ctx;
+  const { world, config } = ctx;
   const cc = config.crows;
-  const fromCase = pf.row(caseNode);
-  const canopy = world.nodes.filter((n) => n >= world.N);
-  const pool = (canopy.length ? canopy : world.nodes)
-    .filter((n) => fromCase[world.nodeIndex[n]] >= cc.minFromCase && !ctx.exits.some((e) => e.node === n));
+  const C0 = nodeXYL(world, caseNode);
+  const pool = [];
+  for (let i = 0; i < world.N; i++) {
+    if (world.ground[i] !== G.TREE) continue;
+    const x = i % world.W;
+    const y = Math.floor(i / world.W);
+    if (Math.hypot(x - C0.x, y - C0.y) < cc.minFromCase) continue;
+    let open = false; // a tree you can stand next to
+    forEachNeighbour(world, i, () => { open = true; });
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (world.walk[(y + dy) * world.W + x + dx]) open = true;
+    if (open) pool.push(i);
+  }
   const crows = [];
   for (let k = 0; k < cc.count && pool.length; k++) {
     let best = null;
@@ -261,7 +265,7 @@ export function stepCrows(game) {
   for (const c of game.crows) {
     c.cawing = false;
     if (c.cooldown > 0) c.cooldown--;
-    c.watching = c.node === me.node || isAdjacent(world, c.node, me.node);
+    c.watching = me.inTree === c.node || isAdjacent(world, c.node, me.node);
     if (!c.watching) continue;
     const P = nodeXYL(world, c.node);
     const T = nodeXYL(world, me.node);

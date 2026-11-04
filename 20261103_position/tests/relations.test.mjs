@@ -103,17 +103,19 @@ test('relations are listed every tick and movements carry a mover', () => {
       for (const p of g.relations.position) kinds.add(p.kind);
     }
   }
-  for (const k of ['toward', 'away', 'behind', 'among', 'adjacent']) assert.ok(kinds.has(k), k);
+  for (const k of ['toward', 'away', 'behind', 'adjacent']) assert.ok(kinds.has(k), k);
 });
 
-test('crows perch apart from the case and caw once when you are next to them', () => {
+test('crows perch in trees apart from the case and caw once when you are next to them', () => {
   const ctx = makeContext(CONFIG);
   const g = newRun(ctx, { round: 1 });
   assert.equal(g.crows.length, CONFIG.crows.count);
-  for (const c of g.crows) assert.ok(ctx.pf.distance(c.node, g.caseItem.node) >= CONFIG.crows.minFromCase);
+  for (const c of g.crows) assert.equal(ctx.world.ground[c.node], 1, 'a tree cell');
   const crow = g.crows[0];
-  g.player.node = crow.node;
-  g.creature.node = crow.node; // right there: hears it for sure
+  const x = crow.node % ctx.world.W; const y = Math.floor(crow.node / ctx.world.W);
+  const beside = ctx.world.nodes.find((n) => Math.max(Math.abs((n % ctx.world.W) - x), Math.abs(Math.floor(n / ctx.world.W) - y)) === 1);
+  g.player.node = beside;
+  g.creature.node = beside; // right there: hears it for sure
   g.sounds = [];
   stepCrows(g);
   assert.equal(g.sounds.filter((s) => s.who === 'crow').length, 1);

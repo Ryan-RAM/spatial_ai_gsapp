@@ -79,15 +79,15 @@ export function ambushSpot(ctx, from) {
   return path[Math.floor(path.length * 0.66)];
 }
 
-// Can the creature see you? The vision cone and line of sight, but if you are hidden among cover it
-// only notices you very close.
+// Can the creature see you? Its vision cone and line of sight, up to its sight range (by difficulty).
+// It never sees you up in a tree.
 export function creatureSees(game) {
-  const { world, config } = game.ctx;
+  const { world } = game.ctx;
   const c = game.creature;
   const me = game.player;
+  if (me.inTree !== null) return false; // up in a tree, out of its sight
   const s = canSee(world, c.node, c.facing, me.node);
-  if (!s.visible) return false;
-  return !me.hidden || s.dist <= config.game.hideSeenWithin;
+  return s.visible && s.dist <= game.speeds.sight;
 }
 
 export function creatureAct(ctx, game, rng) {

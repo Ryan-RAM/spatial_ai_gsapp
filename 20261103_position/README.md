@@ -6,30 +6,30 @@ Instructor: [William Martin](https://awmartin.xyz/spatial-computing/course/)
 
 Group: **Ryan Fu, Lu Liu, Yifan Zhao**
 
-A playable night escape in a snowy two-level forest, built on last week's [Misty Forest Chase](../20261022_distance/). You find a vaccine case in the forest and carry it to the hospital door on the east side while a creature made of roots hunts you. Every rule of the game is a preposition of place or movement: you hide *among* cover, stay out of its view or slip *behind* it, get past it, and it ambushes you by standing *between* you and the hospital.
+A playable night escape in a snowy forest, built on last week's [Misty Forest Chase](../20261022_distance/). You find a vaccine case and carry it to the hospital door on the east side while a creature made of roots hunts you. Every rule of the game is a preposition of place or movement: you hide *up in a tree* (above it), slip *behind* and *past* it, and it ambushes you by standing *between* you and the hospital.
 
-Play: open `index.html` through a web server (for example `python3 -m http.server` in this folder). Tests: `npm test`. Balance: `npm run balance`.
+Play: open `index.html` through a web server (for example `python3 -m http.server` in this folder). Tests: `npm test`. Balance: `npm run balance`. Made for a computer screen (16:9); on a phone, on-screen buttons appear.
 
 ## Controls
 
-| Key | Action |
+| Input | Action |
 |---|---|
-| W A S D / arrows | move (walking is quiet) |
-| Shift + move | run: faster but loud, uses stamina (3 seconds, refills while walking) |
-| Space | shoot: if the creature is within 7 cells with a clear line, it freezes for 3 seconds |
-| E (on a ladder) | climb up to the canopy walkways or down |
+| Arrow keys / WASD, or click where to go | move (click a tree to walk to it and climb it) |
+| Space (one button for everything) | shoot when it is close and in the clear (freezes it for 3 seconds); climb a tree next to you; climb down |
 | M / P | map view / pause |
 
-On a phone, on-screen buttons appear.
+A prompt at the bottom of the screen always says what Space will do.
 
 ## Rules
 
-- **Win:** reach the hospital door with the case. Screen: *你拯救了世界 · You saved the world*.
-- **Lose:** the creature reaches you (same or neighbouring cell, not while frozen), or the night runs out after 6 minutes. Screen: *你被它融合了 · You became part of it*.
-- **Sight** (Euclidean distance): the creature sees 9 cells ahead in a 120° cone, blocked by trees, bushes, rocks, leaves and floors. You only see the creature when it is within 9 cells with a clear line; otherwise the minimap shows a fading **?** where you last saw or heard it.
-- **Hearing** (acoustic distance): your running steps are heard within 12, walking within 7; shots within 20. You hear the creature move within 12.
-- **The case alarm:** when you pick up the case it beeps for 9 seconds and the creature knows where you are.
-- **Difficulty:** creature speed and bullets. With a scripted player (`src/sim/bot.js`, which only knows what a player could see and hear) the win rate is about **84% on Easy, 51% on Normal, 24% on Hard** (300 runs on 6 maps each).
+- **Win:** reach the hospital door with the case: *You saved the world*.
+- **Lose:** it reaches you (same or neighbouring cell, not while frozen and not while you are in a tree), or the night runs out after 6 minutes: *You became part of it*.
+- **Trees:** up in a tree it cannot see you or catch you, even standing below. You can hold on for 7.5 seconds. The case's alarm still gives you away.
+- **Sight** (Euclidean distance): it sees ahead in a 120° cone, 6 to 9 cells by difficulty, blocked by trees, bushes and rocks. You only see it within 9 cells with a clear line; otherwise the minimap shows a fading **?** where you last saw or heard it.
+- **Hearing** (acoustic distance): your footsteps are heard within 7, shots within 20; you hear it move within 12.
+- **The case alarm:** when you pick up the case it beeps for 6 seconds and it knows where you are.
+- **Fear:** synthesized sound (wind, a heartbeat that speeds up as it closes in, its creaking, a screech when it sees you), a red vignette, a flickering flashlight and camera shake when it is near, and a lunge when it gets you.
+- **Difficulty:** its speed and sight, and your bullets (Easy 3, Normal 1, Hard 1). With a scripted player (`src/sim/bot.js`, which only knows what a player could see and hear) the win rate is about **86% on Easy, 63% on Normal, 39% on Hard** (300 runs on 6 maps each).
 
 ## Position (Part 1)
 
@@ -37,33 +37,32 @@ All rules live in [`src/sim/relations.js`](src/sim/relations.js) and are checked
 
 | Relation | Rule on the grid | Indicator |
 |---|---|---|
-| **Among (hidden)** | at least 4 of the 8 cells around you are solid (trees, bushes, rocks; leaves on the canopy) | green double ring, green 3 × 3 frame on the minimap, HIDDEN chip |
+| **In a tree (above / below)** | you are up in a tree; it is *below* when it is within 2 cells of your tree | double rings and ▲ IN THE TREE on the minimap, ▼ BELOW on it, IN A TREE chip |
 | **Behind** | within 9 cells and more than 90° from where the other faces | rear half-disc shaded, BEHIND tag |
-| **Adjacent** | no occupiable cell in between: one walking step (no cutting a blocked corner, ladders count) or the same column on the other level | one yellow outline around both cells: you and the creature, the case, the hospital door, a crow |
-| **Between** | on the plan, the creature projects inside the segment from you to your goal (case, then door) and lies within 1.6 cells of it | dashed line, crossed out at the creature, IN THE WAY tag |
-| **Above / below** | one on the canopy, the other on the ground, at most 2 columns apart | double rings, ▲ ABOVE / ▼ BELOW, vertical line in 3D |
+| **Adjacent** | no occupiable cell in between: one walking step without cutting a blocked corner | one yellow outline around both cells: you and the creature, the case, the hospital door, a crow's tree |
+| **Between** | on the plan, it projects inside the segment from you to your goal (case, then door) and lies within 1.6 cells of it | dashed line crossed out at the creature, IN THE WAY tag |
 
 Relations that involve the creature are only shown while you can see it.
 
 ## Position (Part 2): behaviours
 
-- **(a) Placement → response.** *Hidden among:* the creature does not see you among cover, even inside its cone, unless it is within 2 cells. *Ambush:* when the alarm stops and it has lost you while you carry the case, it goes to stand two thirds of the way along your shortest walk to the door, between you and the hospital.
-- **(b) Intrinsic capability: crows.** Three crows perch on the canopy. When you are adjacent to one it caws; the creature hears the caw within an acoustic distance of 16 and comes to the crow.
+- **(a) Placement → response.** *Hiding up a tree:* it never sees or catches you in a tree. *Ambush:* when the alarm stops and it has lost you while you carry the case, it goes to stand two thirds of the way along your shortest walk to the door, between you and the hospital.
+- **(b) Intrinsic capability: crows.** Three crows perch in trees. When you are adjacent to a crow's tree it caws; it hears the caw within an acoustic distance of 16 and comes.
 
 ## Movement
 
 | Movement | Rule | Indicator |
 |---|---|---|
 | **Toward / away** | the mover's path distance to the other, before and after its step | arrow on the minimap, solid toward, dashed away |
-| **Up / down** | a ladder changed the level | ↑ UP / ↓ DOWN tag, arrow cone in 3D |
-| **Around** | within 8 cells of the case, the bearing from it turned through 270° | the trail with an arrowhead, AROUND tag |
-| **Past** | the gap fell to 4 cells or less and grew again while the creature never saw you | ring at the closest point, » PAST tag |
+| **Up / down** | you climbed into a tree or down from it | ↑ UP / ↓ DOWN tag, arrow cone in 3D, a bar for how long you can hold on |
+| **Around** | within 7 cells of the case, the bearing from it turned through 270° | the trail with an arrowhead, AROUND tag |
+| **Past** | the gap fell to 4 cells or less and grew again while it never saw you | ring at the closest point, » PAST tag |
 
 The page has a diagram for each relation and behaviour.
 
 ## The scene
 
-A 46 × 32 grid with two levels: ground (pines, bushes, rocks, a boundary wall) and canopy walkways 3 cells up, joined by ladders, with no dead ends. Maps come from a seed; **New map** draws another. The creature, the case, the crows, the hospital, the night look and the story are original to this project.
+A 34 × 24 grid on one level: pines, bushes, rocks and a boundary wall, with no dead ends. Maps come from a seed; **New map** draws another. The creature, the case, the crows, the hospital, the look, the sound and the story are original to this project.
 
 ## The four distances (from last week, where they drove a police officer and a thief)
 
@@ -102,7 +101,7 @@ The fog cuts every ray at 9, so open places have similar fingerprints, while pla
 ## Files
 
 ```
-index.html, style.css        the game page (works at phone width, touch buttons on phones)
+index.html, style.css        the game page (16:9 for a computer screen; touch buttons on phones)
 src/sim/                     game core, no DOM, runs in Node
   config.js                  every parameter in one object (config.game, config.relations, config.crows)
   escape.js                  one run: you, the case, the hospital, shots, winning and losing
@@ -111,6 +110,6 @@ src/sim/                     game core, no DOM, runs in Node
   bot.js                     a scripted player for balancing and tests
   world.js, los.js, rays.js, paths.js, metrics.js, context.js   map, sight, hearing, paths (last week)
 src/render/                  three.js night scene and the minimap
-src/ui/                      input, game loop, HUD and panels
+src/ui/                      input, game loop, HUD, panels and synthesized sound (audio.js)
 tests/                       node:test suites and the balance script
 ```

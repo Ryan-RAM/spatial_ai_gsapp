@@ -6,8 +6,8 @@ export const CONFIG = {
   seed: 20261022,
 
   // Grid
-  width: 46,
-  height: 32,
+  width: 34,
+  height: 24,
   levelHeight: 3,          // the canopy floor is 3 cells above the ground
   eyeHeight: 1.5,          // eye point above the floor an agent stands on
 
@@ -20,11 +20,11 @@ export const CONFIG = {
   foliageTop: 5.5,         // leaf clumps on the platforms
 
   // Map generation
-  treeCount: 185,
-  bushRows: 38,
-  rockCount: 19,
-  platformCount: 7,
-  ladderCount: 7,
+  treeCount: 118,
+  bushRows: 16,
+  rockCount: 9,
+  platformCount: 0,
+  ladderCount: 0,
   foliageClumpsPerPlatform: 2,
   noDeadEnds: true,               // every walkable cell lies on a loop: no path is a dead end
 
@@ -60,42 +60,40 @@ export const CONFIG = {
   // Position + movement relations (this week's assignment)
   relations: {
     betweenTolerance: 1.6,   // "between": at most this far (cells, on the plan) from the segment
-    coverMin: 4,             // "among": at least this many of the 8 cells around are solid: you are hidden
     aroundDeg: 270,          // "around": the bearing from the case turned at least this much
-    aroundRadius: 8,         // ... while staying within this many cells of it (plan distance)
+    aroundRadius: 7,         // ... while staying within this many cells of it (plan distance)
     pastDistance: 4,         // "past": the gap closed to at most this path distance and opened again
+    belowWithin: 2,          // "below": the creature this close (plan) to the tree you are in
   },
 
-  // Crows: occupants with a built-in capability. A crow caws when you are adjacent to it.
+  // Crows: occupants with a built-in capability. They perch in trees and caw when you are adjacent.
   crows: {
     count: 3,
     cawRange: 16,            // a caw carries farther than a footstep (acoustic distance)
     cooldown: 40,            // ticks a crow stays quiet after cawing
-    minFromCase: 5,          // crows never perch right next to the case
+    minFromCase: 5,          // crows never perch right next to the case (plan distance)
   },
 
   // The game: you, the creature, the vaccine case and the hospital. One tick is one step.
   game: {
     tickMs: 150,             // real time per step
-    walkSpeed: 0.4,          // walking: cells per tick, quiet (heard as if sneakQuietness farther away)
-    runSpeed: 0.8,           // running (Shift): cells per tick, heard at the full hearing range
-    stamina: 20,             // ticks of running before you are out of breath (3 seconds)
-    staminaRecover: 0.3,     // stamina back per tick while not running
-    climbTicks: 3,           // a ladder takes this many ticks
+    walkSpeed: 0.5,          // cells per tick (about 3 cells a second); footsteps heard as if sneakQuietness farther
+    climbTicks: 2,           // getting into or out of a tree
+    treeTicks: 50,           // you can hold on in a tree for 7.5 seconds, then you climb down
+    treeCooldown: 10,        // ticks before you can climb again
     shotRange: 7,            // the shot reaches this far (Euclidean), needs a clear line
     shotCooldown: 4,         // ticks between shots
     shotHeard: 20,           // a shot is heard this far (acoustic distance)
     freezeTicks: 20,         // a hit freezes the creature for 3 seconds (20 x 150 ms)
-    hideSeenWithin: 2,       // hidden among cover, you are still seen this close (Euclidean)
-    caseAlarmTicks: 60,      // the case's alarm: after you take it the creature knows where you are this long (9 s)
-    caseFromDoor: 26,        // the case lies at least this far (path) from the hospital door
-    maxTicks: 2400,          // 6 minutes: then the night is over and it finds you
+    caseAlarmTicks: 40,      // after you take the case it beeps for 6 seconds: the creature knows where you are
+    caseFromDoor: 16,        // the case lies at least this far (path) from the hospital door
+    maxTicks: 2400,          // 6 minutes: then the night is over
     searchTicks: 8,          // the creature turns a full circle where it lost you
     difficulty: {
-      // creature speeds in cells per tick (fractions add up between ticks), and your bullets
-      easy:   { patrol: 0.35, investigate: 0.55, chase: 0.95, track: 0.9, ammo: 3 },
-      normal: { patrol: 0.4, investigate: 0.65, chase: 1.05, track: 1.0, ammo: 2 },
-      hard:   { patrol: 0.45, investigate: 0.7, chase: 0.8, track: 0.75, ammo: 1 },
+      // creature speeds in cells per tick (yours is 0.5), how far it sees, and your bullets
+      easy:   { patrol: 0.28, investigate: 0.4, chase: 0.42, track: 0.4, sight: 6, ammo: 3 },
+      normal: { patrol: 0.32, investigate: 0.48, chase: 0.55, track: 0.5, sight: 8, ammo: 1 },
+      hard:   { patrol: 0.36, investigate: 0.55, chase: 0.72, track: 0.65, sight: 9, ammo: 1 },
     },
   },
 

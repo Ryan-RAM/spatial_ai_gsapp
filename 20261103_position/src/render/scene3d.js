@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { G, C, nodeXYL } from '../sim/world.js';
 import { eyePoint, inCone } from '../sim/los.js';
+import { actionFor, treeNextTo } from '../sim/escape.js';
 
 const tmpMatrix = new THREE.Matrix4();
 const tmpQuat = new THREE.Quaternion();
@@ -53,34 +54,71 @@ export function makeScene3D(container, palette) {
   const options = { relations: true, canopy: true };
   const camTarget = new THREE.Vector3();
   const camLook = new THREE.Vector3();
+  const camOff = new THREE.Vector3(0, 15.5, 10.5);
+  let climbFrom = null;
 
   const floorY = (level) => level * world.config.levelHeight;
   const cellV = (n, lift = 0.1) => { const { x, y, level } = nodeXYL(world, n); return new THREE.Vector3(x + 0.5, floorY(level) + lift, y + 0.5); };
   const colorOf = (who) => ({ player: palette.player, creature: palette.creature, crow: palette.crow, shot: '#ffffff' }[who] ?? palette.rel);
 
-  // ---- you: a figure in a pale parka, a ground ring, and a flashlight --------------------
+  // ---- you: a survivor in a hooded winter coat, scarf, backpack and flashlight ------------
   const you = new THREE.Group();
-  const parka = new THREE.MeshStandardMaterial({ color: palette.player, roughness: 0.6, emissive: palette.player, emissiveIntensity: 0.25, fog: false });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 1.0, 16), parka);
-  body.position.y = 0.5;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 12), parka);
-  head.position.y = 1.22;
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.42, 0.34), new THREE.MeshStandardMaterial({ color: 0x3b4450, fog: false }));
-  pack.position.set(-0.27, 0.7, 0);
-  const torch = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.3, 10), new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffe2a8, emissiveIntensity: 0.6, fog: false }));
-  torch.rotation.z = -Math.PI / 2;
-  torch.position.set(0.32, 0.85, 0.12);
-  const ringMat = new THREE.MeshBasicMaterial({ color: palette.player, transparent: true, opacity: 0.95, side: THREE.DoubleSide, fog: false });
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 40), ringMat);
+  const coat = new THREE.MeshStandardMaterial({ color: palette.player, roughness: 0.75, emissive: palette.player, emissiveIntensity: 0.16, fog: false });
+  const cloth = new THREE.MeshStandardMaterial({ color: 0x2c3138, roughness: 0.9, fog: false });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xe3b9a0, roughness: 0.7, fog: false });
+  const red = new THREE.MeshStandardMaterial({ color: 0xb3262b, roughness: 0.8, fog: false });
+  const figure = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.4, 6, 14), coat);
+  torso.position.y = 0.98;
+  torso.scale.set(1, 1, 0.85);
+  const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.26, 0.18, 14), coat);
+  hem.position.y = 0.7;
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.2, 18, 14), coat);
+  hood.position.y = 1.45;
+  hood.scale.set(1.05, 1.08, 1);
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), skin);
+  face.position.set(0.1, 1.43, 0);
+  const fur = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.045, 8, 20), new THREE.MeshStandardMaterial({ color: 0xe8e1d4, roughness: 1, fog: false }));
+  fur.rotation.y = Math.PI / 2;
+  fur.position.set(0.13, 1.44, 0);
+  const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.055, 8, 18), red);
+  scarf.rotation.x = Math.PI / 2;
+  scarf.position.y = 1.26;
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.1), red);
+  tail.position.set(-0.17, 1.12, 0.08);
+  tail.rotation.z = 0.25;
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.42, 0.34), new THREE.MeshStandardMaterial({ color: 0x3d4a3a, roughness: 0.9, fog: false }));
+  pack.position.set(-0.27, 1.02, 0);
+  const limb = (r, len, mat) => { const g = new THREE.Group(); const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 4, 10), mat); m.position.y = -len / 2 - r; g.add(m); return g; };
+  const legL = limb(0.075, 0.36, cloth);
+  const legR = limb(0.075, 0.36, cloth);
+  legL.position.set(0, 0.64, -0.1);
+  legR.position.set(0, 0.64, 0.1);
+  for (const leg of [legL, legR]) {
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.12), new THREE.MeshStandardMaterial({ color: 0x1a1c20, fog: false }));
+    boot.position.set(0.04, -0.58, 0);
+    leg.add(boot);
+  }
+  const armL = limb(0.06, 0.32, coat);
+  const armR = limb(0.06, 0.32, coat);
+  armL.position.set(0, 1.2, -0.25);
+  armR.position.set(0, 1.2, 0.25);
+  const torch = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.26, 10), new THREE.MeshStandardMaterial({ color: 0x1d1f23, emissive: 0xffe2a8, emissiveIntensity: 0.5, fog: false }));
+  torch.position.set(0, -0.48, 0);
+  armR.add(torch);
+  figure.add(torso, hem, hood, face, fur, scarf, tail, pack, legL, legR, armL, armR);
+  const ringMat = new THREE.MeshBasicMaterial({ color: palette.player, transparent: true, opacity: 0.9, side: THREE.DoubleSide, fog: false });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.58, 40), ringMat);
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.04;
-  const hiddenRing = new THREE.Mesh(new THREE.RingGeometry(0.75, 0.85, 40, 1), new THREE.MeshBasicMaterial({ color: palette.hidden, transparent: true, opacity: 0.9, side: THREE.DoubleSide, fog: false }));
-  hiddenRing.rotation.x = -Math.PI / 2;
-  hiddenRing.position.y = 0.05;
-  you.add(body, head, pack, torch, ring, hiddenRing);
+  you.add(figure, ring);
   scene.add(you);
+  // the tree you can climb right now: a ring at its foot
+  const climbRing = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.72, 40), new THREE.MeshBasicMaterial({ color: palette.rel, transparent: true, opacity: 0.85, side: THREE.DoubleSide, fog: false }));
+  climbRing.rotation.x = -Math.PI / 2;
+  scene.add(climbRing);
 
-  const flashlight = new THREE.SpotLight(0xffe7c2, 14, 15, 0.52, 0.55, 1.1);
+  const flashlight = new THREE.SpotLight(0xffe7c2, 16, 17, 0.55, 0.5, 1.05);
   flashlight.position.set(0, 1.1, 0);
   scene.add(flashlight, flashlight.target);
   const glow = new THREE.PointLight(0xffe7c2, 1.6, 4.5, 1.2); // so you are always visible
@@ -91,33 +129,68 @@ export function makeScene3D(container, palette) {
   const ice = new THREE.MeshStandardMaterial({ color: 0xa8dcff, roughness: 0.2, metalness: 0.1, emissive: 0x3aa0ff, emissiveIntensity: 0.6, flatShading: true, fog: false });
   const ember = new THREE.MeshBasicMaterial({ color: palette.creature, fog: false });
   const creature = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1), bark);
-  core.position.y = 1.15;
-  core.scale.set(1, 1.15, 0.9);
-  creature.add(core);
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.55, 1), bark);
+  core.position.y = 1.75;
+  core.scale.set(0.9, 1.4, 0.8);
+  const skull = new THREE.Mesh(new THREE.IcosahedronGeometry(0.34, 0), bark);
+  skull.position.set(0.3, 2.45, 0);
+  creature.add(core, skull);
   const tendrils = [];
-  for (let k = 0; k < 10; k++) {
-    const a = (k / 10) * Math.PI * 2 + (k % 2) * 0.3;
-    const up = k % 3 === 0;
-    const r = up ? 0.7 : 1.05;
-    const pts = [
-      new THREE.Vector3(0, 1.15, 0),
-      new THREE.Vector3(Math.cos(a) * r * 0.45, up ? 1.7 : 1.0, Math.sin(a) * r * 0.45),
-      new THREE.Vector3(Math.cos(a + 0.4) * r * 0.85, up ? 2.15 : 0.45, Math.sin(a + 0.4) * r * 0.85),
-      new THREE.Vector3(Math.cos(a + 0.7) * r, up ? 2.3 : 0.02, Math.sin(a + 0.7) * r),
-    ];
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, up ? 0.06 : 0.09, 6), bark);
-    tendrils.push(tube);
-    creature.add(tube);
-  }
+  const tube = (pts, r) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 20, r, 6), bark);
+  // legs: roots that splay into the snow
   for (let k = 0; k < 7; k++) {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(0.055 + 0.03 * (k % 3), 8, 6), ember);
-    const a = k * 2.4;
-    e.position.set(Math.cos(a) * 0.42, 1.0 + (k % 4) * 0.13, Math.sin(a) * 0.42);
+    const a = (k / 7) * Math.PI * 2 + 0.4;
+    const r = 1.1 + 0.25 * (k % 2);
+    const t = tube([
+      new THREE.Vector3(0, 1.5, 0),
+      new THREE.Vector3(Math.cos(a) * r * 0.4, 1.05, Math.sin(a) * r * 0.4),
+      new THREE.Vector3(Math.cos(a + 0.3) * r * 0.85, 0.45, Math.sin(a + 0.3) * r * 0.85),
+      new THREE.Vector3(Math.cos(a + 0.5) * r * 1.1, 0.02, Math.sin(a + 0.5) * r * 1.1),
+    ], 0.085);
+    tendrils.push(t); creature.add(t);
+  }
+  // two long arms reaching forward, with twig fingers
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Group();
+    const t = tube([
+      new THREE.Vector3(0.2, 2.05, side * 0.3),
+      new THREE.Vector3(0.75, 2.2, side * 0.7),
+      new THREE.Vector3(1.35, 1.6, side * 0.75),
+      new THREE.Vector3(1.75, 0.95, side * 0.5),
+    ], 0.07);
+    arm.add(t);
+    for (let f = 0; f < 4; f++) {
+      const ff = tube([
+        new THREE.Vector3(1.75, 0.95, side * 0.5),
+        new THREE.Vector3(2.0, 0.85 + f * 0.06, side * (0.35 + f * 0.1)),
+        new THREE.Vector3(2.2, 0.6 + f * 0.1, side * (0.25 + f * 0.13)),
+      ], 0.025);
+      arm.add(ff);
+    }
+    arm.userData.side = side;
+    tendrils.push(arm); creature.add(arm);
+  }
+  // spines on its back
+  for (let k = 0; k < 6; k++) {
+    const a = k * 1.1;
+    const t = tube([
+      new THREE.Vector3(-0.1, 2.0, 0),
+      new THREE.Vector3(-0.35 + Math.cos(a) * 0.2, 2.6 + k * 0.05, Math.sin(a) * 0.4),
+      new THREE.Vector3(-0.6 + Math.cos(a) * 0.3, 3.1 + k * 0.08, Math.sin(a) * 0.6),
+    ], 0.035);
+    tendrils.push(t); creature.add(t);
+  }
+  // a cluster of ember eyes on the skull and the body
+  for (let k = 0; k < 11; k++) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.04 + 0.025 * (k % 3), 8, 6), ember);
+    const a = k * 2.39;
+    const onSkull = k < 6;
+    if (onSkull) e.position.set(0.55 + Math.cos(a) * 0.08, 2.42 + Math.sin(a) * 0.14, Math.sin(a * 1.7) * 0.2);
+    else e.position.set(0.42 + Math.cos(a) * 0.1, 1.6 + (k % 4) * 0.16, Math.sin(a) * 0.35);
     creature.add(e);
   }
-  const creatureLight = new THREE.PointLight(palette.creature, 3, 6, 1.4);
-  creatureLight.position.y = 1.2;
+  const creatureLight = new THREE.PointLight(palette.creature, 4, 7, 1.3);
+  creatureLight.position.set(0.6, 2.2, 0);
   creature.add(creatureLight);
   const iceRing = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.3, 48), new THREE.MeshBasicMaterial({ color: 0x9fd8ff, transparent: true, opacity: 0.85, side: THREE.DoubleSide, fog: false }));
   iceRing.rotation.x = -Math.PI / 2;
@@ -442,8 +515,7 @@ export function makeScene3D(container, palette) {
       const c = game.crows[i];
       m.visible = !!c;
       if (!c) return;
-      const p = cellV(c.node, 0);
-      m.position.copy(p);
+      m.position.set((c.node % world.W) + 0.5, 2.85, Math.floor(c.node / world.W) + 0.5);
       m.rotation.y = -c.facing;
       for (const e of m.userData.eyes) e.material = c.watching ? crowEyeOn : crowEyeOff;
     });
@@ -504,26 +576,76 @@ export function makeScene3D(container, palette) {
     }
     const P = anim.player.current;
     const Q = anim.creature.current;
+    const me = g.player;
     if (P) {
-      you.position.set(P.x, P.z, P.y);
+      // in a tree: up among the branches, hugging the trunk
+      let px = P.x; let py = P.z; let pz = P.y;
+      const treeCell = me.inTree ?? (me.climbing === 'down' ? climbFrom : null);
+      if (me.inTree !== null) climbFrom = me.inTree;
+      if (treeCell !== null && (me.inTree !== null || me.climbing === 'down')) {
+        const tx = (treeCell % world.W) + 0.5;
+        const tz = Math.floor(treeCell / world.W) + 0.5;
+        const k = me.inTree !== null ? 1 : 0.5;
+        px = P.x + (tx - P.x) * k;
+        pz = P.y + (tz + 0.45 - P.y) * k; // on the camera side of the trunk, so you stay visible
+        py = 1.9 * k;
+      } else if (me.climbing === 'up' && me.climbTree !== null) {
+        const tx = (me.climbTree % world.W) + 0.5;
+        const tz = Math.floor(me.climbTree / world.W) + 0.5;
+        px = (P.x + tx) / 2; pz = (P.y + tz) / 2; py = 0.9;
+      }
+      you.position.set(px, py, pz);
       you.rotation.y = -P.facing;
-      const hidden = g.player.hidden;
-      hiddenRing.visible = hidden;
-      ringMat.color.set(hidden ? palette.hidden : palette.player);
-      parka.opacity = 1;
+      ring.visible = me.inTree === null;
+      if (goalMark.visible && me.node !== undefined && goalMark.position.distanceTo(cellV(me.node, 0.05)) < 0.1) goalMark.visible = false;
+      goalMark.rotation.z = now / 600;
+      // walking: legs and arms swing; in a tree: legs bent, arms up
+      const walk = me.inTree === null && (me.moving || (anim.player.to && (now - anim.player.t0) < anim.player.dur && (anim.player.from.x !== anim.player.to.x || anim.player.from.y !== anim.player.to.y)));
+      const sw = walk ? Math.sin(now / 105) * 0.65 : 0;
+      if (me.inTree !== null) {
+        legL.rotation.z = 0.9; legR.rotation.z = 0.3;
+        armL.rotation.z = -2.4; armR.rotation.z = -2.1;
+      } else {
+        legL.rotation.z = sw; legR.rotation.z = -sw;
+        armL.rotation.z = -sw * 0.8;
+        armR.rotation.z = -1.25 + sw * 0.15; // holding the flashlight forward
+      }
+      figure.position.y = walk ? Math.abs(Math.sin(now / 105)) * 0.04 : 0;
+      // the tree you could climb
+      const action = g.over ? null : actionFor(g);
+      climbRing.visible = action === 'climb';
+      if (climbRing.visible) {
+        const t = treeNextTo(world, me.node, me.facing);
+        climbRing.position.set((t % world.W) + 0.5, 0.05, Math.floor(t / world.W) + 0.5);
+        climbRing.material.opacity = 0.55 + 0.35 * Math.sin(now / 160);
+      }
       const fx = Math.cos(P.facing);
       const fz = Math.sin(P.facing);
-      flashlight.position.set(P.x + fx * 0.3, P.z + 1.1, P.y + fz * 0.3);
-      flashlight.target.position.set(P.x + fx * 6, P.z + 0.1, P.y + fz * 6);
-      glow.position.set(P.x, P.z + 1.4, P.y);
-      // camera: follow from the south and above
-      const off = mapView ? new THREE.Vector3(0, 52, 6) : new THREE.Vector3(0, 13 * zoom, 9.5 * zoom);
-      const target = mapView ? new THREE.Vector3(world.W / 2, 0, world.H / 2) : new THREE.Vector3(P.x, P.z, P.y);
-      camTarget.lerp(target, 0.12);
-      camLook.lerp(target, 0.15);
-      camera.position.copy(camTarget).add(off);
+      // the flashlight flickers when it is close; in a tree you keep it down
+      const near = me.knownCreature !== null && g.step - me.knownStep <= 3 ? Math.max(0, 1 - g.distances.path / 7) : 0;
+      const flick = near > 0 && Math.random() < 0.12 + near * 0.3 ? 0.15 + Math.random() * 0.4 : 1;
+      flashlight.intensity = (me.inTree !== null ? 5 : 16) * flick;
+      flashlight.position.set(px + fx * 0.3, py + 1.1, pz + fz * 0.3);
+      flashlight.target.position.set(px + fx * 7, me.inTree !== null ? 0 : py + 0.1, pz + fz * 7);
+      glow.position.set(px, py + 1.5, pz);
+      glow.intensity = me.inTree !== null ? 0.7 : 1.6;
+      // camera: follow from the south and above; when it gets you, it lunges into view
+      let target = mapView ? new THREE.Vector3(world.W / 2, 0, world.H / 2) : new THREE.Vector3(px, 0, pz);
+      let off = mapView ? new THREE.Vector3(0, 40, 5) : new THREE.Vector3(0, 15.5 * zoom, 10.5 * zoom);
+      if (g.over && g.result === 'lose' && Q) {
+        target = new THREE.Vector3(Q.x, 1.8, Q.y);
+        off.set(Math.cos(Q.facing) * 2.6, 0.6, Math.sin(Q.facing) * 2.6);
+      }
+      const lerp = g.over && g.result === 'lose' ? 0.09 : 0.12;
+      camTarget.lerp(target, lerp);
+      camLook.lerp(target, lerp + 0.03);
+      camOff.lerp(off, g.over ? 0.08 : 0.2);
+      camera.position.copy(camTarget).add(camOff);
+      // shake: when it is close, and hard when it gets you
+      const shake = g.over && g.result === 'lose' ? 0.22 : near > 0.4 && g.creature.frozenLeft === 0 ? near * 0.07 : 0;
+      if (shake) camera.position.add(new THREE.Vector3((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake));
       camera.lookAt(camLook);
-      scene.fog.density = mapView ? 0.012 : 0.045 / zoom;
+      scene.fog.density = mapView ? 0.012 : 0.034 / zoom;
       // snow falls around the camera target
       const sp = snowGeo.attributes.position.array;
       for (let i = 0; i < SNOW; i++) {
@@ -549,7 +671,13 @@ export function makeScene3D(container, palette) {
       creatureLight.color.set(frozen ? 0x7ec8ff : palette.creature);
       const pulse = frozen ? 1 : 1 + 0.06 * Math.sin(now / 140);
       core.scale.set(pulse, 1.15 * pulse, 0.9 * pulse);
-      tendrils.forEach((t, i) => { t.rotation.y = frozen ? 0 : Math.sin(now / 260 + i) * 0.12; });
+      tendrils.forEach((t, i) => {
+        if (frozen) { t.rotation.set(0, 0, 0); return; }
+        if (t.userData.side) t.rotation.z = -0.15 + Math.sin(now / 190 + t.userData.side) * 0.18;
+        else t.rotation.y = Math.sin(now / 240 + i * 1.3) * 0.14;
+      });
+      creature.position.y = frozen ? 0 : Math.abs(Math.sin(now / 210)) * 0.08;
+      if (g.over && g.result === 'lose') creature.scale.setScalar(1.25); else creature.scale.setScalar(1);
       if (fan.visible) updateFan(g.creature.node, Q.facing, [Q.x - anim.creature.to.x, Q.y - anim.creature.to.y, Q.z - anim.creature.to.z]);
     }
     // the case: on its cell with a beam, or in your hand
@@ -591,8 +719,34 @@ export function makeScene3D(container, palette) {
     renderer.render(scene, camera);
   }
 
+  // where you clicked to walk
+  const goalMark = new THREE.Mesh(new THREE.RingGeometry(0.25, 0.36, 4, 1, Math.PI / 4), new THREE.MeshBasicMaterial({ color: palette.player, transparent: true, opacity: 0.8, side: THREE.DoubleSide, fog: false }));
+  goalMark.rotation.x = -Math.PI / 2;
+  goalMark.visible = false;
+  scene.add(goalMark);
+  function markGoal(n) {
+    goalMark.visible = n !== null && n !== undefined;
+    if (goalMark.visible) goalMark.position.copy(cellV(n, 0.05));
+  }
+
+  const ray = new THREE.Raycaster();
+  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  function pickCell(clientX, clientY) {
+    if (!world) return null;
+    const r = renderer.domElement.getBoundingClientRect();
+    ray.setFromCamera(new THREE.Vector2(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1), camera);
+    const hit = new THREE.Vector3();
+    if (!ray.ray.intersectPlane(groundPlane, hit)) return null;
+    const x = Math.floor(hit.x);
+    const y = Math.floor(hit.z);
+    if (x < 0 || y < 0 || x >= world.W || y >= world.H) return null;
+    return { x, y };
+  }
+
   return {
     buildMap,
+    pickCell,
+    markGoal,
     onTick,
     frame,
     setMapView(on) { mapView = on; },

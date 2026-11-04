@@ -116,7 +116,7 @@ export function makePlans(groundCanvas, canopyCanvas) {
     sounds.length = 0;
     flashes.length = 0;
     drawBackground(0, groundCanvas);
-    drawBackground(1, canopyCanvas);
+    if (canopyCanvas) drawBackground(1, canopyCanvas);
   }
 
   function addSounds(game, now) {
@@ -202,20 +202,25 @@ export function makePlans(groundCanvas, canopyCanvas) {
   function drawRelations(g, cs, game, level, now) {
     const seen = game.player.seesCreature || game.over;
     const rel = {
-      position: game.relations.position.filter((r) => seen || !(r.kind === 'above' || r.kind === 'between'
+      position: game.relations.position.filter((r) => seen || !(r.kind === 'between'
         || (r.kind === 'behind' && r.who === 'creature') || (r.kind === 'adjacent' && r.b === 'creature'))),
       movement: game.relations.movement.filter((m) => seen || m.who === 'player'),
     };
     const pulse = 0.6 + 0.4 * Math.sin(now / 220);
     for (const r of rel.position) {
       if (r.kind === 'above') {
-        // both plans: a double ring at each agent's column, the label says which way
-        for (const who of [r.upper, r.lower]) {
-          const c = centre(game[who].node, cs);
-          g.strokeStyle = colorOf(who);
-          g.lineWidth = Math.max(1.5, cs * 0.12);
-          for (const k of [0.75, 1.05]) { g.beginPath(); g.arc(c.x, c.y, cs * k, 0, Math.PI * 2); g.stroke(); }
-          if (c.level === level) label(g, cs, c.x, c.y - cs * 1.6, who === r.upper ? '\u25B2 ABOVE' : '\u25BC BELOW', colorOf(who));
+        // you up in a tree: a double ring on the tree, and one at the creature if it is right below
+        const tx = (r.tree % world.W + 0.5) * cs;
+        const ty = (Math.floor(r.tree / world.W) + 0.5) * cs;
+        g.strokeStyle = palette.player;
+        g.lineWidth = Math.max(1.5, cs * 0.12);
+        for (const k of [0.6, 0.9]) { g.beginPath(); g.arc(tx, ty, cs * k, 0, Math.PI * 2); g.stroke(); }
+        label(g, cs, tx, ty - cs * 1.5, '\u25B2 IN THE TREE', palette.player);
+        if (r.under && seen) {
+          const c = centre(game.creature.node, cs);
+          g.strokeStyle = palette.creature;
+          g.beginPath(); g.arc(c.x, c.y, cs * 0.8, 0, Math.PI * 2); g.stroke();
+          label(g, cs, c.x, c.y + cs * 1.5, '\u25BC BELOW', palette.creature);
         }
       } else if (r.kind === 'behind') {
         // the rear half of the observer's view, filled while someone stands in it
@@ -374,7 +379,7 @@ export function makePlans(groundCanvas, canopyCanvas) {
 
   function draw(game, now, showCone, showRelations = true) {
     if (!world || !game) return;
-    [groundCanvas, canopyCanvas].forEach((canvas, level) => {
+    [groundCanvas, canopyCanvas].filter(Boolean).forEach((canvas, level) => {
       const { cs, dpr } = fit(canvas);
       if (backgrounds[level].width !== canvas.width) drawBackground(level, canvas);
       const g = canvas.getContext('2d');
@@ -438,11 +443,12 @@ export function makePlans(groundCanvas, canopyCanvas) {
           g.globalAlpha = 1;
         }
       }
-      drawAgent(g, cs, game.player, palette.player, level, showCone);
+      if (game.player.inTree !== null) drawAgent(g, cs, { ...game.player, node: game.player.inTree }, palette.player, level, false);
+      else drawAgent(g, cs, game.player, palette.player, level, showCone);
     });
     for (let i = sounds.length - 1; i >= 0; i--) if (now - sounds[i].born > 1400) sounds.splice(i, 1);
     for (let i = flashes.length - 1; i >= 0; i--) if (now - flashes[i].born > FLASH_MS) flashes.splice(i, 1);
   }
 
-  return { setMap, addSounds, draw, redrawBackgrounds: (p) => { palette = p; if (world) { drawBackground(0, groundCanvas); drawBackground(1, canopyCanvas); } } };
+  return { setMap, addSounds, draw, redrawBackgrounds: (p) => { palette = p; if (world) { drawBackground(0, groundCanvas); if (canopyCanvas) drawBackground(1, canopyCanvas); } } };
 }

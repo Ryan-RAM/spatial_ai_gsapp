@@ -1,10 +1,16 @@
-// DOM updates: the HUD over the 3D view, the position + movement panel and the log.
+// DOM updates: the HUD over the 3D view (objective, bullets, status, the action prompt), the
+// position + movement panel and the log.
 
 import { statusOf } from '../sim/escape.js';
 
 const $ = (id) => document.getElementById(id);
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const DIFF = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+const PROMPT = {
+  shoot: 'Shoot it: freezes it for 3 seconds',
+  climb: 'Climb the tree and hide',
+  down: 'Climb down (or just move)',
+};
 
 export function makePanels() {
   const log = $('log');
@@ -18,26 +24,31 @@ export function makePanels() {
     const me = game.player;
     const st = statusOf(game);
     const obj = $('objective');
-    obj.textContent = me.carrying ? 'To the hospital (east)!' : 'Find the vaccine case';
+    obj.textContent = me.carrying ? 'Run east to the hospital!' : 'Find the vaccine case';
     obj.classList.toggle('urgent', me.carrying);
     $('timer').textContent = `${clock((game.step * g.tickMs) / 1000)} · ${DIFF[game.difficulty]}${me.carrying ? '' : ' · follow the cyan light'}`;
     const total = g.difficulty[game.difficulty].ammo;
     $('ammo').innerHTML = `<span>Bullets</span>${Array.from({ length: total }, (_, i) => `<i class="${i < me.ammo ? '' : 'used'}"></i>`).join('')}`;
-    const st2 = $('stamina');
-    st2.firstElementChild.style.width = `${(100 * me.stamina) / g.stamina}%`;
-    st2.classList.toggle('low', me.stamina < g.stamina * 0.3);
     $('chip-seen').classList.toggle('on', st.sees);
     $('chip-heard').classList.toggle('on', st.hears && !st.sees);
-    $('chip-hidden').classList.toggle('on', st.hidden);
+    $('chip-tree').classList.toggle('on', st.inTree);
     $('chip-alarm').classList.toggle('on', game.alarmLeft > 0);
     $('chip-frozen').classList.toggle('on', game.creature.frozenLeft > 0 && me.seesCreature);
-    const close = me.knownCreature !== null && game.step - me.knownStep <= 3 && game.distances.path <= 6 && game.creature.frozenLeft === 0;
-    $('vignette').classList.toggle('danger', st.sees || close);
+    // the one action key: what it would do now
+    const prompt = $('prompt');
+    prompt.hidden = !st.action || game.over;
+    if (st.action) {
+      prompt.className = `prompt ${st.action}`;
+      $('prompt-text').textContent = PROMPT[st.action];
+    }
+    const bar = $('treebar');
+    bar.hidden = !st.inTree;
+    if (st.inTree) bar.firstElementChild.style.width = `${(100 * me.treeLeft) / g.treeTicks}%`;
   }
 
   function relations(game) {
     const seen = game.player.seesCreature || game.over;
-    const visible = (r) => seen || !(r.kind === 'above' || r.kind === 'between'
+    const visible = (r) => seen || !(r.kind === 'between'
       || (r.kind === 'behind' && r.who === 'creature') || (r.kind === 'adjacent' && r.b === 'creature'));
     const pos = game.relations.position.filter(visible);
     const moves = game.relations.movement.filter((m) => seen || m.who === 'player');
@@ -60,7 +71,7 @@ export function makePanels() {
     t.textContent = text;
     t.classList.remove('hide');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.add('hide'), 2600);
+    toastTimer = setTimeout(() => t.classList.add('hide'), 2800);
   }
 
   function events(game) {
@@ -75,7 +86,7 @@ export function makePanels() {
       what.textContent = e.text;
       li.append(what);
       log.prepend(li);
-      if (['case', 'shot', 'caw', 'spot', 'ambush', 'empty', 'noshot', 'alarm', 'thaw', 'start'].includes(e.kind)) toast(e.text);
+      if (['case', 'shot', 'caw', 'spot', 'ambush', 'noshot', 'alarm', 'thaw', 'start', 'climb', 'slip'].includes(e.kind)) toast(e.text);
     }
     while (log.children.length > 60) log.lastChild.remove();
   }

@@ -1,43 +1,50 @@
 // A simple scripted player, used only to balance the game (tests/balance.mjs) and in the tests.
-// It walks quietly toward the case, then runs for the hospital, steps away from the creature when
-// it is close, and shoots when the creature is coming for it.
+// It only knows what a player could know (where it last saw or heard the creature). It walks to the
+// case, then to the hospital, steps away from the creature, shoots when it comes close, and climbs a
+// tree to hide when it is hunted and the case is not beeping.
 
 import { forEachNeighbour } from './world.js';
-import { directionTo, ladderPartner, newRun, stepRun } from './escape.js';
+import { directionTo, newRun, stepRun, actionFor } from './escape.js';
 
 export function botInput(game, { skill = 1 } = {}) {
-  const { world, pf, metrics, config } = game.ctx;
+  const { world, pf } = game.ctx;
   const me = game.player;
   const c = game.creature;
   const goal = me.carrying ? game.door : game.caseItem.node;
-  // the bot only knows what a player could know: where it last saw or heard the creature
-  const fresh = me.knownCreature !== null && game.step - me.knownStep <= 12;
+  const fresh = me.knownCreature !== null && game.step - me.knownStep <= 10;
   const where = fresh ? me.knownCreature : null;
   const frozen = c.frozenLeft > 0 && me.seesCreature;
   const dC = where === null ? Infinity : pf.distance(me.node, where);
-  const hunting = !frozen && where !== null && dC <= 9;
+  const input = { dx: 0, dy: 0, action: false };
+  const action = actionFor(game);
 
-  const input = { dx: 0, dy: 0, run: (me.carrying && game.alarmLeft > 0) || (hunting && dC <= 6), shoot: false, climb: false };
-  if (!frozen && me.seesCreature && me.ammo > 0 && metrics.euclidean(me.node, c.node) <= config.game.shotRange - 1 && pf.distance(me.node, c.node) <= 3 + skill) input.shoot = true;
+  // in a tree: stay while it is close, come down when it has gone
+  if (me.inTree !== null) {
+    if (!me.seesCreature || dC >= 7) input.action = true;
+    return input;
+  }
+  if (action === 'shoot' && dC <= 2 + skill * 1.5) { input.action = true; return input; }
+  if (action === 'climb' && !frozen && game.alarmLeft === 0 && where !== null && dC <= 4 && c.mode === 'chase') {
+    input.action = true;
+    return input;
+  }
 
   // pick the neighbour that gets closer to the goal without walking into the creature
   const rowGoal = pf.row(goal);
-  const rowC = where === null ? null : pf.row(where);
+  const rowC = where === null || frozen ? null : pf.row(where);
   const idx = (n) => world.nodeIndex[n];
   let best = null;
   let bestScore = Infinity;
   forEachNeighbour(world, me.node, (n, cost) => {
     let score = cost + rowGoal[idx(n)];
-    if (!frozen && rowC) {
+    if (rowC) {
       const dn = rowC[idx(n)];
       if (dn <= 1.5) score += 100;
-      else if (hunting) score -= skill * 0.6 * Math.min(dn, 6);
+      else if (dC <= 8) score -= skill * 0.6 * Math.min(dn, 6);
     }
     if (score < bestScore) { bestScore = score; best = n; }
   });
-  if (best === null) return input;
-  if (ladderPartner(world, me.node) === best) { input.climb = true; return input; }
-  Object.assign(input, directionTo(world, me.node, best));
+  if (best !== null) Object.assign(input, directionTo(world, me.node, best));
   return input;
 }
 

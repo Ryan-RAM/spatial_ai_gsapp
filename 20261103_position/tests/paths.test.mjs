@@ -81,10 +81,8 @@ test('generated maps are fully connected', () => {
     const row = pf.row(world.nodes[0]);
     const unreachable = world.nodes.filter((n) => !Number.isFinite(row[world.nodeIndex[n]]));
     assert.equal(unreachable.length, 0, `seed ${seed}`);
-    assert.ok(world.ladders.length >= 3, `seed ${seed} has ${world.ladders.length} ladders`);
-    let canopyCells = 0;
-    for (const n of world.nodes) if (n >= world.N) canopyCells++;
-    assert.ok(canopyCells > 40, `seed ${seed} canopy ${canopyCells}`);
+    // this game has a single level: no canopy, no ladders
+    assert.equal(world.nodes.filter((n) => n >= world.N).length, 0, `seed ${seed} canopy`);
   }
 });
 
