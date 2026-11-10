@@ -34,7 +34,7 @@ export function makePanels() {
       }).join('');
       el.innerHTML = `
         <h3>${NAME[a.type]} #${a.id}</h3>
-        <div class="row"><span>Now: <b>${esc(MODE[a.mode] || a.mode)}</b></span><span>Goal: <b>${esc(goal)}</b></span></div>
+        <div class="row"><span>Now: <b>${esc((a.type !== 'drone' && a.mode === 'cruise' ? (a.goal?.heliport !== undefined ? 'flying to the heliport' : a.goal?.exit ? 'leaving the site' : 'flying to the next sight') : MODE[a.mode]) || a.mode)}</b></span><span>Goal: <b>${esc(goal)}</b></span></div>
         <div class="row"><span>Altitude <b>${Math.round(a.z / FT)}</b> ft</span><span>Speed <b>${Math.round(a.speed)}</b> m/s</span><span>Trips done <b>${a.totals.trips}</b></span></div>
         <div class="row"><span>${crit}</span></div>
         <div class="row"><span>Knows <b>${pct}%</b> of the site's cells</span><span>Band rule: <b>${k.bandRule ? 'known' : 'not yet seen'}</b></span>

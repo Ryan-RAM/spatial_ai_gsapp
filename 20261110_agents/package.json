@@ -1,1 +1,15 @@
-{"name":"nyc-low-altitude-agents","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs","sim":"node tests/run_sim.mjs 60","capture":"node tools/capture.mjs"},"devDependencies":{"three":"0.160.0"}}
+{
+ "name": "nyc-low-altitude-agents",
+ "private": true,
+ "type": "module",
+ "scripts": {
+  "test": "node --test tests/*.test.mjs",
+  "sim": "node tests/run_sim.mjs 60",
+  "capture": "node tools/capture.mjs",
+  "build": "node tools/build_single.mjs"
+ },
+ "devDependencies": {
+  "esbuild": "^0.24.0",
+  "three": "0.160.0"
+ }
+}

@@ -24,7 +24,8 @@ export const CONFIG = {
   data: {
     buildings: 'data/processed/buildings.json', // made by data/scripts/process_nyc.py
     land: 'data/processed/land.json',
-    usePlaceholderIfMissing: true,               // synthetic Manhattan (src/sim/placeholder.js)
+    useRealData: false,      // false: the simplified, simulated Manhattan (src/sim/placeholder.js), nothing to download
+    usePlaceholderIfMissing: true,               // with useRealData: fall back to the simulated city
   },
 
   // ---- Rule layer --------------------------------------------------------------------------
@@ -190,6 +191,7 @@ export const CONFIG = {
 
   // ---- Simulation --------------------------------------------------------------------------
   sim: {
+    warmUpSeconds: 600,    // the page simulates this much before it opens, so the first view already has agents and paths
     dt: 0.5,               // s per tick
     senseEvery: 2,         // ticks between perception updates
     maxTicks: 14400,       // 2 hours of simulated time for the headless run

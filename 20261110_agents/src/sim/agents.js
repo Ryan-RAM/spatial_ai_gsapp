@@ -365,7 +365,10 @@ function ruleCheck(sim, a, dt) {
     }
   }
   if (cruising && c >= 0 && w.height[c] > a.z - 1) { // flew into something it had not seen: count and climb out
-    a.totals.strikes++; sim.noteEvent(a, 'strike', `${label(a)} nearly hit a building it had not seen and climbed away`);
+    a.totals.strikes++;
+    if (!(a.lastStrikeNote > sim.time - 120)) { a.lastStrikeNote = sim.time; sim.noteEvent(a, 'strike', `${label(a)} nearly hit a building it had not seen and climbed away`); }
+    a.knowledge.see(c, w.height[c], w.land[c]); // now it knows that building
+    a.needPlan = true;
     a.z = w.height[c] + 5;
   }
 }

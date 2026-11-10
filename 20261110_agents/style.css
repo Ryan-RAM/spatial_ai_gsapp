@@ -43,11 +43,12 @@
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
+h1, h2, h3 { font-family: "Space Grotesk", "Inter", system-ui, sans-serif; text-wrap: balance; }
 code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 h1, h2, h3 { margin: 0; line-height: 1.2; }
 button, select { font: inherit; color: inherit; }
 
-.page-head, main, .page-foot { max-width: 1400px; margin: 0 auto; padding: 0 16px; }
+.page-head, main, .page-foot { max-width: 1400px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .page-head { padding-top: 22px; padding-bottom: 12px; display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 6px 20px; }
 .eyebrow { margin: 0 0 4px; font-size: 0.74rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
 h1 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: -0.01em; }
@@ -122,3 +123,15 @@ th { color: var(--muted); font-weight: 600; }
   .hud-tr { left: 10px; right: auto; top: 54px; }
   .seg button { padding: 5px 8px; font-size: 0.8rem; }
 }
+
+.tour { display: grid; gap: 6px; }
+.tour-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.tour-steps button { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; cursor: pointer; color: var(--muted); font-size: 0.86rem; }
+.tour-steps button:hover { color: var(--text); border-color: #3a4760; }
+.tour-steps button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); border-color: var(--accent); }
+.tour-caption { margin: 0; color: var(--text); font-size: 0.95rem; max-width: 110ch; min-height: 2.9em; }
+.tour-caption b { color: var(--selection); font-weight: 600; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--selection); outline-offset: 2px; }
+.embed .no-embed { display: none; }
+.toggles label { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.toggles select { max-width: 100%; }

@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Low Sky: NYC Air Agents</title>
   <meta name="description" content="Delivery drones and helicopters explore the low-altitude airspace of Lower and Midtown Manhattan with limited vision cones, learn a designed rule layer (river lanes, altitude bands, no-fly zones, landing sites), leave landmarks, and show where the rules jam.">
-  <link rel="stylesheet" href="style.css?v=20261110a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap">
+  <link rel="stylesheet" href="style.css?v=20261110b">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
@@ -45,19 +47,33 @@
         <div class="loading" id="loading">Loading the city&hellip;</div>
         <div class="viewer-fallback" id="viewer-fallback" hidden>The 3D view could not start (three.js did not load from the CDN). The panels below still update.</div>
       </div>
+      <div class="tour" id="tour" aria-label="Presentation steps">
+        <div class="tour-steps" role="group" aria-label="Steps">
+          <button type="button" data-step="0">1 &middot; Rule layer</button>
+          <button type="button" data-step="1">2 &middot; Vision cones</button>
+          <button type="button" data-step="2">3 &middot; A drone's map</button>
+          <button type="button" data-step="3">4 &middot; A helicopter's map</button>
+          <button type="button" data-step="4">5 &middot; All paths</button>
+          <button type="button" data-step="5">6 &middot; Landmark heat map</button>
+          <button type="button" data-step="6">7 &middot; Where it jams</button>
+          <button type="button" data-step="7">8 &middot; Shared knowledge</button>
+        </div>
+        <p class="tour-caption" id="tour-caption">Pick a step to present. The simulation keeps running in the background; use Fast-forward to let the agents learn more.</p>
+      </div>
       <div class="controls">
         <button type="button" id="btn-play" class="btn btn-primary">Pause</button>
         <label>Speed <select id="speed">
           <option value="1">1&times;</option><option value="5">5&times;</option><option value="20" selected>20&times;</option><option value="60">60&times;</option><option value="120">120&times;</option>
         </select></label>
+        <button type="button" id="btn-ff" class="btn">Fast-forward 30 min</button>
         <button type="button" id="btn-reset" class="btn">Restart</button>
         <span class="sep"></span>
         <button type="button" id="btn-next-drone" class="btn">Next drone</button>
         <button type="button" id="btn-next-heli" class="btn">Next helicopter</button>
         <label><input type="checkbox" id="tg-follow"> Follow</label>
         <span class="sep"></span>
-        <button type="button" id="btn-shot" class="btn">Screenshot</button>
-        <button type="button" id="btn-rec" class="btn">Record 20 s</button>
+        <span class="no-embed"><button type="button" id="btn-shot" class="btn">Screenshot</button>
+        <button type="button" id="btn-rec" class="btn">Record 20 s</button></span>
         <span class="small" id="perf"></span>
       </div>
     </section>
@@ -112,7 +128,7 @@
       <section class="panel" aria-label="About">
         <h2>How to read it</h2>
         <ul class="caption tight">
-          <li><b>City + rules</b>: real building heights (or the placeholder until the data script has run), the one-way river
+          <li><b>City + rules</b>: a simplified, simulated Manhattan (street grid, Central Park, Midtown and Downtown towers), the one-way river
             loop (chevrons), no-fly zones (red: everyone, violet: drones only), heliports (yellow rings), rooftop drone pads
             (cyan; hubs larger), band signs (white posts).</li>
           <li><b>One agent's map</b>: only what the selected agent knows: cells it has seen (land, water), blocks for obstacles
@@ -125,8 +141,8 @@
       </section>
     </div>
   </main>
-  <footer class="page-foot"><p class="small">ARCH6956 Spatial AI, Columbia GSAPP. Building data: NYC Open Data (when downloaded). Not for navigation.</p></footer>
+  <footer class="page-foot"><p class="small">ARCH6956 Spatial AI, Columbia GSAPP. Simulated, simplified Manhattan. Not for navigation.</p></footer>
 
-  <script type="module" src="src/ui/main.js?v=20261110a"></script>
+  <script type="module" src="src/ui/main.js?v=20261110b"></script>
 </body>
 </html>

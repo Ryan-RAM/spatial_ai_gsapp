@@ -1,5 +1,9 @@
 # Building and shoreline data
 
+**Optional.** The page uses a simplified, simulated Manhattan by default (`data.useRealData: false` in `src/sim/config.js`), so
+nothing has to be downloaded. To try the real buildings: run the two scripts below, set `useRealData: true`, and serve the
+folder (`python3 -m http.server`), because the page then loads `data/processed/*.json`.
+
 ## Which dataset, and why
 
 | Candidate | What it has | Verdict |

@@ -141,5 +141,5 @@ export function makePlaceholder(config, frame) {
     addRect(t.x, t.y, Math.sin(th), Math.cos(th), t.side, t.side, t.top);
     buildings[buildings.length - 1].name = t.name;
   }
-  return { source: 'placeholder (synthetic, not real data)', buildings, land };
+  return { source: 'simulated Manhattan (simplified, not real data)', buildings, land };
 }

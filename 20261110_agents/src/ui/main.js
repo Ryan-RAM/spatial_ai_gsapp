@@ -32,6 +32,7 @@ function readPalette() {
 }
 
 async function loadData() {
+  if (!CONFIG.data.useRealData) return null; // the simulated Manhattan, built in the browser
   const frame = makeFrame(CONFIG.site);
   try {
     const [b, l] = await Promise.all([fetch(CONFIG.data.buildings), fetch(CONFIG.data.land)]);
@@ -48,7 +49,7 @@ const palette = readPalette();
 async function start() {
   const data = await loadData();
   state.world = buildWorld(CONFIG, data);
-  $('source').textContent = state.world.source.startsWith('placeholder') ? 'Placeholder city (run data/scripts/ for real NYC data)' : 'NYC Open Data buildings';
+  $('source').textContent = state.world.source.startsWith('simulated') ? 'Simulated, simplified Manhattan' : 'NYC Open Data buildings';
   try {
     const { makeScene3D } = await import('../render/scene3d.js');
     state.scene = makeScene3D($('scene'), palette);
@@ -57,19 +58,24 @@ async function start() {
     console.error(e); $('viewer-fallback').hidden = false;
   }
   newSim();
-  const warm = Number(qs.get('warm') || 0);
+  const warm = Number(qs.get('warm') ?? CONFIG.sim.warmUpSeconds);
   if (warm > 0) { $('loading').textContent = `Simulating the first ${Math.round(warm / 60)} minutes…`; await warmUp(warm); }
   $('loading').hidden = true;
   applyParams();
   wire();
+  if (!qs.get('mode') && !window.__LOWSKY_NO_TOUR) tourStep(0);
   panels.legend(state.mode, palette);
   requestAnimationFrame(loop);
   window.__app = { state, CONFIG, ready: true, setMode, selectBest, redraw: () => redrawOverlays(true), apply };
 }
 
 // Used by tools/capture.mjs: set a view in one go.
-function apply({ mode, view, heat, select: who, cones, bands, follow } = {}) {
+function apply({ mode, view, heat, select: who, cones, bands, follow } = {}, fromTour = false) {
   const sc = state.scene;
+  if (!fromTour) { // a view set by hand is not one of the steps
+    for (const b of document.querySelectorAll('#tour [data-step]')) b.setAttribute('aria-pressed', 'false');
+    $('tour-caption').textContent = 'Pick a step to present. The simulation keeps running in the background; use Fast-forward to let the agents learn more.';
+  }
   if (heat) { state.heat = heat; $('sel-heat').value = heat; }
   if (cones && sc) { sc.options.cones = cones; $('sel-cones').value = cones; }
   if (bands !== undefined && sc) { sc.options.bands = !!bands; $('tg-bands').checked = !!bands; }
@@ -194,7 +200,23 @@ function wire() {
   $('btn-play').onclick = () => { state.playing = !state.playing; $('btn-play').textContent = state.playing ? 'Pause' : 'Play'; };
   $('speed').onchange = (e) => { state.speed = Number(e.target.value); };
   $('btn-reset').onclick = () => { newSim(); redrawOverlays(true); };
-  for (const b of document.querySelectorAll('#modes button')) b.onclick = () => setMode(b.dataset.mode);
+  $('btn-ff').onclick = async () => {
+    const b = $('btn-ff'); if (b.disabled) return; b.disabled = true;
+    const target = state.sim.time + 1800;
+    await new Promise((resolve) => {
+      const chunk = () => {
+        const t0 = performance.now();
+        while (state.sim.time < target && performance.now() - t0 < 30) state.sim.step();
+        b.textContent = `Fast-forwarding… ${Math.round((1 - (target - state.sim.time) / 1800) * 100)}%`;
+        if (state.sim.time < target) requestAnimationFrame(chunk); else resolve();
+      };
+      chunk();
+    });
+    b.disabled = false; b.textContent = 'Fast-forward 30 min';
+    redrawOverlays(true); panels.performance(state.sim);
+  };
+  for (const b of document.querySelectorAll('#tour [data-step]')) b.onclick = () => tourStep(Number(b.dataset.step));
+  for (const b of document.querySelectorAll('#modes button')) b.onclick = () => apply({ mode: b.dataset.mode });
   const cycle = (pred) => {
     const list = state.sim.agents.filter((a) => a.active && pred(a));
     if (!list.length) return;
@@ -223,6 +245,33 @@ function wire() {
     sc.canvas.toBlob((b) => download(b, `low-sky-${state.mode}-${Math.round(state.sim.time)}s.png`));
   };
   $('btn-rec').onclick = () => record(sc.canvas, 20);
+}
+
+// Presentation steps: each sets a view and says what to look at.
+const TOUR = [
+  { opts: { mode: 'city', view: 'overview', select: 'heli', cones: 'selected', bands: false },
+    text: '<b>The rule layer we designed.</b> A one-way loop: north up the Hudson on the Manhattan shore (as the real SFRA asks), east over Central Park, south down the East River, west round the Battery. No-fly zones: red for everyone (UN), violet for drones only (heliports, Statue of Liberty, a substation). Yellow rings are heliports, cyan rings rooftop drone pads, white posts band signs. No agent knows any of this when it starts.' },
+  { opts: { mode: 'city', view: 'midtown', cones: 'all', bands: true },
+    text: '<b>Limited vision.</b> Every agent sees only its cone: a drone 70° and 180 m, a helicopter 140° and 1,200 m. A tower hides what is behind it. The flat planes are the altitude bands: drones at 200 ft (eastbound) and 300 ft (westbound), tours at 800 ft, medical flights at 1,100 ft.' },
+  { opts: { mode: 'knowledge', select: 'drone', view: 'agent', cones: 'selected', bands: false },
+    text: '<b>What one drone knows.</b> Only the cells it has seen. Red blocks are buildings too tall for its band. Its landmarks (dots) are remembered relative to home: the white lines run back to its hub. Green squares are its customers, and it reuses the breadcrumb route to a customer it has served before.' },
+  { opts: { mode: 'knowledge', select: 'heli', view: 'overview', cones: 'selected' },
+    text: '<b>What one helicopter crew knows.</b> A wide cone maps much more. Light blue is the part of the loop it has found. Its landmarks are anchored to things it can see: towers, bridges, the river. The labels are those visual references.' },
+  { opts: { mode: 'collective', view: 'overview', heat: 'none' },
+    text: '<b>Everyone together: all paths in 3D.</b> Blue drone paths fan out from the six hubs at their two band levels; orange tours and green medical flights follow the river loop.' },
+  { opts: { mode: 'collective', view: 'top', heat: 'landmarks' },
+    text: '<b>Landmark heat map.</b> Where agents left landmarks: lane entries and exits, band switches, landing sites, no-fly boundaries, congestion and holding points.' },
+  { opts: { mode: 'collective', view: 'top', heat: 'crowd' },
+    text: '<b>Where the rules jam.</b> Nothing was scripted as congested. This map is ground truth (no agent sees it): the jams form round the drone hubs, where many drones share one take-off and landing column, and on the heliport approaches.' },
+  { opts: { mode: 'collective', view: 'top', heat: 'knowledge' },
+    text: '<b>Shared knowledge.</b> How many agents know each 50 m cell. The rivers and the loop are known to almost everyone; the middle of Manhattan only to the drones that fly there.' },
+];
+
+function tourStep(i) {
+  const t = TOUR[i]; if (!t) return;
+  apply(t.opts, true);
+  for (const b of document.querySelectorAll('#tour [data-step]')) b.setAttribute('aria-pressed', String(Number(b.dataset.step) === i));
+  $('tour-caption').innerHTML = t.text;
 }
 
 function record(canvas, seconds) {
