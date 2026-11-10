@@ -1,0 +1,277 @@
+{
+ "world": {
+  "source": "placeholder (synthetic, not real data)",
+  "grid": [
+   206,
+   241
+  ],
+  "buildings": 21648,
+  "pads": 26,
+  "buildSeconds": 0.212
+ },
+ "simulatedMinutes": 120,
+ "source": "placeholder (synthetic, not real data)",
+ "types": {
+  "drone": {
+   "agents": 180,
+   "tripsDone": 2054,
+   "failedTrips": 22,
+   "perTripNumber": {
+    "1": {
+     "n": 174,
+     "minutes": 6.8,
+     "km": 4,
+     "wh": 82.9,
+     "whPerKm": 22.2,
+     "replans": 9.6,
+     "reuseShare": 0,
+     "violationSeconds": 127.7,
+     "waitSeconds": 3.9
+    },
+    "2": {
+     "n": 180,
+     "minutes": 7.5,
+     "km": 4.3,
+     "wh": 82.1,
+     "whPerKm": 21.7,
+     "replans": 5.6,
+     "reuseShare": 44.4,
+     "violationSeconds": 45.6,
+     "waitSeconds": 5
+    },
+    "3": {
+     "n": 176,
+     "minutes": 7.5,
+     "km": 4.2,
+     "wh": 82.7,
+     "whPerKm": 21.6,
+     "replans": 6.4,
+     "reuseShare": 61.4,
+     "violationSeconds": 33.3,
+     "waitSeconds": 4.8
+    },
+    "4+": {
+     "n": 1524,
+     "minutes": 7.3,
+     "km": 4.2,
+     "wh": 81,
+     "whPerKm": 21.8,
+     "replans": 4.5,
+     "reuseShare": 67.3,
+     "violationSeconds": 9.6,
+     "waitSeconds": 3.5
+    }
+   },
+   "knowsBandRule": 180,
+   "meanKnownCells": 1343,
+   "landmarks": 1478,
+   "totals": {
+    "nfzSeconds": 41,
+    "offBandSeconds": 54247,
+    "wrongWaySeconds": 0,
+    "waitSeconds": 8205,
+    "yields": 12693,
+    "congestionEncounters": 1350,
+    "emergencies": 117,
+    "forcedLandings": 22,
+    "buildingNearMisses": 3191,
+    "routeReuses": 2900
+   }
+  },
+  "tour": {
+   "agents": 12,
+   "tripsDone": 94,
+   "failedTrips": 0,
+   "perTripNumber": {
+    "1": {
+     "n": 12,
+     "minutes": 12.8,
+     "km": 29.1,
+     "replans": 64.2,
+     "reuseShare": 0,
+     "violationSeconds": 27.3,
+     "waitSeconds": 66.6
+    },
+    "2": {
+     "n": 12,
+     "minutes": 13.2,
+     "km": 30.4,
+     "replans": 36.6,
+     "reuseShare": 0,
+     "violationSeconds": 13.5,
+     "waitSeconds": 34.5
+    },
+    "3": {
+     "n": 12,
+     "minutes": 13.9,
+     "km": 31.3,
+     "replans": 32.3,
+     "reuseShare": 0,
+     "violationSeconds": 11.8,
+     "waitSeconds": 51.8
+    },
+    "4+": {
+     "n": 58,
+     "minutes": 12,
+     "km": 28.1,
+     "replans": 31.8,
+     "reuseShare": 0,
+     "violationSeconds": 12.8,
+     "waitSeconds": 14
+    }
+   },
+   "knowsBandRule": 12,
+   "meanKnownCells": 26074,
+   "landmarks": 754,
+   "totals": {
+    "nfzSeconds": 0,
+    "offBandSeconds": 1276.5,
+    "wrongWaySeconds": 217,
+    "waitSeconds": 2647,
+    "yields": 864,
+    "congestionEncounters": 1,
+    "emergencies": 0,
+    "forcedLandings": 0,
+    "buildingNearMisses": 1,
+    "routeReuses": 0
+   }
+  },
+  "medical": {
+   "agents": 6,
+   "tripsDone": 46,
+   "failedTrips": 0,
+   "perTripNumber": {
+    "1": {
+     "n": 6,
+     "minutes": 7,
+     "km": 11.4,
+     "replans": 23.8,
+     "reuseShare": 0,
+     "violationSeconds": 34.8,
+     "waitSeconds": 0.3
+    },
+    "2": {
+     "n": 6,
+     "minutes": 9,
+     "km": 17.8,
+     "replans": 24.3,
+     "reuseShare": 0,
+     "violationSeconds": 36.3,
+     "waitSeconds": 47.9
+    },
+    "3": {
+     "n": 6,
+     "minutes": 7.3,
+     "km": 12.7,
+     "replans": 17.2,
+     "reuseShare": 0,
+     "violationSeconds": 33.6,
+     "waitSeconds": 6.1
+    },
+    "4+": {
+     "n": 28,
+     "minutes": 8.1,
+     "km": 15.1,
+     "replans": 15.3,
+     "reuseShare": 0,
+     "violationSeconds": 36.4,
+     "waitSeconds": 29.9
+    }
+   },
+   "knowsBandRule": 6,
+   "meanKnownCells": 29917,
+   "landmarks": 373,
+   "totals": {
+    "nfzSeconds": 64.5,
+    "offBandSeconds": 1541,
+    "wrongWaySeconds": 76.5,
+    "waitSeconds": 1201.5,
+    "yields": 142,
+    "congestionEncounters": 0,
+    "emergencies": 0,
+    "forcedLandings": 0,
+    "buildingNearMisses": 4,
+    "routeReuses": 0
+   }
+  }
+ },
+ "separation": {
+  "heli": 120,
+  "drone": 3348,
+  "mixed": 4
+ },
+ "crowdHotspots": [
+  {
+   "lat": 40.79169,
+   "lon": -73.94013,
+   "agentSeconds": 4580,
+   "cell": [
+    188,
+    239
+   ]
+  },
+  {
+   "lat": 40.7773,
+   "lon": -73.9888,
+   "agentSeconds": 3824,
+   "cell": [
+    106,
+    207
+   ]
+  },
+  {
+   "lat": 40.73818,
+   "lon": -73.99058,
+   "agentSeconds": 3160,
+   "cell": [
+    103,
+    120
+   ]
+  },
+  {
+   "lat": 40.71255,
+   "lon": -74.01728,
+   "agentSeconds": 2787,
+   "cell": [
+    58,
+    63
+   ]
+  },
+  {
+   "lat": 40.76247,
+   "lon": -73.95438,
+   "agentSeconds": 2479,
+   "cell": [
+    164,
+    174
+   ]
+  },
+  {
+   "lat": 40.7112,
+   "lon": -73.9799,
+   "agentSeconds": 2315,
+   "cell": [
+    121,
+    60
+   ]
+  },
+  {
+   "lat": 40.79169,
+   "lon": -73.94073,
+   "agentSeconds": 687,
+   "cell": [
+    187,
+    239
+   ]
+  },
+  {
+   "lat": 40.71345,
+   "lon": -74.01728,
+   "agentSeconds": 622,
+   "cell": [
+    58,
+    65
+   ]
+  }
+ ]
+}

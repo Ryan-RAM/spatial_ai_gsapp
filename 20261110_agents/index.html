@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Low Sky: NYC Air Agents</title>
+  <meta name="description" content="Delivery drones and helicopters explore the low-altitude airspace of Lower and Midtown Manhattan with limited vision cones, learn a designed rule layer (river lanes, altitude bands, no-fly zones, landing sites), leave landmarks, and show where the rules jam.">
+  <link rel="stylesheet" href="style.css?v=20261110a">
+  <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Spatial AI &middot; Columbia GSAPP &middot; Spatial Agents</p>
+      <h1>Low Sky<span>:</span> NYC Air Agents</h1>
+    </div>
+    <p class="lede">Delivery drones and helicopters start with no map of Manhattan's low airspace. They learn the lanes,
+      bands, no-fly zones and landing sites through their vision cones, leave landmarks, and show where the rules jam.</p>
+  </header>
+
+  <main>
+    <section class="stage" aria-label="Simulation">
+      <div class="viewer" id="viewer" tabindex="0">
+        <div class="scene" id="scene"></div>
+        <div class="hud hud-tl hud-box">
+          <div class="clock" id="clock">0:00:00</div>
+          <div class="small" id="source"></div>
+        </div>
+        <div class="hud hud-tr">
+          <div class="seg" role="group" aria-label="View" id="modes">
+            <button type="button" data-mode="city" aria-pressed="true">City + rules</button>
+            <button type="button" data-mode="knowledge" aria-pressed="false">One agent's map</button>
+            <button type="button" data-mode="collective" aria-pressed="false">Everyone together</button>
+          </div>
+        </div>
+        <div class="hud hud-bl hud-box legend" id="legend"></div>
+        <div class="loading" id="loading">Loading the city&hellip;</div>
+        <div class="viewer-fallback" id="viewer-fallback" hidden>The 3D view could not start (three.js did not load from the CDN). The panels below still update.</div>
+      </div>
+      <div class="controls">
+        <button type="button" id="btn-play" class="btn btn-primary">Pause</button>
+        <label>Speed <select id="speed">
+          <option value="1">1&times;</option><option value="5">5&times;</option><option value="20" selected>20&times;</option><option value="60">60&times;</option><option value="120">120&times;</option>
+        </select></label>
+        <button type="button" id="btn-reset" class="btn">Restart</button>
+        <span class="sep"></span>
+        <button type="button" id="btn-next-drone" class="btn">Next drone</button>
+        <button type="button" id="btn-next-heli" class="btn">Next helicopter</button>
+        <label><input type="checkbox" id="tg-follow"> Follow</label>
+        <span class="sep"></span>
+        <button type="button" id="btn-shot" class="btn">Screenshot</button>
+        <button type="button" id="btn-rec" class="btn">Record 20 s</button>
+        <span class="small" id="perf"></span>
+      </div>
+    </section>
+
+    <div class="below">
+      <section class="panel" aria-label="Layers">
+        <h2>Layers</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="tg-buildings" checked> Buildings</label>
+          <label><input type="checkbox" id="tg-rules" checked> Rule layer (lanes, no-fly, pads, signs)</label>
+          <label><input type="checkbox" id="tg-bands"> Altitude bands</label>
+          <label><input type="checkbox" id="tg-trails" checked> Selected agent's trail and plan</label>
+          <label>Vision cones <select id="sel-cones"><option value="selected" selected>selected agent</option><option value="all">all agents</option><option value="none">none</option></select></label>
+        </div>
+        <h3 class="sub">Everyone together</h3>
+        <div class="toggles">
+          <label><input type="checkbox" id="tg-paths" checked> All paths (3D)</label>
+          <label><input type="checkbox" id="tg-hotspots" checked> Congestion landmarks (3D)</label>
+          <label><input type="checkbox" id="tg-lms"> All landmarks (3D)</label>
+          <label>Heat map <select id="sel-heat">
+            <option value="landmarks">Landmarks (all types)</option>
+            <option value="congestion">Congestion landmarks</option>
+            <option value="crowd">True crowding (ground truth)</option>
+            <option value="drone">Time over each cell: drones</option>
+            <option value="heli">Time over each cell: helicopters</option>
+            <option value="knowledge">Shared knowledge (how many agents know a cell)</option>
+            <option value="none">None</option>
+          </select></label>
+        </div>
+        <p class="caption" id="heat-note"></p>
+      </section>
+
+      <section class="panel" aria-label="Selected agent">
+        <h2>Selected agent <span class="small">(click an agent in the view)</span></h2>
+        <div id="agent-card" class="agent-card"><p class="caption">Nobody selected yet.</p></div>
+      </section>
+
+      <section class="panel wide" aria-label="Performance">
+        <h2>Performance by trip number</h2>
+        <p class="caption">Each agent keeps its own map and landmarks between trips. If what it learned helps, later trips are
+          quicker, use less energy and break fewer rules. Violation seconds are measured against the rule layer the agent did not
+          know at first (off its band, inside a no-fly zone, against a lane).</p>
+        <div id="perf-table"></div>
+        <div class="stats" id="totals"></div>
+      </section>
+
+      <section class="panel" aria-label="Events">
+        <h2>Events</h2>
+        <ol class="log" id="log"></ol>
+      </section>
+
+      <section class="panel" aria-label="About">
+        <h2>How to read it</h2>
+        <ul class="caption tight">
+          <li><b>City + rules</b>: real building heights (or the placeholder until the data script has run), the one-way river
+            loop (chevrons), no-fly zones (red: everyone, violet: drones only), heliports (yellow rings), rooftop drone pads
+            (cyan; hubs larger), band signs (white posts).</li>
+          <li><b>One agent's map</b>: only what the selected agent knows: cells it has seen (land, water), blocks for obstacles
+            (red when too tall for its band), lanes and no-fly zones it has found, its landmarks (coloured dots) with a thin line to
+            what each is remembered against: home for a drone, a visual reference for a helicopter.</li>
+          <li><b>Everyone together</b>: all paths overlaid, congestion landmarks as spheres, and a heat map on the ground.</li>
+        </ul>
+        <p class="caption">Rules and data sources: <code>docs/rules.md</code>, <code>docs/data.md</code>. All parameters:
+          <code>src/sim/config.js</code>.</p>
+      </section>
+    </div>
+  </main>
+  <footer class="page-foot"><p class="small">ARCH6956 Spatial AI, Columbia GSAPP. Building data: NYC Open Data (when downloaded). Not for navigation.</p></footer>
+
+  <script type="module" src="src/ui/main.js?v=20261110a"></script>
+</body>
+</html>
