@@ -7,51 +7,50 @@ hubs, 12 tour and 6 medical helicopters; seed 20261110.
 
 ## Learning shows up as fewer violations and fewer re-plans
 
-| Agent | Trip no. | Trips | Minutes | Wh | Re-plans | Remembered route | Violation s |
+| Agent | Trip no. | Trips | Minutes | Wh | Re-plans | Used express | Violation s |
 |---|---|---|---|---|---|---|---|
-| Drone | 1 | 175 | 6.7 | 81.6 | 10.3 | 0% | 130.3 |
-| Drone | 2 | 173 | 8.7 | 82.7 | 10.2 | 49% | 50.8 |
-| Drone | 3 | 172 | 9.0 | 80.9 | 6.6 | 56% | 24.2 |
-| Drone | 4+ | 1,246 | 7.4 | 80.2 | 4.5 | 66% | 13.8 |
-| Tour helicopter | 1 | 12 | 15.9 | – | 65.8 | – | 27.1 |
-| Tour helicopter | 2 | 12 | 13.0 | – | 37.3 | – | 15.2 |
-| Tour helicopter | 4+ | 52 | 12.9 | – | 32.3 | – | 12.8 |
-| Medical helicopter | 1 | 6 | 6.7 | – | 19.8 | – | 37.4 |
-| Medical helicopter | 4+ | 27 | 7.8 | – | 15.8 | – | 35.4 |
+| Drone | 1 | 173 | 10.5 | 127.4 | 7.1 | 43% | 57.0 |
+| Drone | 2 | 177 | 10.4 | 128.2 | 3.8 | 45% | 18.7 |
+| Drone | 3 | 177 | 10.4 | 129.0 | 3.6 | 48% | 10.8 |
+| Drone | 4+ | 1,121 | 9.5 | 118.9 | 3.2 | 43% | 4.9 |
+| Tour helicopter | 1 | 12 | 11.8 | – | 64.6 | – | 27.2 |
+| Tour helicopter | 2 | 12 | 12.6 | – | 35.4 | – | 18.4 |
+| Tour helicopter | 4+ | 62 | 12.0 | – | 31.9 | – | 17.0 |
+| Medical helicopter | 1 | 5 | 7.4 | – | 28.0 | – | 35.2 |
+| Medical helicopter | 4+ | 23 | 8.4 | – | 17.3 | – | 34.6 |
 
-- **Drones** break the rules (mostly flying off their band, because they have not yet seen a band sign) for about two minutes on
-  their first trip and for about 14 seconds from the fourth trip on. They re-plan less than half as often and, by then, two orders
-  in three fly a remembered breadcrumb route. **Energy and time per trip stay flat** (about 81 Wh, 7-9 minutes): the first route
-  to a customer is already close to the shortest one on a 50 m grid, so remembering it saves planning, not distance.
-- **Tour helicopters** halve their re-plans and violation seconds after the first tour, once they have found the lane loop, and
-  the second tour is about 3 minutes shorter.
+- **Drones** fly only above the streets or in the express corridors. Their violations (flying off their layer before they have
+  seen a layer sign) fall from 57 s on the first trip to 5 s from the fourth trip on, and re-plans halve. Each drone knows 8 of the
+  14 corridors on average after two hours, and about 45% of trips use at least one. Trips from the fourth on use about 7% less
+  energy and 10% less time (119 vs 127 Wh, 9.5 vs 10.5 minutes). The gain is probably small because a drone already finds the
+  corridors near its own hub on its first trip (43% of first trips use one).
+- **Tour helicopters** halve their re-plans after the first tour, once they have found the lane loop; violation seconds fall by
+  about a third.
 - **Medical helicopters do not improve**: they come in from four different edges to three heliports, so each trip covers new
-  ground. Their violations are mostly **off-band seconds** (1,492 s of 1,569). A likely cause, not yet isolated: the supertall
+  ground. Their violations are mostly **off-band seconds** (1,255 s of 1,350). A likely cause, not yet isolated: the supertall
   towers reach into or above the 1,000-1,299 ft transient band, and a helicopter climbs over any known roof ahead even if that
-  takes it out of its band. If that holds on the real data it is a finding about the band design, not about the agents.
+  takes it out of its band.
 
 ## Where the rules jam
 
 Measured over the same two-hour run (shares within 600 m of a hub or 1.5 km of a heliport):
 
-1. **The drone hubs.** 86% of the true-crowding seconds (ground truth, no agent sees it) and 99.9% of the drones' congestion
-   landmarks are within 600 m of one of the six hubs; one hub on the Hudson waterfront at Battery Park City alone has 49% of the
-   crowding. Each hub serves 30 drones with four landing spots, so returning drones queue on holding rings round the roof while
-   others climb out through them. *The rule problem is hub capacity and the shared take-off/landing column, not the cruise
-   bands.* The other 13% of crowding is spread thinly over the city.
-2. **Heliport approaches and holds, not the lanes.** Of the 149 helicopter losses of separation, 93 happen on approach to or
-   climb-out from JRB (59), JRA (28) and 6N5 (6), 33 in holding patterns while a heliport is full, and 23 in cruise.
-3. **Helicopters perceive little congestion.** Their congestion landmarks (343 counts in two hours) are few next to the drones'
-   (about 19,600) and are away from the heliports: 18 helicopters rarely put three in one cone within 900 m. With this population the
-   helicopter rule layer is not saturated; raise `population.tours` to test it.
+1. **The drone hubs.** 92% of the true-crowding seconds (ground truth, no agent sees it) and 99% of the drones' congestion
+   landmarks are within 600 m of one of the six hubs, where the streets, the express corridors and the take-off column meet.
+   The Kips Bay and Lower East Side hubs are the busiest. Most of the 3,801 drone-drone losses of separation are on the short
+   links between a hub and its first street corner, where both directions meet. *The rule problem is the hub: one take-off
+   column and two street links per hub.* The street grid itself stays fluid. On the heat map (log scale) weaker crowding also
+   shows along the busiest express corridors and along the Hudson leg of the helicopter loop.
+2. **Heliport approaches, not the lanes.** Of the 143 helicopter losses of separation, 125 happen on approach to or climb-out
+   from JRB (75), JRA (45) and 6N5 (5); 18 in cruise or holding.
+3. **Helicopters perceive no congestion** in this run: 18 helicopters rarely put three in one cone within 900 m. The helicopter
+   rule layer is not saturated at this population; raise `population.tours` to test it.
 4. **Not measured yet: what the one-way loop costs.** A flight from the west to the East 34th St heliport has to go round by the
    Battery or the park crossing. Switch on the real SFRA's west-shore southbound lane (`hudson-sb`) and compare medical minutes.
 
 ## Other numbers (two hours)
 
-- Drones: 1,766 deliveries, 28 forced landings (battery), 233 diversions to a pad they had found, 3,734 drone-drone losses of
-  separation (under 12.5 m and 6 m), 1,976 congestion encounters.
-- Helicopters: 88 tours, 45 medical missions, 149 helicopter-helicopter losses of separation (< 150 m and < 100 ft), 1 mixed.
-- No-fly seconds: 303 (drones) and 9 (medical), all before the zone was seen.
-- Near misses with buildings the agent had not yet seen: about 4,100 for drones (their cone is 180 m and they fly between towers).
-  On contact a drone climbs away, learns that building and re-plans round it.
+- Drones: 1,648 deliveries, 9 forced landings (battery), 88 diversions to a pad they had found, 3,801 drone-drone losses of
+  separation (under 12.5 m and 6 m), 1,569 congestion encounters.
+- Helicopters: 98 tours, 38 medical missions, 143 helicopter-helicopter losses of separation (< 150 m and < 100 ft), none mixed.
+- No-fly seconds: 0 (drones) and 42 (medical), all before the zone was seen.

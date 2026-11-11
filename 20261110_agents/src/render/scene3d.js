@@ -53,6 +53,7 @@ export function makeScene3D(container, palette) {
     layers.buildings = buildingMesh(w); root.add(layers.buildings);
     layers.rules = ruleLayer(w); root.add(layers.rules);
     layers.bands = bandLayer(w); root.add(layers.bands);
+    layers.net = netLayer(w); root.add(layers.net);
     layers.heat = heatLayer(w); root.add(layers.heat);
     layers.knowledge = new THREE.Group(); root.add(layers.knowledge);
     layers.collective = new THREE.Group(); root.add(layers.collective);
@@ -149,9 +150,38 @@ export function makeScene3D(container, palette) {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(Wd, Hd), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false }));
       m.rotation.x = -Math.PI / 2; m.position.set(Wd / 2, ft * FT * ve, -Hd / 2); g.add(m);
     };
-    plane(cfg.drone.eastbound, palette.drone, 0.07); plane(cfg.drone.westbound, palette.drone, 0.07);
+    plane(w.config.droneNet.avenueFt, palette.drone, 0.06); plane(w.config.droneNet.streetFt, palette.drone, 0.06);
     plane(cfg.heli.tour.cruise, palette.tour, 0.05); plane(cfg.heli.medical.cruise, palette.medical, 0.05);
     plane(cfg.classBFloor, '#ffffff', 0.035);
+    return g;
+  }
+
+  // The drone network: street layers as lines over the street centres, express corridors as tubes.
+  function netLayer(w, filter = null) {
+    const g = new THREE.Group(); const net = w.net; const L = w.config.droneNet;
+    const pos = { avenue: [], street: [] };
+    for (const e of net.edges) {
+      if (e.kind === 'express' || (filter && !filter.edges.has(e.id))) continue;
+      const kind = e.kind === 'avenue' ? 'avenue' : 'street';
+      const z = (kind === 'avenue' ? L.avenueFt : L.streetFt) * FT;
+      const A = net.nodes[e.a], B = net.nodes[e.b];
+      pos[kind].push(A.x, z * ve, -A.y, B.x, z * ve, -B.y);
+    }
+    for (const [kind, arr] of Object.entries(pos)) {
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3));
+      g.add(new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: kind === 'avenue' ? palette.streetAve : palette.streetSt, transparent: true, opacity: filter ? 0.95 : 0.55 })));
+    }
+    const lvlColor = [palette.express1, palette.express2, palette.express3, palette.express4];
+    for (const c of net.corridors) {
+      if (filter && !filter.corridors.has(c.id)) continue;
+      const len = c.len; const tube = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, len, 10, 1, true),
+        new THREE.MeshBasicMaterial({ color: lvlColor[c.level] || palette.express1, transparent: true, opacity: 0.55, depthWrite: false }));
+      tube.position.copy(V((c.x1 + c.x2) / 2, (c.y1 + c.y2) / 2, c.z));
+      tube.quaternion.setFromUnitVectors(UP, V(c.x2 - c.x1, c.y2 - c.y1, 0).normalize());
+      g.add(tube);
+      if (!filter) g.add(labelSprite(`${c.levelFt} ft`, V((c.x1 + c.x2) / 2, (c.y1 + c.y2) / 2, c.z + 25), lvlColor[c.level] || '#fff'));
+    }
+    if (!filter) for (const p of w.pads) if (p.hub) g.add(labelSprite(p.name, V(p.x, p.y, p.z + 140), palette.hub));
     return g;
   }
 
@@ -303,6 +333,8 @@ export function makeScene3D(container, palette) {
       blocked.setColorAt(i, col.set(h > zc - a.spec.clearance ? palette.kBlockHot : palette.kBlock));
     });
     blocked.count = cells.length; g.add(blocked);
+    // a drone's part of the network: streets it has seen, corridors it knows
+    if (a.type === 'drone') g.add(netLayer(w, { edges: k.edges, corridors: k.corridors }));
     // rule features it has seen
     for (const id of k.noFly) { const z = w.noFly[id]; const ring = new THREE.Mesh(new THREE.TorusGeometry(z.radius, 6, 6, 64), new THREE.MeshBasicMaterial({ color: palette.nfz })); ring.rotation.x = Math.PI / 2; ring.position.copy(V(z.x, z.y, a.z)); g.add(ring); }
     for (const id of k.heliports) { const h = w.heliports[id]; g.add(padMarker(h.x, h.y, h.z + 3, 80, palette.heliport)); }
@@ -412,6 +444,7 @@ export function makeScene3D(container, palette) {
     layers.buildings.material.opacity = m === 'collective' ? 0.45 : 1;
     layers.buildings.material.depthWrite = m === 'city';
     layers.rules.visible = options.rules && m !== 'knowledge';
+    layers.net.visible = options.rules && m === 'city';
     layers.bands.visible = options.bands;
     layers.knowledge.visible = m === 'knowledge';
     layers.collective.visible = m === 'collective';

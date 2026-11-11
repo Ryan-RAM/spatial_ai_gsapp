@@ -122,3 +122,29 @@ test('landmarks: drones keep them relative to home, helicopters against a visual
   const l2 = h.knowledge.addLandmark('lane-entry', ref.x + 300, ref.y, 240, 5);
   assert.equal(l2.rep.frame, 'ref'); assert.equal(l2.rep.ref, ref.id); assert.equal(l2.rep.bearing, 90);
 });
+
+test('express corridors: crossing corridors never share a level, and nothing stands in them', () => {
+  const C = world.net.corridors;
+  assert.ok(C.length >= 12, `${C.length} corridors`);
+  for (const c of C) for (const j of c.crosses) assert.notEqual(c.levelFt, C[j].levelFt, `${c.name} / ${C[j].name}`);
+  for (const c of C) {
+    const n = Math.ceil(c.len / 10);
+    for (let s = 1; s < n; s++) {
+      const x = c.x1 + ((c.x2 - c.x1) * s) / n, y = c.y1 + ((c.y2 - c.y1) * s) / n;
+      for (const b of world.data.buildings) {
+        if (b.top < c.z) continue;
+        assert.ok(!pointInPoly(x, y, b.p), `${b.name || 'a building'} (${Math.round(b.top / FT)} ft) stands in corridor ${c.name} at ${c.levelFt} ft`);
+      }
+    }
+  }
+});
+
+test('the street network covers Manhattan and joins all six hubs', () => {
+  const net = world.net;
+  assert.ok(net.streetCount > 1000);
+  // every hub can reach every other hub over the streets alone
+  const seen = new Set([net.padNode.get(0)]); const todo = [net.padNode.get(0)];
+  while (todo.length) { const u = todo.pop(); for (const eid of net.nodes[u].adj) { const e = net.edges[eid]; if (e.kind === 'express') continue; const v = e.a === u ? e.b : e.a; if (!seen.has(v)) { seen.add(v); todo.push(v); } } }
+  for (let h = 0; h < 6; h++) assert.ok(seen.has(net.padNode.get(h)), `hub ${h} reachable by street`);
+  assert.ok(seen.size > net.streetCount * 0.95, 'the street grid is connected');
+});

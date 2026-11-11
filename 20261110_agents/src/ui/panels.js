@@ -39,7 +39,7 @@ export function makePanels() {
         <div class="row"><span>${crit}</span></div>
         <div class="row"><span>Knows <b>${pct}%</b> of the site's cells</span><span>Band rule: <b>${k.bandRule ? 'known' : 'not yet seen'}</b></span>
           <span>Lane gates <b>${k.lanes.size}</b></span><span>No-fly zones <b>${k.noFly.size}</b></span><span>${a.type === 'drone' ? `Pads <b>${k.pads.size}</b>` : `Heliports <b>${k.heliports.size}</b>, references <b>${k.refs.size}</b>`}</span>
-          <span>Agents met <b>${k.agents.size}</b></span>${a.type === 'drone' ? `<span>Remembered routes <b>${k.routes.size}</b></span>` : ''}</div>
+          <span>Agents met <b>${k.agents.size}</b></span>${a.type === 'drone' ? `<span>Express corridors known <b>${k.corridors.size}</b> of ${w.net.corridors.length}</span><span>Streets seen <b>${k.edges.size}</b></span>` : ''}</div>
         <div class="small" style="margin-top:6px">Landmarks (${k.landmarks.length}), newest first. ${a.type === 'drone' ? 'A drone remembers them relative to its home pad and along its trips.' : 'A helicopter crew remembers them against things it can see.'}</div>
         <ul class="lm-list">${lms || '<li class="small">none yet</li>'}</ul>`;
     },
@@ -56,20 +56,21 @@ export function makePanels() {
       for (const [type, v] of Object.entries(s.types)) {
         for (const k of ['1', '2', '3', '4+']) {
           const r = v.perTripNumber[k]; if (!r) continue;
-          rows.push(`<tr><td>${NAME[type]}</td><td>${k}</td><td>${r.n}</td><td>${n1(r.minutes)}</td><td>${n1(r.km)}</td><td>${type === 'drone' ? n1(r.wh) : '–'}</td><td>${n1(r.replans)}</td><td>${type === 'drone' ? `${Math.round(r.reuseShare)}%` : '–'}</td><td>${n1(r.violationSeconds)}</td><td>${n1(r.waitSeconds)}</td></tr>`);
+          rows.push(`<tr><td>${NAME[type]}</td><td>${k}</td><td>${r.n}</td><td>${n1(r.minutes)}</td><td>${n1(r.km)}</td><td>${type === 'drone' ? n1(r.wh) : '–'}</td><td>${n1(r.replans)}</td><td>${type === 'drone' ? `${Math.round(r.expressShare)}%` : '–'}</td><td>${n1(r.violationSeconds)}</td><td>${n1(r.waitSeconds)}</td></tr>`);
         }
       }
-      $('perf-table').innerHTML = `<div class="table-wrap"><table><thead><tr><th>Agent</th><th>Trip no.</th><th>Trips</th><th>Minutes</th><th>km</th><th>Wh</th><th>Re-plans</th><th>Remembered route</th><th>Violation s</th><th>Wait s</th></tr></thead>
+      $('perf-table').innerHTML = `<div class="table-wrap"><table><thead><tr><th>Agent</th><th>Trip no.</th><th>Trips</th><th>Minutes</th><th>km</th><th>Wh</th><th>Re-plans</th><th>Used express</th><th>Violation s</th><th>Wait s</th></tr></thead>
         <tbody>${rows.join('') || '<tr><td colspan="10" class="small">No trip finished yet.</td></tr>'}</tbody></table></div>`;
       const d = s.types.drone.totals, t = s.types.tour.totals, m = s.types.medical.totals;
       $('totals').innerHTML = [
-        ['Drones knowing the band rule', `${s.types.drone.knowsBandRule} / ${s.types.drone.agents}`],
+        ['Drones knowing the street-layer rule', `${s.types.drone.knowsBandRule} / ${s.types.drone.agents}`],
+        ['Express corridors known per drone (mean)', `${s.types.drone.knowsCorridors} / ${sim.world.net.corridors.length}`],
         ['Congestion encounters (drones / helicopters)', `${d.congestionEncounters} / ${t.congestionEncounters + m.congestionEncounters}`],
         ['Losses of separation (helicopter pairs / drone pairs / mixed)', `${s.separation.heli} / ${s.separation.drone} / ${s.separation.mixed}`],
         ['Emergency diversions / forced landings (drones)', `${d.emergencies} / ${d.forcedLandings}`],
         ['Wrong-way lane seconds (helicopters)', Math.round(t.wrongWaySeconds + m.wrongWaySeconds)],
         ['No-fly seconds (all)', Math.round(d.nfzSeconds + t.nfzSeconds + m.nfzSeconds)],
-        ['Near misses with unseen buildings', d.buildingNearMisses + t.buildingNearMisses + m.buildingNearMisses],
+        ['Helicopter near misses with unseen buildings', t.buildingNearMisses + m.buildingNearMisses],
       ].map(([k, v]) => `<span>${k}: <b>${v}</b></span>`).join('');
     },
 
@@ -89,8 +90,8 @@ export function makePanels() {
       const sw = (c, t, dot) => `<span><i class="sw${dot ? ' dot' : ''}" style="background:${c}"></i>${t}</span>`;
       const agents = sw(p.drone, 'Drone') + sw(p.tour, 'Tour helicopter') + sw(p.medical, 'Medical helicopter (white top)');
       let html = '';
-      if (mode === 'city') html = agents + sw(p.lane, 'River loop lane') + sw(p.nfz, 'No-fly: all') + sw(p.nfzDrone, 'No-fly: drones') + sw(p.heliport, 'Heliport') + sw(p.hub, 'Drone hub / pad') + sw(p.selection, 'Selected: cone, trail, plan');
-      else if (mode === 'knowledge') html = sw(p.kLand, 'Seen land') + sw(p.kWater, 'Seen water') + sw(p.lane, 'Lane it found') + sw(p.nfz, 'No-fly it found') + sw(p.kBlock, 'Known obstacle') + sw(p.kBlockHot, 'Too tall for its band') + LANDMARK_GROUPS.map((g) => sw(g.color, g.label, true)).join('') + sw(p.anchor, 'Line: what a landmark is remembered against');
+      if (mode === 'city') html = agents + sw(p.streetAve, 'Drone avenue layer 100 ft') + sw(p.streetSt, 'Drone street layer 150 ft') + sw(p.express1, 'Express 250 ft') + sw(p.express2, '300 ft') + sw(p.express3, '350 ft') + sw(p.lane, 'Helicopter river loop') + sw(p.nfz, 'No-fly: all') + sw(p.nfzDrone, 'No-fly: drones') + sw(p.heliport, 'Heliport') + sw(p.hub, 'Drone hub / pad') + sw(p.selection, 'Selected: cone, trail, plan');
+      else if (mode === 'knowledge') html = sw(p.streetAve, 'Streets it has seen') + sw(p.express1, 'Express corridors it knows') + sw(p.kLand, 'Seen land') + sw(p.kWater, 'Seen water') + sw(p.lane, 'Lane it found') + sw(p.nfz, 'No-fly it found') + sw(p.kBlock, 'Known obstacle') + sw(p.kBlockHot, 'Too tall for its band') + LANDMARK_GROUPS.map((g) => sw(g.color, g.label, true)).join('') + sw(p.anchor, 'Line: what a landmark is remembered against');
       else html = agents.replace('Drone', 'Drone paths').replace('Tour helicopter', 'Tour paths').replace('Medical helicopter (white top)', 'Medical paths') + sw('#c98500', 'Congestion landmark (size = agents)', true) + (heat && heat !== 'none' ? '<span><i class="ramp"></i>heat: low → high</span>' : '');
       $('legend').innerHTML = html;
     },

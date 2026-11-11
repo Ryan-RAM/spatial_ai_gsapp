@@ -27,6 +27,7 @@ function readPalette() {
     sky: v('--sky'), water: v('--water'), land: v('--land'), bLow: v('--b-low'), bHigh: v('--b-high'),
     drone: v('--drone'), tour: v('--tour'), medical: v('--medical'), lane: v('--lane'), nfz: v('--nfz'), nfzDrone: v('--nfz-drone'),
     heliport: v('--heliport'), hub: v('--hub'), pad: v('--pad'), sign: v('--sign'), cone: v('--cone'), selection: v('--selection'), anchor: v('--anchor'),
+    streetAve: v('--street-ave'), streetSt: v('--street-st'), express1: v('--express-1'), express2: v('--express-2'), express3: v('--express-3'), express4: v('--express-4'),
     kLand: v('--k-land'), kWater: v('--k-water'), kBlock: v('--k-block'), kBlockHot: v('--k-block-hot'),
   };
 }
@@ -250,21 +251,21 @@ function wire() {
 // Presentation steps: each sets a view and says what to look at.
 const TOUR = [
   { opts: { mode: 'city', view: 'overview', select: 'heli', cones: 'selected', bands: false },
-    text: '<b>The rule layer we designed.</b> A one-way loop: north up the Hudson on the Manhattan shore (as the real SFRA asks), east over Central Park, south down the East River, west round the Battery. No-fly zones: red for everyone (UN), violet for drones only (heliports, Statue of Liberty, a substation). Yellow rings are heliports, cyan rings rooftop drone pads, white posts band signs. No agent knows any of this when it starts.' },
+    text: '<b>The rule layer we designed.</b> Drones: six rooftop hubs joined by straight express corridors (250 / 300 / 350 ft, crossing corridors on different levels); everywhere else they fly only above the street grid, avenues at 100 ft and cross streets at 150 ft. Helicopters: a one-way loop up the Hudson, over Central Park, down the East River, round the Battery. No-fly zones in red (everyone) and violet (drones). No agent knows any of this when it starts.' },
   { opts: { mode: 'city', view: 'midtown', cones: 'all', bands: true },
-    text: '<b>Limited vision.</b> Every agent sees only its cone: a drone 70° and 180 m, a helicopter 140° and 1,200 m. A tower hides what is behind it. The flat planes are the altitude bands: drones at 200 ft (eastbound) and 300 ft (westbound), tours at 800 ft, medical flights at 1,100 ft.' },
+    text: '<b>Limited vision.</b> Every agent sees only its cone: a drone 70° and 180 m, a helicopter 140° and 1,200 m. A tower hides what is behind it. Drones learn an express corridor only when they see one of its signs, so on their first trips they mostly take the streets.' },
   { opts: { mode: 'knowledge', select: 'drone', view: 'agent', cones: 'selected', bands: false },
-    text: '<b>What one drone knows.</b> Only the cells it has seen. Red blocks are buildings too tall for its band. Its landmarks (dots) are remembered relative to home: the white lines run back to its hub. Green squares are its customers, and it reuses the breadcrumb route to a customer it has served before.' },
+    text: '<b>What one drone knows.</b> The streets it has flown or seen, the express corridors it has found, the obstacles beside them, its pads and its landmarks (dots), each remembered relative to its home hub (white lines). Green squares are its customers.' },
   { opts: { mode: 'knowledge', select: 'heli', view: 'overview', cones: 'selected' },
-    text: '<b>What one helicopter crew knows.</b> A wide cone maps much more. Light blue is the part of the loop it has found. Its landmarks are anchored to things it can see: towers, bridges, the river. The labels are those visual references.' },
+    text: '<b>What one helicopter crew knows.</b> A wide cone maps much more. Light blue is the part of the river loop it has found. Its landmarks are anchored to things it can see: towers, bridges, the river. The labels are those visual references.' },
   { opts: { mode: 'collective', view: 'overview', heat: 'none' },
-    text: '<b>Everyone together: all paths in 3D.</b> Blue drone paths fan out from the six hubs at their two band levels; orange tours and green medical flights follow the river loop.' },
+    text: '<b>Everyone together: all paths in 3D.</b> Blue drone paths trace the street grid and, above it, the straight express corridors between the hubs; orange tours and green medical flights follow the river loop.' },
   { opts: { mode: 'collective', view: 'top', heat: 'landmarks' },
-    text: '<b>Landmark heat map.</b> Where agents left landmarks: lane entries and exits, band switches, landing sites, no-fly boundaries, congestion and holding points.' },
+    text: '<b>Landmark heat map.</b> Where agents left landmarks: corridor and lane entries and exits, layer switches, landing sites, no-fly boundaries, congestion and holding points.' },
   { opts: { mode: 'collective', view: 'top', heat: 'crowd' },
-    text: '<b>Where the rules jam.</b> Nothing was scripted as congested. This map is ground truth (no agent sees it): the jams form round the drone hubs, where many drones share one take-off and landing column, and on the heliport approaches.' },
+    text: '<b>Where the rules jam.</b> Nothing was scripted as congested. This map is ground truth (no agent sees it): the jams form at the six hubs, where streets, corridors and the take-off column all meet, and on the heliport approaches.' },
   { opts: { mode: 'collective', view: 'top', heat: 'knowledge' },
-    text: '<b>Shared knowledge.</b> How many agents know each 50 m cell. The rivers and the loop are known to almost everyone; the middle of Manhattan only to the drones that fly there.' },
+    text: '<b>Shared knowledge.</b> How many agents know each 50 m cell. The rivers and the loop are known to almost everyone; the streets round the hubs to every drone of that hub.' },
 ];
 
 function tourStep(i) {

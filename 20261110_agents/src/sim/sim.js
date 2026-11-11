@@ -27,15 +27,13 @@ export function makeSim(world, config = world.config, seed = config.seed) {
   // ---- customers for each hub (drop points on low roofs or open ground) ----
   const hubs = world.pads.filter((p) => p.hub);
   if (!hubs.length) throw new Error('No drone hubs could be placed: check dronePads in config.js');
+  const streetNodes = world.net.nodes.filter((n) => n.kind === 'street');
   for (const hub of hubs) {
     hub.customers = [];
-    let tries = 0;
-    while (hub.customers.length < config.drone.customersPerHub && tries++ < 5000) {
-      const r = rng.range(500, config.drone.tripRadius), th = rng.range(0, 2 * Math.PI);
-      const x = hub.x + Math.cos(th) * r, y = hub.y + Math.sin(th) * r;
-      const c = world.cellOf(x, y);
-      if (c < 0 || !world.land[c] || world.nfzMask[c] || world.height[c] > 45 || /jersey/i.test(world.landNameAt(world.cx(c), world.cy(c)))) continue; // NYC customers only
-      hub.customers.push({ id: `${hub.id}-${hub.customers.length}`, x: world.cx(c), y: world.cy(c), z: world.height[c], hub: hub.id });
+    const pool = streetNodes.filter((n) => { const d = Math.hypot(n.x - hub.x, n.y - hub.y); return d > 500 && d < config.drone.tripRadius && !world.inNoFly('drone', n.x, n.y, 30); });
+    for (let i = 0; i < config.drone.customersPerHub && pool.length; i++) {
+      const n = pool.splice(Math.floor(rng.next() * pool.length), 1)[0];
+      hub.customers.push({ id: `${hub.id}-${i}`, x: n.x, y: n.y, z: 0, node: n.id, hub: hub.id });
     }
   }
 
@@ -97,6 +95,12 @@ export function makeSim(world, config = world.config, seed = config.seed) {
     s.waiting.delete(a.id); s.holders.add(a.id);
     return true;
   };
+  // where on the roof a slot holder lands: spots 14 m apart round the pad centre
+  sim.slotSpot = (site, a) => {
+    const i = [...slotOf(site).holders].indexOf(a.id); const n = capacity(site);
+    if (i < 0 || n < 2) return [site.x, site.y];
+    const th = (2 * Math.PI * i) / n; return [site.x + Math.cos(th) * 12, site.y + Math.sin(th) * 12];
+  };
   sim.releaseSlot = (site, a) => { const s = slotOf(site); s.holders.delete(a.id); s.waiting.delete(a.id); };
   sim.siteAt = (a) => world.pads.find((p) => Math.hypot(p.x - a.x, p.y - a.y) < 5) || null;
   const byId = new Map(sim.agents.map((a) => [a.id, a]));
@@ -114,7 +118,7 @@ export function makeSim(world, config = world.config, seed = config.seed) {
   // ---- bookkeeping hooks used by agents.js ----
   sim.recordTrip = (a, t) => {
     sim.trips.push({ agent: a.id, type: a.type, no: t.no, kind: t.kind, duration: t.duration, energy: t.energy, dist: t.dist,
-      nfz: t.nfz, band: t.band, wrongWay: t.wrongWay, waits: t.waits, replans: t.replans, reuse: t.reuse, emergency: t.emergency, ok: t.ok, yields: t.yields,
+      nfz: t.nfz, band: t.band, wrongWay: t.wrongWay, waits: t.waits, replans: t.replans, reuse: t.reuse, express: t.express, emergency: t.emergency, ok: t.ok, yields: t.yields,
       known: a.knowledge.seenCount, end: sim.time });
   };
   sim.addPathSegment = (a, p0, p1) => {
@@ -209,7 +213,7 @@ export function summarise(sim) {
       perTrip[k] = {
         n: ts.length, minutes: r1(mean(ts.map((t) => t.duration / 60))), km: r1(mean(ts.map((t) => t.dist / 1000))),
         ...(type === 'drone' ? { wh: r1(mean(ts.map((t) => t.energy))), whPerKm: r1(mean(ts.map((t) => t.energy / Math.max(0.1, t.dist / 1000)))) } : {}),
-        replans: r1(mean(ts.map((t) => t.replans))), reuseShare: r1(mean(ts.map((t) => (t.reuse ? 100 : 0)))),
+        replans: r1(mean(ts.map((t) => t.replans))), expressShare: r1(mean(ts.map((t) => (t.express ? 100 : 0)))),
         violationSeconds: r1(mean(ts.map((t) => t.nfz + t.band + t.wrongWay))), waitSeconds: r1(mean(ts.map((t) => t.waits))),
       };
     }
@@ -221,7 +225,8 @@ export function summarise(sim) {
       meanKnownCells: Math.round(mean(ag.map((a) => a.knowledge.seenCount)) || 0),
       landmarks: ag.reduce((s, a) => s + a.knowledge.landmarks.length, 0),
       totals: { nfzSeconds: r1(tot('nfz')), offBandSeconds: r1(tot('band')), wrongWaySeconds: r1(tot('wrongWay')), waitSeconds: r1(tot('waits')),
-        yields: tot('yields'), congestionEncounters: tot('congestion'), emergencies: tot('emergencies'), forcedLandings: tot('forced'), buildingNearMisses: tot('strikes'), routeReuses: tot('reuse') },
+        yields: tot('yields'), congestionEncounters: tot('congestion'), emergencies: tot('emergencies'), forcedLandings: tot('forced'), buildingNearMisses: tot('strikes') },
+      knowsCorridors: type === 'drone' ? r1(mean(ag.map((a) => a.knowledge.corridors.size))) : undefined,
     };
   }
   // where the jams formed (top cells of true crowding)

@@ -5,6 +5,7 @@ import { CONFIG, FT } from '../src/sim/config.js';
 import { buildWorld } from '../src/sim/world.js';
 import { makeSim } from '../src/sim/sim.js';
 import { K } from '../src/sim/knowledge.js';
+import { closestOnSegment } from '../src/sim/geo.js';
 
 const world = buildWorld(CONFIG);
 const small = { ...CONFIG, population: { drones: 60, tours: 6, medical: 3 } };
@@ -37,9 +38,18 @@ test('a 40-minute run: trips finish, knowledge and landmarks grow, rules get lea
   // the knowledge views have content
   const overlap = sim.knowledgeOverlap(); assert.ok(overlap.some((v) => v > 3));
   assert.ok(sim.paths.n > 1000);
-  // drones that learned the band rule cruise in it
-  const cruising = sim.agents.filter((a) => a.type === 'drone' && a.mode === 'cruise' && a.knowledge.bandRule && Math.abs(a.z - a.altTarget) < 2);
-  for (const a of cruising) assert.ok([CONFIG.bands.drone.eastbound, CONFIG.bands.drone.westbound].some((ft) => Math.abs(a.z - ft * FT) < 15));
+  // drones that know the layer rule fly at a street layer or a corridor level, on their lane
+  const L = CONFIG.droneNet;
+  const levels = [L.avenueFt, L.streetFt, ...L.expressLevelsFt].map((f) => f * FT);
+  const cruising = sim.agents.filter((a) => a.type === 'drone' && (a.mode === 'cruise' || a.mode === 'return') && a.knowledge.bandRule && Math.abs(a.z - a.altTarget) < 2 && a.route);
+  assert.ok(cruising.length > 5);
+  for (const a of cruising) {
+    assert.ok(levels.some((z) => Math.abs(a.z - z) < 3), `drone at ${(a.z / FT).toFixed(0)} ft`);
+    const e = a.route.edges[a.route.k], A = world.net.nodes[e.a], B = world.net.nodes[e.b];
+    const [qx, qy] = closestOnSegment(a.x, a.y, A.x, A.y, B.x, B.y);
+    assert.ok(Math.hypot(a.x - qx, a.y - qy) < L.keepRight + 6, 'a drone stays over its street or corridor');
+  }
+  assert.ok(sim.trips.some((t) => t.type === 'drone' && t.express), 'some trips use an express corridor');
 });
 
 test('helicopters plan along a known lane and never against it', () => {

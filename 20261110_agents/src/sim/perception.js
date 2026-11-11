@@ -55,8 +55,9 @@ export function sense(agent, sim) {
       const before = k.knownHeight(c);
       k.see(c, top, world.land[c]);
       if (top > before + 2 && agent.isBlockingHeight(top)) out.blockedNew.push(c);
+      if (agent.type === 'drone') { const es = world.net?.cellEdges.get(c); if (es) for (const e of es) k.edges.add(e); }
       const fs = world.features.get(c);
-      if (fs) for (const f of fs) learnFeature(agent, sim, f, out);
+      if (fs) for (const f of fs) learnFeature(agent, sim, { ...f, cell: c }, out);
       if (top > eye) break; // the building hides what is behind it
     }
   }
@@ -95,6 +96,12 @@ function learnFeature(agent, sim, f, out) {
     if (!k.heliports.has(f.id)) { k.heliports.add(f.id); out.learned.push({ kind: 'heliport', heliport: world.heliports[f.id] }); }
   } else if (f.kind === F.PAD) {
     if (!k.pads.has(f.id)) { k.pads.add(f.id); out.learned.push({ kind: 'pad', pad: world.pads[f.id] }); }
+  } else if (f.kind === F.CORRIDOR) {
+    if (agent.type === 'drone' && !k.corridors.has(f.id)) {
+      k.corridors.add(f.id);
+      const c = f.cell;
+      out.learned.push({ kind: 'corridor', corridor: world.net.corridors[f.id], at: { x: world.cx(c), y: world.cy(c) } });
+    }
   } else if (f.kind === F.SIGN) {
     if (!k.bandRule) { k.bandRule = true; out.learned.push({ kind: 'band', sign: world.signs[f.id] }); }
   }

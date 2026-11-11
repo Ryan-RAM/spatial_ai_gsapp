@@ -7,7 +7,8 @@
 
 import { makeRng } from './rng.js';
 import { FT } from './config.js';
-import { pointInPoly } from './geo.js';
+import { pointInPoly, closestOnSegment } from './geo.js';
+import { gridFrames, corridors } from './streets.js';
 
 // Shorelines, [lat, lon]. Hand-traced approximations; the real ones come from the DCP borough
 // boundaries (clipped to shoreline) through data/scripts/fetch_nyc.py.
@@ -80,7 +81,17 @@ export function makePlaceholder(config, frame) {
     for (const s of hs) h += s.a * Math.exp(-((x - s.x) ** 2 + (y - s.y) ** 2) / (2 * s.s * s.s));
     return h;
   };
-  const nearTower = (x, y) => towers.some((t) => Math.hypot(x - t.x, y - t.y) < t.side + 25);
+  const hubs = config.droneNet.hubs.map((h) => frame.toXY(h.lat, h.lon));
+  const nearTower = (x, y) => towers.some((t) => Math.hypot(x - t.x, y - t.y) < t.side + 25) || hubs.some(([hx, hy]) => Math.hypot(x - hx, y - hy) < 55);
+  // air rights: blocks under an express corridor stay below it
+  const cors = corridors(config, frame).corridors;
+  const capUnder = (x, y, top) => {
+    for (const c of cors) {
+      const [qx, qy] = closestOnSegment(x, y, c.x1, c.y1, c.x2, c.y2);
+      if (Math.hypot(qx - x, qy - y) < config.droneNet.corridorWidth + 20) top = Math.min(top, c.z - config.droneNet.corridorClearance);
+    }
+    return top;
+  };
 
   const buildings = [];
   const addRect = (cx, cy, ux, uy, len, wid, top) => {
@@ -111,7 +122,7 @@ export function makePlaceholder(config, frame) {
           if (!inside(lx, ly) || nearTower(lx, ly) || rng.chance(0.06)) continue;
           let top = heightAt(lx, ly, base) * Math.exp(rng.normal() * 0.38);
           if (rng.chance(0.04)) top *= 1.9;
-          top = Math.max(7, Math.min(top, 380));
+          top = Math.max(7, capUnder(lx, ly, Math.min(top, 380)));
           const depth = blockWid * (rng.chance(0.5) ? 0.92 : 0.46);
           const off = depth < blockWid * 0.6 ? (rng.chance(0.5) ? 1 : -1) * blockWid * 0.24 : 0;
           addRect(lx + ux * off, ly + uy * off, vx, vy, w - 3, depth, top);
@@ -121,21 +132,23 @@ export function makePlaceholder(config, frame) {
   };
 
   const inManhattan = (x, y) => pointInPoly(x, y, manhattan);
-  const [gx, gy] = frame.toXY(40.7484, -73.9857); // Fifth Avenue at 34th St
-  const [hx, hy] = frame.toXY(40.7270, -73.9990); // a point on the Houston / 14th St transition
-  const gridLine = (x, y) => (y - hy) + 0.55 * (x - hx); // north-east of this line: the 1811 grid
-  // Central Park: from 59th St (25 streets north of 34th) between Fifth and Eighth avenues.
-  const park = (u, v) => u > 25 * 80.5 && u < 52 * 80.5 + 2000 && v < 0 && v > -800;
-  fillGrid({ ox: gx, oy: gy, bearing: 29, avenue: 262, street: 80.5, aveW: 30, stW: 18, base: 28,
-    lotMin: 18, lotMax: 55, inside: (x, y) => inManhattan(x, y) && gridLine(x, y) > 0, skip: park });
-  fillGrid({ ox: hx, oy: hy, bearing: 12, avenue: 140, street: 85, aveW: 16, stW: 14, base: 24,
-    lotMin: 16, lotMax: 42, inside: (x, y) => inManhattan(x, y) && gridLine(x, y) <= 0 });
+  // the same two street grids the drones fly over (config.droneNet.grid, streets.js)
+  const G = gridFrames(config, frame);
+  fillGrid({ ox: G.up.ox, oy: G.up.oy, bearing: G.up.bearing, avenue: G.up.avenue, street: G.up.street, aveW: 30, stW: 18, base: 28,
+    lotMin: 18, lotMax: 55, inside: (x, y) => inManhattan(x, y) && G.isUptown(x, y), skip: G.park });
+  fillGrid({ ox: G.down.ox, oy: G.down.oy, bearing: G.down.bearing, avenue: G.down.avenue, street: G.down.street, aveW: 16, stW: 14, base: 24,
+    lotMin: 16, lotMax: 42, inside: (x, y) => inManhattan(x, y) && !G.isUptown(x, y) });
   for (const l of others) {
     const ins = (x, y) => pointInPoly(x, y, l.p);
     const [ox, oy] = [l.p[0], l.p[1]];
     fillGrid({ ox, oy, bearing: l.name === 'Brooklyn and Queens' ? 0 : 36, avenue: 180, street: 75, aveW: 20, stW: 16,
       base: l.name === 'Governors Island' ? 6 : 14, lotMin: 18, lotMax: 50, inside: ins });
   }
+  config.droneNet.hubs.forEach((h, i) => { // the hub buildings: 100 ft roofs with room to land
+    const [x, y] = hubs[i]; const th = (29 * Math.PI) / 180;
+    addRect(x, y, Math.sin(th), Math.cos(th), 44, 44, config.droneNet.hubRoofFt * FT);
+    buildings[buildings.length - 1].name = `${h.name} drone hub`;
+  });
   for (const t of towers) {
     const th = (29 * Math.PI) / 180;
     addRect(t.x, t.y, Math.sin(th), Math.cos(th), t.side, t.side, t.top);

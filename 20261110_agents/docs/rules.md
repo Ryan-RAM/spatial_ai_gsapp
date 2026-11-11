@@ -45,20 +45,29 @@ so and say which one we used.
 - The real SFRA also has a **southbound lane on the west (New Jersey) shore**. It is in the config but switched off, because
   the point of the project is to test a one-way loop. Switch on `hudson-sb` to compare.
 
-### Altitude bands
+### Drone network: streets below, express corridors above
 
-| Band | Who | Feet MSL | Reasoning |
+Drones may not cross blocks. Outside the express corridors a drone flies only above the street centre lines of the Manhattan grid,
+keeping 8 m to the right so the two directions pass apart. Between the six rooftop hubs it may fly straight, in an express corridor.
+
+| Layer | Who | Feet | Reasoning |
 |---|---|---|---|
-| Transition | drones | 0-150 | Take-off, landing, the delivery drop. |
-| Drone eastbound | drones, magnetic course 000-179 | 200 ± 40 | The hemispheric idea of 91.159 (which legally applies only above 3,000 ft AGL) moved down into the Part 107 400 ft ceiling, so opposite directions are 100 ft apart. |
-| Drone westbound | drones, magnetic course 180-359 | 300 ± 40 | |
+| Hub roof, drop | drones | 0-100 | Take-off and landing on the hub roofs (several spots each), the delivery drop at 10 m over the street. |
+| Avenue layer | drones on avenues (roughly north-south) | 100 ± 20 | The street layer is split by street direction, so crossing streams pass 50 ft apart at every intersection. The same idea as the hemispheric rule (91.159), applied to the street grid. |
+| Cross-street layer | drones on cross streets (roughly east-west) | 150 ± 20 | |
+| Express corridors | drones between hubs | 250 / 300 / 350 (400 spare) | Straight hub-to-hub corridors above the street layer, inside the Part 107 400 ft ceiling. Corridors that cross each other get different levels (a greedy colouring of the crossing graph, `streets.js`); corridors that only meet at a hub may share a level. |
 | Buffer | nobody | 400-500 | 107.51 keeps drones below 400 ft; we leave 100 ft clear before the helicopters. |
 | Helicopter local | tour flights | 500-999, cruise 800 | SFRA "local" operations are below 1,000 ft; the kneeboard asks for the highest practical altitude below 1,000 ft. |
 | Helicopter transient | medical flights | 1,000-1,299, cruise 1,100 | SFRA "transient" operations, 1,000 ft up to the Class B floor. |
 | Class B floor | everyone | 1,300 | Hard ceiling: we do not model ATC clearances. |
 
-Helicopters may step 100 ft up or down inside their band to get away from traffic. A drone's course for the band is the
-direct course of the current leg (hub to customer, or back), converted to magnetic with the 13° W declination.
+The six hubs (Battery Park City, Lower East Side, Chelsea, Kips Bay, Upper West Side, Upper East Side) were placed so that every
+corridor keeps clear of the well-known towers. All 15 pairs are corridors except Lower East Side – Upper East Side, which would
+cross the UN zone: 14 corridors: 9 at 250 ft, 4 at 300 ft, 1 at 350 ft (exact list: `world.net.corridors`). In the
+simulated city the blocks under a corridor are kept 12 m below it (air rights). A drone learns a corridor only when it sees one
+of its signs (every 250 m along it, none on the hub roofs), and learns the street-layer heights from the band signs. Before that
+it flies the streets at 125 ft, which counts as off-layer. Helicopters may step 100 ft up or down inside their band to get away
+from traffic.
 
 ### No-fly zones
 
@@ -73,9 +82,9 @@ direct course of the current leg (hub to customer, or back), converted to magnet
 
 - **Heliports**: the three public Manhattan heliports at their FAA positions. The number of pads used at once (JRB 3, 6N5 2,
   JRA 2) is our assumption. Medical flights get the next free pad first.
-- **Rooftop drone pads**: picked from the building data (35-170 ft roofs, at least 1,400 m² of roof, 650 m apart, outside all
-  no-fly zones), standing in for DOT-designated take-off and landing sites. The first six, spread over Manhattan, are
-  delivery hubs. They double as emergency landing sites for drones that know them.
+- **Drone hubs and pads**: the six hubs are fixed rooftops (100 ft, four landing spots each); 20 more rooftop pads are picked
+  from the buildings (35-170 ft roofs, at least 1,400 m² of roof, 650 m apart, outside all no-fly zones). They stand in for
+  DOT-designated take-off and landing sites and double as emergency landing sites for drones that know them.
 - **Band signs**: posts at the heliports, the non-hub pads, every fourth lane gate and on a 1 km grid over land. They stand in
   for a broadcast of the airspace rules (as a UTM service might send). An agent learns its band only when it sees one.
 

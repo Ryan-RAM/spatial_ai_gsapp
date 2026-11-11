@@ -39,7 +39,7 @@ export const CONFIG = {
       eastbound: 200,         // magnetic course 000-179
       westbound: 300,         // magnetic course 180-359
       ceiling: 400,
-      tolerance: 40,          // +/- ft that still counts as "in the band"
+      tolerance: 20,          // +/- ft that still counts as "in the layer" (street layers are 50 ft apart)
     },
     buffer: [400, 500],       // nobody cruises here: vertical gap between drones and helicopters
     heli: {
@@ -100,13 +100,41 @@ export const CONFIG = {
     { id: 'JRA', name: 'West 30th Street Heliport', lat: 40.75490, lon: -74.00706, pads: 2, elevationFt: 7 },
   ],
 
+  // ---- Drone network (our design): streets below, express corridors between the six hubs above
+  droneNet: {
+    hubs: [ // rooftop hubs, fixed places; every pair is joined by a straight express corridor
+      { name: 'Battery Park City', lat: 40.7071, lon: -74.0174 },
+      { name: 'Lower East Side', lat: 40.7191, lon: -73.9877 },
+      { name: 'Chelsea', lat: 40.7422, lon: -74.0029 },
+      { name: 'Kips Bay', lat: 40.7395, lon: -73.9843 },
+      { name: 'Upper West Side', lat: 40.7806, lon: -73.9771 },
+      { name: 'Upper East Side', lat: 40.7741, lon: -73.9564 },
+    ],
+    hubRoofFt: 100,
+    avenueFt: 100,            // street layer: along the avenues (roughly north-south) ...
+    streetFt: 150,            // ... and along the cross streets, so drones cross each other 50 ft apart at intersections
+    expressLevelsFt: [250, 300, 350, 400], // express corridors; crossing corridors never share a level
+    streetSpeed: 10,          // m/s above a street (between buildings)
+    expressSpeed: 16,         // m/s in an express corridor (open air)
+    keepRight: 8,             // m to the right of the centre line, so opposite directions pass apart
+    corridorClearance: 12,    // m: in the simulated city, buildings under a corridor stay this far below it
+    corridorWidth: 45,        // m either side of a corridor kept below it
+    signEvery: 250,           // m between corridor signs (a corridor is learned when a sign is seen)
+    grid: {
+      uptown: { origin: [40.7484, -73.9857], bearing: 29, avenue: 262, street: 80.5 }, // 5th Ave & 34th St
+      downtown: { origin: [40.7270, -73.9990], bearing: 12, avenue: 140, street: 85 },
+      boundary: [40.7270, -73.9990], boundarySlope: 0.55,  // the line between the two grids
+      park: { fromStreet: 25, toStreet: 77, westV: -800, transverses: [31, 45, 52] }, // 59th-110th St; 65th, 79th, 86th
+    },
+  },
+
   // Rooftop drone pads are picked from the building data at load time.
   dronePads: {
     count: 26,
     minRoofFt: 35, maxRoofFt: 170,  // under the 200 ft band, above street clutter
     minFootprint: 1400,             // m2 of roof
     minSpacing: 650,                // m between pads
-    hubs: 6,                        // the first pads (spread over the site) are delivery hubs
+    hubs: 6,                        // the six droneNet hubs come first
     capacity: 2,                    // drones landing or taking off at once on an ordinary pad
     hubCapacity: 4,                 // ... and on a hub (a depot roof with several landing spots)
   },
@@ -145,8 +173,8 @@ export const CONFIG = {
     reserve: 0.22,         // battery fraction that triggers an emergency landing
     deliverHold: 12,       // s hovering over the drop point
     rechargeTime: 90,      // s on the hub before the next trip
-    naiveAltitudeFt: 250,  // altitude flown before the band rule is known
-    tripRadius: 3200,      // m, customers are within this distance of the hub
+    naiveAltitudeFt: 125,  // altitude flown above the streets before the layer rule is known
+    tripRadius: 4500,      // m, customers are within this distance of the hub
     repeatCustomerChance: 0.55, // chance the next order goes to a customer served before
     customersPerHub: 8,
     congestion: { radius: 120, count: 4, holdCount: 6, holdTime: 8, penalty: 6, memory: 240 },

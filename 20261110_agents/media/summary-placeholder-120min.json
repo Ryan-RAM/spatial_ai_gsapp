@@ -5,272 +5,270 @@
    206,
    241
   ],
-  "buildings": 21648,
+  "buildings": 21604,
   "pads": 26,
-  "buildSeconds": 0.144
+  "buildSeconds": 0.199
  },
  "simulatedMinutes": 120,
  "source": "simulated Manhattan (simplified, not real data)",
  "types": {
   "drone": {
    "agents": 180,
-   "tripsDone": 1766,
-   "failedTrips": 28,
+   "tripsDone": 1648,
+   "failedTrips": 9,
    "perTripNumber": {
     "1": {
-     "n": 175,
-     "minutes": 6.7,
-     "km": 3.9,
-     "wh": 81.6,
-     "whPerKm": 22.3,
-     "replans": 10.3,
-     "reuseShare": 0,
-     "violationSeconds": 130.3,
-     "waitSeconds": 4
+     "n": 173,
+     "minutes": 10.5,
+     "km": 5.9,
+     "wh": 127.4,
+     "whPerKm": 22.9,
+     "replans": 7.1,
+     "expressShare": 43.4,
+     "violationSeconds": 57,
+     "waitSeconds": 0.1
     },
     "2": {
-     "n": 173,
-     "minutes": 8.7,
-     "km": 4.9,
-     "wh": 82.7,
-     "whPerKm": 20.9,
-     "replans": 10.2,
-     "reuseShare": 49.1,
-     "violationSeconds": 50.8,
-     "waitSeconds": 4.5
+     "n": 177,
+     "minutes": 10.4,
+     "km": 6,
+     "wh": 128.2,
+     "whPerKm": 22.7,
+     "replans": 3.8,
+     "expressShare": 45.2,
+     "violationSeconds": 18.7,
+     "waitSeconds": 0
     },
     "3": {
-     "n": 172,
-     "minutes": 9,
-     "km": 5.1,
-     "wh": 80.9,
-     "whPerKm": 20.7,
-     "replans": 6.6,
-     "reuseShare": 56.4,
-     "violationSeconds": 24.2,
-     "waitSeconds": 4.4
+     "n": 177,
+     "minutes": 10.4,
+     "km": 6.1,
+     "wh": 129,
+     "whPerKm": 22.6,
+     "replans": 3.6,
+     "expressShare": 48,
+     "violationSeconds": 10.8,
+     "waitSeconds": 0.1
     },
     "4+": {
-     "n": 1246,
-     "minutes": 7.4,
-     "km": 4.2,
-     "wh": 80.2,
-     "whPerKm": 21.8,
-     "replans": 4.5,
-     "reuseShare": 66.3,
-     "violationSeconds": 13.8,
-     "waitSeconds": 3.6
+     "n": 1121,
+     "minutes": 9.5,
+     "km": 5.5,
+     "wh": 118.9,
+     "whPerKm": 23.2,
+     "replans": 3.2,
+     "expressShare": 43.4,
+     "violationSeconds": 4.9,
+     "waitSeconds": 0.2
     }
    },
-   "knowsBandRule": 179,
-   "meanKnownCells": 1266,
-   "landmarks": 1462,
+   "knowsBandRule": 180,
+   "meanKnownCells": 1284,
+   "landmarks": 3734,
    "totals": {
-    "nfzSeconds": 303,
-    "offBandSeconds": 70786,
+    "nfzSeconds": 0,
+    "offBandSeconds": 20860.5,
     "wrongWaySeconds": 0,
-    "waitSeconds": 9176.5,
-    "yields": 20442,
-    "congestionEncounters": 1976,
-    "emergencies": 233,
-    "forcedLandings": 28,
-    "buildingNearMisses": 4127,
-    "routeReuses": 5913
-   }
+    "waitSeconds": 328.5,
+    "yields": 4417,
+    "congestionEncounters": 1569,
+    "emergencies": 88,
+    "forcedLandings": 9,
+    "buildingNearMisses": 0
+   },
+   "knowsCorridors": 8.1
   },
   "tour": {
    "agents": 12,
-   "tripsDone": 88,
+   "tripsDone": 98,
    "failedTrips": 0,
    "perTripNumber": {
     "1": {
      "n": 12,
-     "minutes": 15.9,
-     "km": 34.5,
-     "replans": 65.8,
-     "reuseShare": 0,
-     "violationSeconds": 27.1,
-     "waitSeconds": 174.6
+     "minutes": 11.8,
+     "km": 28,
+     "replans": 64.6,
+     "expressShare": 0,
+     "violationSeconds": 27.2,
+     "waitSeconds": 20.1
     },
     "2": {
      "n": 12,
-     "minutes": 13,
-     "km": 30.5,
-     "replans": 37.3,
-     "reuseShare": 0,
-     "violationSeconds": 15.2,
-     "waitSeconds": 27.7
+     "minutes": 12.6,
+     "km": 29.1,
+     "replans": 35.4,
+     "expressShare": 0,
+     "violationSeconds": 18.4,
+     "waitSeconds": 17.2
     },
     "3": {
      "n": 12,
-     "minutes": 12.1,
-     "km": 28.1,
-     "replans": 33.5,
-     "reuseShare": 0,
-     "violationSeconds": 13.2,
-     "waitSeconds": 4.2
+     "minutes": 12.2,
+     "km": 28.2,
+     "replans": 31.9,
+     "expressShare": 0,
+     "violationSeconds": 17,
+     "waitSeconds": 12.1
     },
     "4+": {
-     "n": 52,
-     "minutes": 12.9,
-     "km": 29.5,
-     "replans": 32.3,
-     "reuseShare": 0,
-     "violationSeconds": 12.8,
-     "waitSeconds": 52.9
+     "n": 62,
+     "minutes": 12,
+     "km": 28.1,
+     "replans": 31.9,
+     "expressShare": 0,
+     "violationSeconds": 17,
+     "waitSeconds": 14.2
     }
    },
    "knowsBandRule": 12,
-   "meanKnownCells": 26392,
-   "landmarks": 798,
+   "meanKnownCells": 25288,
+   "landmarks": 618,
    "totals": {
     "nfzSeconds": 0,
-    "offBandSeconds": 1211,
-    "wrongWaySeconds": 255.5,
-    "waitSeconds": 5233,
-    "yields": 1085,
-    "congestionEncounters": 19,
+    "offBandSeconds": 1279.5,
+    "wrongWaySeconds": 695.5,
+    "waitSeconds": 1472,
+    "yields": 866,
+    "congestionEncounters": 0,
     "emergencies": 0,
     "forcedLandings": 0,
-    "buildingNearMisses": 4,
-    "routeReuses": 0
+    "buildingNearMisses": 0
    }
   },
   "medical": {
    "agents": 6,
-   "tripsDone": 45,
+   "tripsDone": 38,
    "failedTrips": 0,
    "perTripNumber": {
     "1": {
-     "n": 6,
-     "minutes": 6.7,
-     "km": 10.1,
-     "replans": 19.8,
-     "reuseShare": 0,
-     "violationSeconds": 37.4,
-     "waitSeconds": 10.3
+     "n": 5,
+     "minutes": 7.4,
+     "km": 12.4,
+     "replans": 28,
+     "expressShare": 0,
+     "violationSeconds": 35.2,
+     "waitSeconds": 0.6
     },
     "2": {
-     "n": 6,
-     "minutes": 8.7,
-     "km": 16.5,
-     "replans": 26.2,
-     "reuseShare": 0,
-     "violationSeconds": 28.5,
-     "waitSeconds": 43.7
+     "n": 5,
+     "minutes": 7.5,
+     "km": 13.2,
+     "replans": 18.2,
+     "expressShare": 0,
+     "violationSeconds": 39.1,
+     "waitSeconds": 14.3
     },
     "3": {
-     "n": 6,
-     "minutes": 7.3,
-     "km": 12.7,
-     "replans": 18,
-     "reuseShare": 0,
-     "violationSeconds": 33.3,
-     "waitSeconds": 7
+     "n": 5,
+     "minutes": 7,
+     "km": 12.1,
+     "replans": 14.2,
+     "expressShare": 0,
+     "violationSeconds": 33.1,
+     "waitSeconds": 1.6
     },
     "4+": {
-     "n": 27,
-     "minutes": 7.8,
-     "km": 14.2,
-     "replans": 15.8,
-     "reuseShare": 0,
-     "violationSeconds": 35.4,
-     "waitSeconds": 17.1
+     "n": 23,
+     "minutes": 8.4,
+     "km": 16.5,
+     "replans": 17.3,
+     "expressShare": 0,
+     "violationSeconds": 34.6,
+     "waitSeconds": 19.2
     }
    },
    "knowsBandRule": 6,
-   "meanKnownCells": 31473,
-   "landmarks": 375,
+   "meanKnownCells": 28227,
+   "landmarks": 372,
    "totals": {
-    "nfzSeconds": 8.5,
-    "offBandSeconds": 1491.5,
-    "wrongWaySeconds": 69,
-    "waitSeconds": 985,
-    "yields": 166,
+    "nfzSeconds": 42,
+    "offBandSeconds": 1255,
+    "wrongWaySeconds": 52.5,
+    "waitSeconds": 2494.5,
+    "yields": 128,
     "congestionEncounters": 0,
     "emergencies": 0,
     "forcedLandings": 0,
-    "buildingNearMisses": 3,
-    "routeReuses": 0
+    "buildingNearMisses": 2
    }
   }
  },
  "separation": {
-  "heli": 149,
-  "drone": 3734,
-  "mixed": 1
+  "heli": 143,
+  "drone": 3801,
+  "mixed": 0
  },
  "crowdHotspots": [
   {
-   "lat": 40.79169,
-   "lon": -73.94013,
-   "agentSeconds": 4725,
+   "lat": 40.73953,
+   "lon": -73.98464,
+   "agentSeconds": 9012,
    "cell": [
-    188,
-    239
+    113,
+    123
    ]
   },
   {
-   "lat": 40.7148,
-   "lon": -74.01728,
-   "agentSeconds": 3953,
+   "lat": 40.7193,
+   "lon": -73.98761,
+   "agentSeconds": 8729,
    "cell": [
-    58,
-    68
+    108,
+    78
    ]
   },
   {
-   "lat": 40.71615,
-   "lon": -74.0161,
-   "agentSeconds": 3360,
+   "lat": 40.78045,
+   "lon": -73.97693,
+   "agentSeconds": 7979,
    "cell": [
-    60,
-    71
+    126,
+    214
    ]
   },
   {
-   "lat": 40.7773,
-   "lon": -73.9888,
-   "agentSeconds": 3349,
+   "lat": 40.74223,
+   "lon": -74.00304,
+   "agentSeconds": 7606,
    "cell": [
-    106,
-    207
+    82,
+    129
    ]
   },
   {
-   "lat": 40.71525,
-   "lon": -74.01669,
-   "agentSeconds": 3270,
+   "lat": 40.77416,
+   "lon": -73.95616,
+   "agentSeconds": 6523,
    "cell": [
-    59,
-    69
+    161,
+    200
    ]
   },
   {
-   "lat": 40.71435,
-   "lon": -74.01728,
-   "agentSeconds": 3221,
+   "lat": 40.73953,
+   "lon": -73.98405,
+   "agentSeconds": 6117,
    "cell": [
-    58,
-    67
+    114,
+    123
    ]
   },
   {
-   "lat": 40.7157,
-   "lon": -74.01669,
-   "agentSeconds": 3104,
+   "lat": 40.71885,
+   "lon": -73.98761,
+   "agentSeconds": 5305,
    "cell": [
-    59,
-    70
+    108,
+    77
    ]
   },
   {
-   "lat": 40.73818,
-   "lon": -73.99058,
-   "agentSeconds": 2802,
+   "lat": 40.74268,
+   "lon": -74.00363,
+   "agentSeconds": 5042,
    "cell": [
-    103,
-    120
+    81,
+    130
    ]
   }
  ]

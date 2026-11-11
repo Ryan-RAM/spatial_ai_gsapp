@@ -5,9 +5,10 @@
 import { FT } from './config.js';
 import { makeFrame, pointInPoly, polyBounds, polyArea, polyCentroid, closestOnSegment } from './geo.js';
 import { makePlaceholder } from './placeholder.js';
+import { buildDroneNet } from './streets.js';
 
 // Feature kinds that can be discovered by looking at a cell.
-export const F = { LANE: 1, NFZ: 2, HELIPORT: 3, PAD: 4, SIGN: 5 };
+export const F = { LANE: 1, NFZ: 2, HELIPORT: 3, PAD: 4, SIGN: 5, CORRIDOR: 6 };
 export const TYPE_BIT = { drone: 1, tour: 2, medical: 4 };
 
 // data = { source, buildings: [{ top, base, name, p: [x0, y0, ...] }], land: [{ name, p }] }
@@ -152,6 +153,11 @@ export function buildWorld(config, data = null) {
     cands.push({ bi, x, y, z: b.top, c, manhattan: /manhattan/i.test(landNameAt(data.land, x, y)) });
   });
   const pads = [];
+  // the six hubs are fixed places (config.droneNet.hubs); their roof is the hub pad
+  for (const h of config.droneNet.hubs) {
+    const [x, y] = frame.toXY(h.lat, h.lon); const c = cellOf(x, y);
+    pads.push({ bi: tallestIn[c], x, y, z: Math.max(10, height[c] || config.droneNet.hubRoofFt * FT), c, name: h.name });
+  }
   const pickSpread = (pool, k) => {
     if (!pool.length) return;
     if (!pads.length) { // start next to the middle of the site
@@ -169,10 +175,9 @@ export function buildWorld(config, data = null) {
       pads.push(best);
     }
   };
-  pickSpread(cands.filter((c) => c.manhattan), dp.hubs);
-  pickSpread(cands, dp.count);
+  pickSpread(cands.filter((c) => c.manhattan), dp.count);
   world.pads = pads.map((p, id) => {
-    const pad = { id, x: p.x, y: p.y, z: p.z, cell: p.c, hub: id < dp.hubs, capacity: id < dp.hubs ? dp.hubCapacity : dp.capacity, kind: 'pad', building: p.bi };
+    const pad = { id, x: p.x, y: p.y, z: p.z, cell: p.c, hub: id < dp.hubs, name: p.name, capacity: id < dp.hubs ? dp.hubCapacity : dp.capacity, kind: 'pad', building: p.bi };
     addFeature(p.c, F.PAD, id);
     return pad;
   });
@@ -189,6 +194,13 @@ export function buildWorld(config, data = null) {
   }
   world.signs = signs;
   world.features = features;
+
+  // ---- the drone network: streets and the express corridors between hubs (streets.js) ------
+  world.net = buildDroneNet(world);
+  for (const cor of world.net.corridors) { // corridor signs every signEvery m along it (none on the hub roofs)
+    const n = Math.max(2, Math.round(cor.len / config.droneNet.signEvery));
+    for (let s = 1; s < n; s++) addFeature(cellOf(cor.x1 + ((cor.x2 - cor.x1) * s) / n, cor.y1 + ((cor.y2 - cor.y1) * s) / n), F.CORRIDOR, cor.id);
+  }
 
   // ---- visual references for helicopters: towers, bridges, islands, rivers, the park ------
   const refs = [];

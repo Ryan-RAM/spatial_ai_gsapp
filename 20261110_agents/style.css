@@ -23,6 +23,12 @@
   --cone: #ffffff;
   --selection: #ffe066;
   --anchor: #ffffff;
+  --street-ave: #6fa8ff;   /* avenue layer, 100 ft */
+  --street-st: #b9d4ff;    /* cross-street layer, 150 ft */
+  --express-1: #f2c14e;    /* express corridor levels 250 / 300 / 350 / 400 ft */
+  --express-2: #ff9f6b;
+  --express-3: #e87ba4;
+  --express-4: #c6a8ff;
 
   /* the city */
   --sky: #0e1522;

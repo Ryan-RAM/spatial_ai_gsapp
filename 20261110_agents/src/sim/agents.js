@@ -1,9 +1,9 @@
 // The two kinds of agent.
 //
 //   Delivery drone  - small, slow, short battery, small vision cone. Goal: carry a package from its
-//                     hub to a customer and come back. Criterion: least energy. Keeps to its
-//                     altitude band once it has seen a band sign. Remembers landmarks relative to
-//                     home and as breadcrumb routes.
+//                     hub to a customer and come back. Criterion: least energy. Flies only above the
+//                     streets or in the express corridors between hubs (drone.js, streets.js).
+//                     Remembers landmarks relative to home.
 //   Helicopter      - big, fast, wide turns, wide vision cone. Tour flights fly a sightseeing
 //                     circuit, medical flights come in to a heliport. Criterion: least time while
 //                     keeping separation. Prefers the river lanes once it has seen them; medical
@@ -20,11 +20,13 @@ import { sense } from './perception.js';
 import { aStar, smoothPath, cellsOnSegment } from './planner.js';
 import { TYPE_BIT, bandAltitudes, droneBandFor } from './world.js';
 import { wrapAngle, clamp, bearingDeg, closestOnSegment } from './geo.js';
+import { updateDrone } from './drone.js';
+export { makeDrone } from './drone.js';
 
 let nextId = 0;
 export function resetIds() { nextId = 0; }
 
-function baseAgent(sim, type, spec, x, y, z, heading) {
+export function baseAgent(sim, type, spec, x, y, z, heading) {
   const a = {
     id: nextId++, type, spec, x, y, z, heading, speed: 0, vx: 0, vy: 0, vz: 0, active: true,
     mode: 'idle', timer: 0, plan: null, planCells: new Set(), needPlan: true, lastPlan: -1e9,
@@ -39,21 +41,6 @@ function baseAgent(sim, type, spec, x, y, z, heading) {
 // ---------------------------------------------------------------------------------------------
 // Construction
 // ---------------------------------------------------------------------------------------------
-
-export function makeDrone(sim, hub) {
-  const c = sim.config.drone;
-  const a = baseAgent(sim, 'drone', c, hub.x, hub.y, hub.z, sim.rng.range(-Math.PI, Math.PI));
-  a.home = { x: hub.x, y: hub.y, z: hub.z, pad: hub.id };
-  a.hub = hub;
-  a.battery = c.battery;
-  a.mode = 'charging';
-  a.timer = sim.rng.range(0, 1200); // staggered first departures
-  a.served = new Set();
-  a.isBlockingHeight = (top) => top > a.cruiseZ() - c.clearance;
-  a.knowledge.pads.add(hub.id);
-  a.knowledge.addLandmark('home', hub.x, hub.y, hub.z, 0, { pad: hub.id });
-  return a;
-}
 
 export function makeHeli(sim, kind, opts) {
   const c = sim.config.heli;
@@ -170,13 +157,13 @@ function routeClear(w, pts, cellCost) {
 // Trips
 // ---------------------------------------------------------------------------------------------
 
-function beginTrip(sim, a, kind) {
+export function beginTrip(sim, a, kind) {
   a.tripNo++;
-  a.trip = { no: a.tripNo, kind, t0: sim.time, battery0: a.battery ?? 0, dist: 0, nfz: 0, band: 0, wrongWay: 0, waits: 0, replans: 0, reuse: false, emergency: false, yields: 0, crumbs: [] };
+  a.trip = { no: a.tripNo, kind, t0: sim.time, battery0: a.battery ?? 0, dist: 0, nfz: 0, band: 0, wrongWay: 0, waits: 0, replans: 0, reuse: false, express: false, emergency: false, yields: 0 };
   a.tripOrigin = { x: a.x, y: a.y };
 }
 
-function endTrip(sim, a, ok = true) {
+export function endTrip(sim, a, ok = true) {
   if (!a.trip) return;
   const t = a.trip;
   t.duration = sim.time - t.t0;
@@ -187,7 +174,7 @@ function endTrip(sim, a, ok = true) {
   a.trip = null;
 }
 
-function setGoal(sim, a, g) {
+export function setGoal(sim, a, g) {
   a.goal = g; a.needPlan = true;
   if (a.trip) a.tripOrigin = { x: a.x, y: a.y };
 }
@@ -197,11 +184,11 @@ function setGoal(sim, a, g) {
 // ---------------------------------------------------------------------------------------------
 
 export function updateAgent(sim, a, dt, doSense) {
-  if (a.type === 'drone') updateDrone(sim, a, dt, doSense);
+  if (a.type === 'drone') updateDrone(sim, a, dt, doSense); // drone.js
   else updateHeli(sim, a, dt, doSense);
 }
 
-function afterSense(sim, a, ev) {
+export function afterSense(sim, a, ev) {
   const k = a.knowledge; const t = sim.time; const w = sim.world;
   for (const l of ev.learned) {
     if (l.kind === 'band') {
@@ -214,7 +201,7 @@ function afterSense(sim, a, ev) {
       const d = Math.hypot(a.x - z.x, a.y - z.y) || 1;
       const bx = z.x + ((a.x - z.x) / d) * z.radius, by = z.y + ((a.y - z.y) / d) * z.radius;
       k.addLandmark('nfz-edge', bx, by, a.z, t, { zone: z.name, applies: z.applies.includes(a.type) }, 200);
-      if (z.applies.includes(a.type) && z.cells.some((c) => a.planCells.has(c))) a.needPlan = true;
+      if (z.applies.includes(a.type) && (a.type === 'drone' || z.cells.some((c) => a.planCells.has(c)))) a.needPlan = true;
     } else if (l.kind === 'pad' && a.type === 'drone') {
       k.addLandmark('landing-site', l.pad.x, l.pad.y, l.pad.z, t, { pad: l.pad.id, hub: l.pad.hub }, 60);
     } else if (l.kind === 'heliport' && a.type !== 'drone') {
@@ -313,13 +300,7 @@ function desiredDirection(sim, a, acceptR) {
   return d > 0.01 ? { x: (tx - a.x) / d, y: (ty - a.y) / d, d } : { x: 0, y: 0, d: 0 };
 }
 
-function recordCrumb(a) {
-  if (!a.trip || a.type !== 'drone') return;
-  const cr = a.trip.crumbs; const last = cr[cr.length - 1];
-  if (!last || Math.hypot(a.x - a.home.x - last[0], a.y - a.home.y - last[1]) > 120) cr.push([a.x - a.home.x, a.y - a.home.y]);
-}
-
-function moveTrail(sim, a, d) {
+export function moveTrail(sim, a, d) {
   a.totals.dist += d;
   if (a.trip) a.trip.dist += d;
   const lt = a.lastTrail;
@@ -375,180 +356,6 @@ function ruleCheck(sim, a, dt) {
 
 export const label = (a) => `${a.type === 'drone' ? 'Drone' : a.type === 'tour' ? 'Tour helicopter' : 'Medical helicopter'} #${a.id}`;
 
-// =============================================================================================
-// Drone
-// =============================================================================================
-
-function updateDrone(sim, a, dt, doSense) {
-  const c = a.spec; const cfg = sim.config;
-  a.cruiseZ = a.cruiseZ || (() => cruiseZFor(sim, a));
-  if (doSense && a.active) afterSense(sim, a, sense(a, sim));
-
-  let wantV = { x: 0, y: 0 }; let targetZ = a.z; let hSpeed = c.speed;
-  switch (a.mode) {
-    case 'charging': {
-      a.airborne = false; a.battery = Math.min(c.battery, a.battery + (c.battery / c.rechargeTime) * dt * 0.5);
-      a.timer -= dt;
-      if (a.timer <= 0 && a.battery > c.battery * 0.95) {
-        if (a.resumeGoal) { // after an emergency stop: carry on
-          a.mode = 'takeoff'; setGoal(sim, a, a.resumeGoal); a.resumeGoal = null; break;
-        }
-        const cust = sim.pickCustomer(a);
-        beginTrip(sim, a, 'delivery');
-        setGoal(sim, a, { x: cust.x, y: cust.y, z: cust.z, key: `c${cust.id}`, customer: cust });
-        a.mode = 'takeoff';
-      }
-      break;
-    }
-    case 'takeoff': {
-      a.airborne = true;
-      const pad = sim.siteAt(a);
-      if (pad && !sim.holdsSlot(pad, a) && !sim.requestSlot(pad, a)) { a.trip && (a.trip.waits += dt); a.totals.waits += dt; break; }
-      a.slotHeld = !!pad;
-      targetZ = a.cruiseZ(); hSpeed = 0;
-      if (Math.abs(a.z - targetZ) < 3) { if (pad) sim.releaseSlot(pad, a); a.slotHeld = false; a.mode = a.goal?.customer ? 'cruise' : 'return'; a.needPlan = true; }
-      break;
-    }
-    case 'cruise': case 'return': case 'divert': {
-      a.airborne = true;
-      const zc = a.cruiseZ();
-      if (Math.abs(zc - a.altTarget) > 10 && a.knowledge.bandRule && a.mode !== 'divert') {
-        a.knowledge.addLandmark('band-switch', a.x, a.y, a.z, sim.time, { from: Math.round(a.altTarget / FT), to: Math.round(zc / FT), reason: 'new course' }, 80);
-      }
-      targetZ = zc;
-      const dir = desiredDirection(sim, a, 20);
-      if (dir) { wantV = { x: dir.x, y: dir.y }; if (dir.d < 40) hSpeed = Math.max(2, c.speed * dir.d / 40); }
-      const cong = checkCongestion(sim, a);
-      if (cong >= c.congestion.holdCount - 1 && sim.time > a.holdUntil + 30) { a.holdUntil = sim.time + c.congestion.holdTime; }
-      if (sim.time < a.holdUntil) { hSpeed = 0; a.totals.waits += dt; if (a.trip) a.trip.waits += dt; }
-      recordCrumb(a);
-      // battery: divert to the nearest pad it knows when it runs low
-      if (a.mode !== 'divert' && a.battery < c.battery * c.reserve) {
-        const pad = nearestKnownPad(sim, a);
-        if (pad) {
-          a.resumeGoal = a.goal; a.totals.emergencies++; if (a.trip) a.trip.emergency = true;
-          setGoal(sim, a, { x: pad.x, y: pad.y, z: pad.z, pad: pad.id, key: null });
-          a.mode = 'divert';
-          sim.noteEvent(a, 'emergency', `${label(a)} is low on battery and diverts to a pad it saw earlier`);
-        }
-      }
-      const g = a.goal;
-      if (g && Math.hypot(g.x - a.x, g.y - a.y) < 15) {
-        if (a.mode === 'cruise') a.mode = 'drop';
-        else a.mode = 'landing';
-        a.timer = c.deliverHold;
-      }
-      break;
-    }
-    case 'drop': {
-      const g = a.goal;
-      targetZ = g.z + 15; hSpeed = 0;
-      if (Math.abs(a.z - targetZ) < 2) {
-        a.timer -= dt;
-        if (a.timer <= 0) {
-          const k = a.knowledge;
-          if (!a.served.has(g.customer.id)) k.addLandmark('customer', g.x, g.y, g.z, sim.time, { customer: g.customer.id }, 30);
-          a.served.add(g.customer.id);
-          if (a.trip && !a.trip.reuse) k.routes.set(g.key, a.trip.crumbs.slice());
-          if (a.trip) a.trip.crumbs = [];
-          setGoal(sim, a, { x: a.home.x, y: a.home.y, z: a.home.z, key: `h${g.customer.id}`, home: true, pad: a.home.pad });
-          a.mode = 'climb';
-        }
-      }
-      break;
-    }
-    case 'climb': {
-      targetZ = a.cruiseZ(); hSpeed = 0;
-      if (Math.abs(a.z - targetZ) < 3) { a.mode = 'return'; a.needPlan = true; }
-      break;
-    }
-    case 'landing': {
-      const g = a.goal;
-      const pad = sim.world.pads[g.pad];
-      const low = a.battery < c.battery * c.reserve * 0.7; // a nearly empty drone asks for priority
-      if (!sim.holdsSlot(pad, a) && !sim.requestSlot(pad, a, low)) {
-        // wait on a holding ring round the pad, each drone at its own spot
-        const th = a.id * 2.39996, R = 60 + (a.id % 3) * 25;
-        const hx = pad.x + Math.cos(th) * R - a.x, hy = pad.y + Math.sin(th) * R - a.y, hd = Math.hypot(hx, hy);
-        wantV = hd > 1 ? { x: hx / hd, y: hy / hd } : { x: 0, y: 0 }; hSpeed = Math.min(c.speed, hd * 0.5);
-        targetZ = a.cruiseZ(); a.totals.waits += dt; if (a.trip) a.trip.waits += dt;
-        checkCongestion(sim, a);
-        if (sim.time > a.holdUntil) { a.knowledge.addLandmark('hold', a.x, a.y, a.z, sim.time, { pad: pad.id }, 100); a.holdUntil = sim.time + 20; }
-        break;
-      }
-      a.slotHeld = true;
-      wantV = { x: (pad.x - a.x), y: (pad.y - a.y) }; const d = Math.hypot(wantV.x, wantV.y);
-      if (d > 0.5) { wantV.x /= d; wantV.y /= d; hSpeed = Math.min(4, d); } else hSpeed = 0;
-      targetZ = pad.z;
-      if (a.z - pad.z < 0.6 && d < 2) {
-        sim.releaseSlot(pad, a); a.slotHeld = false;
-        a.x = pad.x; a.y = pad.y; a.z = pad.z; a.airborne = false; a.speed = 0; a.vx = a.vy = a.vz = 0;
-        if (g.home) {
-          if (a.trip) { a.trip.charged = 0; recordReturnRoute(a); }
-          endTrip(sim, a, true);
-          a.mode = 'charging'; a.timer = c.rechargeTime;
-        } else { // emergency pad
-          if (a.trip) a.trip.charged = (a.trip.charged || 0) + (c.battery - a.battery);
-          a.mode = 'charging'; a.timer = c.rechargeTime * 2; a.battery = Math.max(a.battery, 0.01);
-        }
-      }
-      break;
-    }
-    case 'recover': {
-      a.timer -= dt;
-      if (a.timer <= 0) { a.x = a.home.x; a.y = a.home.y; a.z = a.home.z; a.battery = c.battery; a.active = true; a.mode = 'charging'; a.timer = c.rechargeTime; }
-      return;
-    }
-    default: break;
-  }
-  if (!a.active) return;
-
-  // see-and-avoid
-  // the pad area is reserved for the drone holding its slot: it does not swerve there
-  const onPad = (a.mode === 'landing' || a.mode === 'takeoff') && a.goal && a.slotHeld;
-  const av = a.airborne && !onPad ? avoidance(sim, a, 10) : { ax: 0, ay: 0, az: 0, yielded: false };
-  if (av.yielded && sim.time > a.yieldUntil) { a.totals.yields++; a.yieldUntil = sim.time + 5; if (a.trip) a.trip.yields++; }
-  let vx = wantV.x * hSpeed + av.ax * c.speed * 0.8, vy = wantV.y * hSpeed + av.ay * c.speed * 0.8;
-  const vmag = Math.hypot(vx, vy);
-  if (vmag > c.speed) { vx *= c.speed / vmag; vy *= c.speed / vmag; }
-  // never steer into a building it knows about: drop the avoidance part, and stop if even the
-  // planned direction is blocked (then re-plan)
-  if (a.airborne && blockedAhead(sim, a, vx, vy)) {
-    vx = wantV.x * hSpeed; vy = wantV.y * hSpeed;
-    if (blockedAhead(sim, a, vx, vy)) {
-      a.stuckT = (a.stuckT || 0) + dt;
-      if (a.stuckT < 3) { vx = 0; vy = 0; if (!a.rawPlan) { a.needPlan = true; a.rawPlan = true; } } // re-plan along cell centres
-    } else a.stuckT = 0;
-  } else a.stuckT = 0;
-  // first-order response (a small multirotor accelerates quickly)
-  const k = Math.min(1, dt * 1.5);
-  a.vx += (vx - a.vx) * k; a.vy += (vy - a.vy) * k;
-  if (a.airborne && a.stuckT === 0 && blockedAhead(sim, a, a.vx, a.vy)) { a.vx *= 0.2; a.vy *= 0.2; }
-  const tz = targetZ + av.az * 8;
-  a.vz = clamp((tz - a.z) * 0.8, -c.descentRate, c.climbRate);
-  a.speed = Math.hypot(a.vx, a.vy);
-  if (a.speed > 0.5) a.heading = Math.atan2(a.vy, a.vx);
-  else if (a.goal && a.airborne) a.heading += clamp(wrapAngle(Math.atan2(a.goal.y - a.y, a.goal.x - a.x) - a.heading), -0.8 * dt, 0.8 * dt);
-  a.x += a.vx * dt; a.y += a.vy * dt; a.z += a.vz * dt;
-  a.altTarget = targetZ;
-  // energy
-  if (a.airborne) {
-    const P = c.hoverPower + c.dragK * a.speed * a.speed + Math.max(0, c.mass * 9.81 * a.vz) / c.climbEff;
-    const e = (P * dt) / 3600;
-    a.battery -= e; a.totals.energy += e;
-    if (a.battery <= 0) {
-      a.battery = 0; a.totals.forced++;
-      sim.noteEvent(a, 'forced', `${label(a)} ran out of battery and made a forced landing`);
-      a.knowledge.addLandmark('landing-site', a.x, a.y, sim.world.height[sim.world.cellOf(a.x, a.y)] || 0, sim.time, { forced: true }, 50);
-      endTrip(sim, a, false);
-      a.active = false; a.airborne = false; a.mode = 'recover'; a.timer = 300; a.resumeGoal = null;
-      return;
-    }
-  }
-  moveTrail(sim, a, a.speed * dt);
-  ruleCheck(sim, a, dt);
-}
-
 // Is the cell the agent would be in a couple of seconds from now known to be too tall?
 function blockedAhead(sim, a, vx, vy, secs = 2.5) {
   const v = Math.hypot(vx, vy); if (v < 0.1) return false;
@@ -574,19 +381,6 @@ function safeFloor(sim, a, dist) {
     }
   }
   return top + a.spec.clearance * 0.75;
-}
-
-function recordReturnRoute(a) {
-  if (a.goal?.key && !a.trip.reuseHome) a.knowledge.routes.set(a.goal.key, a.trip.crumbs.slice());
-}
-
-function nearestKnownPad(sim, a) {
-  let best = null, bd = Infinity;
-  for (const id of a.knowledge.pads) {
-    const p = sim.world.pads[id]; const d = Math.hypot(p.x - a.x, p.y - a.y);
-    if (d < bd) { bd = d; best = p; }
-  }
-  return best;
 }
 
 // =============================================================================================

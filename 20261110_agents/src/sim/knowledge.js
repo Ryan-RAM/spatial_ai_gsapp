@@ -25,10 +25,19 @@ export function makeKnowledge(world, agent) {
     bandRule: false,               // has it seen a band sign?
     agents: new Map(),             // id -> { x, y, z, t, type } last sighting
     landmarks: [],
-    routes: new Map(),             // drone: customer key -> breadcrumbs relative to home
+    routes: new Map(),
+    corridors: new Set(),          // drone: express corridors it has seen a sign of
+    edges: new Set(),              // drone: street edges it has seen
+    congEdges: new Map(),          // drone: edge id -> time until which it avoids that edge
     seenCount: 0,
   };
   k.knownHeight = (c) => k.height[c] * 2;
+  // is this network edge inside a drone no-fly zone the agent has found?
+  k.nfzEdge = (eid) => {
+    const net = world.net; const e = net.edges[eid];
+    const c = world.cellOf((net.nodes[e.a].x + net.nodes[e.b].x) / 2, (net.nodes[e.a].y + net.nodes[e.b].y) / 2);
+    return c >= 0 && (k.flags[c] & K.NFZ) && (world.nfzMask[c] & 1);
+  };
   k.see = (c, top, isLand) => {
     if (!(k.flags[c] & K.SEEN)) { k.flags[c] |= K.SEEN; k.seenCount++; }
     if (isLand) k.flags[c] |= K.LAND;
