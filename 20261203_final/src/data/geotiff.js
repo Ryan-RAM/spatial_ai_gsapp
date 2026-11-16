@@ -161,3 +161,14 @@ export async function readWindow(tif, col0, row0, col1, row1, { onTile } = {}) {
   }
   return out;
 }
+
+// The pixel <-> projected transforms from cached georeferencing (no file access): enough for the
+// bake steps that work on a cached window.
+export function georefFromJson({ width, height, tiepoint, pixelScale, noData, geoKeys }) {
+  const [, , , X0, Y0] = tiepoint; const [sx, sy] = pixelScale;
+  return {
+    width, height, tiepoint, pixelScale, noData, geoKeys,
+    toProjected: (col, row) => [X0 + (col + 0.5) * sx, Y0 - (row + 0.5) * sy],
+    toPixel: (X, Y) => [(X - X0) / sx - 0.5, (Y0 - Y) / sy - 0.5],
+  };
+}

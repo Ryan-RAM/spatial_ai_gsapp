@@ -12,14 +12,14 @@ import { CONFIG } from '../../src/sim/config.js';
 import { studyArea } from '../../src/data/area.js';
 import { makeGrid } from '../../src/data/geo.js';
 import { get } from '../../src/data/http.js';
-import { openGeoTiff, httpRangeReader } from '../../src/data/geotiff.js';
+import { georefFromJson } from '../../src/data/geotiff.js';
 import { toStatePlane, fromStatePlane, FT_US } from '../../src/data/stateplane.js';
 import { toUtm18, fromUtm18 } from '../../src/data/utm.js';
 import { parseOsmXml } from '../../src/data/osm.js';
 import { areas, project } from '../../src/data/osm-features.js';
 import { fillRings, drawLine } from '../../src/data/raster.js';
 import { smoothChm, findTreetops, growCrowns, otsu, trunkRadius } from '../../src/data/trees.js';
-import { DEM_URL, POINT_TILES } from '../../src/data/sources.js';
+import { POINT_TILES } from '../../src/data/sources.js';
 
 const TILES = POINT_TILES;
 const MARGIN = 20; // m
@@ -51,7 +51,9 @@ const un0 = Math.min(utmCorners[0][1], utmCorners[1][1]) - pad; const un1 = Math
 const utmToEnu = fitAffine((e, n) => enu.toEnu(...fromUtm18(e, n), 0), [ue0, un0], [ue1, un1]);
 
 // the DEM window cached by bake-terrain, sampled bilinearly (height above ground of a point)
-const tif = await openGeoTiff(httpRangeReader(DEM_URL));
+const georefFile = new URL('../raw/dem/georef.json', import.meta.url);
+if (!existsSync(georefFile)) throw new Error('run npm run bake:terrain first (DEM georeferencing cache missing)');
+const tif = georefFromJson(JSON.parse(readFileSync(georefFile, 'utf8')));
 const winFile = readdirSync(new URL('../raw/dem/', import.meta.url)).find((f) => /^window-\d+-\d+-\d+x\d+\.f32$/.test(f));
 if (!winFile) throw new Error('run npm run bake:terrain first (DEM window cache missing)');
 const [, col0, row0, WW, WH] = winFile.match(/window-(\d+)-(\d+)-(\d+)x(\d+)/).map(Number);

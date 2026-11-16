@@ -1,0 +1,139 @@
+{
+  "file": "world.bin",
+  "W": 244,
+  "H": 215,
+  "cellSize": 3,
+  "layout": "idx = j * W + i, row 0 north",
+  "sections": [
+    {
+      "name": "z",
+      "type": "float32",
+      "offset": 0,
+      "bytes": 209840
+    },
+    {
+      "name": "cover",
+      "type": "uint8",
+      "offset": 209840,
+      "bytes": 52460
+    },
+    {
+      "name": "slope",
+      "type": "uint8",
+      "offset": 262300,
+      "bytes": 52460
+    },
+    {
+      "name": "openness",
+      "type": "uint8",
+      "offset": 314760,
+      "bytes": 52460
+    },
+    {
+      "name": "canopy",
+      "type": "uint8",
+      "offset": 367220,
+      "bytes": 52460
+    },
+    {
+      "name": "canopyEv",
+      "type": "uint8",
+      "offset": 419680,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_N",
+      "type": "uint8",
+      "offset": 472140,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_NE",
+      "type": "uint8",
+      "offset": 524600,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_E",
+      "type": "uint8",
+      "offset": 577060,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_SE",
+      "type": "uint8",
+      "offset": 629520,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_S",
+      "type": "uint8",
+      "offset": 681980,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_SW",
+      "type": "uint8",
+      "offset": 734440,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_W",
+      "type": "uint8",
+      "offset": 786900,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_NW",
+      "type": "uint8",
+      "offset": 839360,
+      "bytes": 52460
+    }
+  ],
+  "legend": [
+    "outside",
+    "path_paved",
+    "path_dirt",
+    "lawn",
+    "woodland_floor",
+    "thicket",
+    "rock",
+    "water",
+    "structure"
+  ],
+  "counts": {
+    "outside": 3671,
+    "path_paved": 7267,
+    "path_dirt": 704,
+    "lawn": 17511,
+    "woodland_floor": 13046,
+    "thicket": 1206,
+    "rock": 412,
+    "water": 5964,
+    "structure": 2679
+  },
+  "rules": {
+    "thicketLowVeg": 0.15,
+    "thicketMajority": 5,
+    "rockSlope": 30,
+    "rockRelief": 0.3,
+    "shelterCanopy": 0.5,
+    "shelterEvergreen": 0.4,
+    "driftCanopyDamping": 0.6
+  },
+  "windDirs": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "NW"
+  ],
+  "sources": [
+    "cover.bin (OpenStreetMap)",
+    "terrain.bin (2017 NYC LiDAR DEM)",
+    "canopy.bin (2017 NYC LiDAR point cloud)"
+  ]
+}

@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { CONFIG } from '../../src/sim/config.js';
 import { studyArea } from '../../src/data/area.js';
 import { makeGrid } from '../../src/data/geo.js';
-import { openGeoTiff, httpRangeReader, readWindow } from '../../src/data/geotiff.js';
+import { openGeoTiff, httpRangeReader, readWindow, georefFromJson } from '../../src/data/geotiff.js';
 import { toStatePlane, fromStatePlane, FT_US } from '../../src/data/stateplane.js';
 import { slopeDeg, terrainOpenness, upwindSx, driftFromSx, WIND_DIRS } from '../../src/data/terrain.js';
 import { parseOsmXml } from '../../src/data/osm.js';
@@ -33,7 +33,10 @@ const ext = makeGrid({ minX: b.minX - M * s, minY: b.minY - M * s, maxX: b.maxX 
 
 // ------------------------------------------------------------------ the DEM window
 
-const tif = await openGeoTiff(httpRangeReader(DEM_URL));
+// The georeferencing of the DEM is cached next to the window, so that a re-run is offline.
+const georefFile = new URL('georef.json', raw);
+const tif = existsSync(georefFile) ? georefFromJson(JSON.parse(readFileSync(georefFile, 'utf8'))) : await openGeoTiff(httpRangeReader(DEM_URL));
+if (!existsSync(georefFile)) writeFileSync(georefFile, JSON.stringify({ url: DEM_URL, width: tif.width, height: tif.height, tiepoint: tif.tiepoint, pixelScale: tif.pixelScale, noData: tif.noData, geoKeys: tif.geoKeys }, null, 2));
 const corners = [[ext.bbox.minX, ext.bbox.minY], [ext.bbox.maxX, ext.bbox.minY], [ext.bbox.maxX, ext.bbox.maxY], [ext.bbox.minX, ext.bbox.maxY]]
   .map(([x, y]) => tif.toPixel(...toStatePlane(...enu.fromEnu(x, y, 0))));
 const col0 = Math.floor(Math.min(...corners.map((c) => c[0]))) - 2; const col1 = Math.ceil(Math.max(...corners.map((c) => c[0]))) + 3;
@@ -116,7 +119,9 @@ const osm = parseOsmXml(readFileSync(new URL('../raw/osm/ramble.osm', import.met
 const resRings = areas(osm, project(osm, enu), (t) => /Reservoir/.test(t.name ?? '') && t.natural === 'water')[0].rings;
 const [rc0, rr0] = tif.toPixel(...toStatePlane(40.7843, -73.9640)).map(Math.round);
 const [rc1, rr1] = tif.toPixel(...toStatePlane(40.7826, -73.9600)).map(Math.round);
-const resWin = await readWindow(tif, rc0, Math.max(0, rr0), rc1, rr1);
+const resCache = new URL(`reservoir-${rc0}-${Math.max(0, rr0)}-${rc1}-${rr1}.f32`, raw);
+const resWin = existsSync(resCache) ? new Float32Array(new Uint8Array(readFileSync(resCache)).buffer) : await readWindow(tif, rc0, Math.max(0, rr0), rc1, rr1);
+if (!existsSync(resCache)) writeFileSync(resCache, new Uint8Array(resWin.buffer));
 const resVals = [];
 for (let r = Math.max(0, rr0); r < rr1; r++) for (let c = rc0; c < rc1; c++) {
   const v = resWin[(r - Math.max(0, rr0)) * (rc1 - rc0) + (c - rc0)];
