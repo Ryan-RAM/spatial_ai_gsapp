@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frostroot: The Ramble</title>
   <meta name="description" content="Design Central Park's Ramble for the night of the January 2016 blizzard: plow paths, place lamps, shelters and signs, and watch who gets out before the creature of roots or the cold finds them.">
-  <link rel="stylesheet" href="style.css?v=20261203e">
+  <link rel="stylesheet" href="style.css?v=20261203f">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203d"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203e"
       }
     }
   </script>
@@ -69,6 +69,39 @@
           <div id="pick" class="pick" aria-live="polite"><p>Click the map to see a point in every frame of reference (W, P, N, E).</p></div>
         </div>
       </div>
+    </section>
+    <section id="design" class="design" aria-labelledby="designTitle">
+      <h2 id="designTitle">Design the park for the storm</h2>
+      <p class="lede">Plow paths, close dead ends, place lamps, warming shelters and signs, within the budget. Every plan is scored on the same 24 rounds (6 start times, 2 places, 2 seeds), so differences come from the plan, not from luck.</p>
+      <div class="row">
+        <div role="tablist" aria-label="Design mode">
+          <button role="tab" id="tabManual" aria-selected="true" aria-controls="manual" type="button">Choose your own</button>
+          <button role="tab" id="tabAuto" aria-selected="false" aria-controls="auto" type="button">Automatic (epochs)</button>
+        </div>
+        <label>Score for <select id="perspective"><option value="survivors">the survivors (F)</option><option value="creature">the creature (F′)</option></select></label>
+        <button id="watch" type="button">Watch this plan</button>
+        <button id="export" type="button">Export JSON</button>
+      </div>
+      <p id="parentInfo" class="muted"></p>
+      <p id="designStatus" role="status" aria-live="polite" class="muted">Scoring the empty plan…</p>
+      <div id="manual" role="tabpanel" aria-labelledby="tabManual">
+        <button id="vary" type="button">Make two variations</button>
+        <div class="pair">
+          <article><h3>Variation A</h3><p id="diffA" class="diff">—</p><canvas id="mapA" aria-label="Variation A running live"></canvas><p id="liveA" class="muted"></p><p id="scoreA" class="score"></p><button id="pickA" type="button" disabled>Choose A</button></article>
+          <article><h3>Variation B</h3><p id="diffB" class="diff">—</p><canvas id="mapB" aria-label="Variation B running live"></canvas><p id="liveB" class="muted"></p><p id="scoreB" class="score"></p><button id="pickB" type="button" disabled>Choose B</button></article>
+        </div>
+      </div>
+      <div id="auto" role="tabpanel" aria-labelledby="tabAuto" hidden>
+        <div class="row">
+          <label>Epochs <input id="epochs" type="number" min="1" max="500" value="50"></label>
+          <label>Children per epoch <select id="lambda"><option value="1">1 (1+1)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+          <button id="autoStart" type="button">Start</button>
+          <button id="autoStop" type="button" disabled>Stop</button>
+        </div>
+        <canvas id="curve" aria-label="Fitness per epoch: the kept environments marked; escape, catch and cold rates below"></canvas>
+      </div>
+      <h3>Lineage</h3>
+      <div id="lineage" class="lineage" aria-label="Every plan tried, linked to its parent; click one to go back to it"></div>
     </section>
   </main>
   <footer class="page-foot">

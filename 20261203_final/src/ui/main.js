@@ -14,6 +14,7 @@ import { makeFrames } from '../sim/frames.js';
 import { makeScene3D } from '../render/scene3d.js';
 import { makeMap2D, LAYERS } from '../render/map2d.js';
 import { makePool } from './pool.js';
+import { makeDesigner } from './designer.js';
 
 const $ = (id) => document.getElementById(id);
 const status = $('status');
@@ -23,12 +24,16 @@ const world = await loadWorldFromUrl(base);
 const storm = makeStorm(await (await fetch(new URL('storm-2016-01.json', base))).json());
 const frames = makeFrames(world);
 const night = nightsOf(evaluationSuite(CONFIG))[0];
-const plan = emptyPlan(); const layers = applyPlan(world, CONFIG, plan);
+let plan = emptyPlan(); let layers = applyPlan(world, CONFIG, plan);
 
 // the creature maps the woods at dusk, once per night; its memory carries over to every round
-const memory = newMemory(world, CONFIG);
-const m = mapTheWoods(world, CONFIG, { memory, startCell: wakeCell(world, CONFIG, night.seed, night.zone), ticks: CONFIG.creature.mappingTicks, layers, weather: storm.at(localSeconds(CONFIG.creature.mappingStart)) });
-memory.lastCell = m.endCell;
+// a night for a plan: the creature maps that variant of the woods at dusk (§11.4)
+function nightFor(planLayers) {
+  const mem = newMemory(world, CONFIG);
+  const mm = mapTheWoods(world, CONFIG, { memory: mem, startCell: wakeCell(world, CONFIG, night.seed, night.zone), ticks: CONFIG.creature.mappingTicks, layers: planLayers, weather: storm.at(localSeconds(CONFIG.creature.mappingStart)) });
+  mem.lastCell = mm.endCell; return mem;
+}
+let memory = nightFor(layers);
 
 const view = makeScene3D($('view'), world);
 const map = makeMap2D($('map'), world, frames);
@@ -101,7 +106,10 @@ status.hidden = true; $('app').hidden = false;
 addEventListener('resize', resize); resize();
 hud(); requestAnimationFrame(frame);
 let poolP = null; const pool = () => (poolP ??= makePool(world, { base }));
-window.__app = { world, view, pool, get round() { return round; }, stepSim, setSpeed: (s) => { speed = s; }, pause: () => { playing = false; } };
+// watch another plan in the live views: a new night for it
+function watchPlan(p) { plan = p; layers = applyPlan(world, CONFIG, plan); memory = nightFor(layers); results.length = 0; roundIdx = 0; startRound(); metrics(); $('next').hidden = true; }
+const designer = makeDesigner({ world, storm, frames, night, pool, nightFor, watchPlan, getStart: () => nextStart ?? night.rounds[0].start });
+window.__app = { world, view, pool, designer, watchPlan, get round() { return round; }, stepSim, setSpeed: (s) => { speed = s; }, pause: () => { playing = false; } };
 
 // ---------------------------------------------------------------- the interface (M5.4)
 const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
