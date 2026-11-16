@@ -2,6 +2,25 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M7-M9 except deployment
+
+**Done**
+- M7.1 data panel (hourly temperature, wind and gusts, visibility, snow; hover shows the observation; test: values = storm-2016-01.json). M7.2 tonight mode from api.weather.gov with fallback (D-035). M7.3 covered by the diagrams.
+- M8.1 `diagrams.html` ("How it works"), 15 figures drawn from the sim; `npm run diagrams` exports PNGs to docs/diagrams/ (D-036). M8.2/M8.3 video shot lists. M8.4 gallery: 9 environments with heat maps and stories, one-click load, docs/gallery/. M8.5 `deck.html` (26 slides) + docs/frostroot-deck.pdf. M8.6 semantic model v1.0, `npm run model:check` (in the tests) (D-037).
+- M9.1 walkthrough (open → round → 3 manual generations → 20 epochs → gallery → tonight): no console errors; sound (off by default, suspended when hidden). Fixed an 11 s stall from the gallery maps. M9.2 audit (docs/a11y-audit.md). M9.3 LICENSE (MIT), docs/credits.md, Credits on the page (D-038).
+- M9.5: merged `main` into this branch (brings 20261110_agents and its README line), added the 20261203_final line to the root README.
+
+**Numbers**: 158 tests pass (1 skipped: live MCP). Gallery best (evolved for survivors) F 0.086; Plan B 0.023; empty −0.188. Gallery build 5 min (node tools/build-gallery.mjs).
+
+**Next**
+- M9.4 deploy to GitHub Pages: waiting for Ryan's go-ahead (CLAUDE.md checkpoint). After deploying: open the live URL on desktop and phone, click the Credits links, update README / deck links (`LIVE_URL`), rebuild the deck PDF.
+- Record the two videos from the shot lists and put the links in the deck (`tools/make-deck.mjs`).
+- M4.3 (60 fps at 1080p) still needs a machine with a GPU.
+
+**Open problems**
+- This container has no GPU: the export scripts work but are slow and sometimes time out under SwiftShader; re-run if one does.
+- The fingerprints (14.5 MB raw) load only on diagrams.html; check how GitHub Pages serves .bin (gzip) after deploying.
+
 ## 2026-11-16 (continued): M5.3-M6.7
 
 **Done**
