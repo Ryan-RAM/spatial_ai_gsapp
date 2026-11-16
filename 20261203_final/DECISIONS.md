@@ -94,6 +94,14 @@
 - **性能影响**：52k 格比 3.5 万格多 50%。积雪和 A* 用 typed array 应该没有问题；visibility fingerprint 只给可行走的格子算，而且要量化（M1.7），不然会超过 15 MB 的数据预算。
 - **改回**：改 `CONFIG.studyArea.bboxM`，跑 `npm run bake:meta` 和后面的烘焙步骤。
 
+## D-015 从 OSM 得到的路网、出口和地面覆盖规则（M1.2）
+
+- **路网**：footway、path、steps、pedestrian（East Drive 在 OSM 里是 pedestrian）、service、bridleway 等都算步道；隧道里的、`access=private` 的不算。只保留连通的主网络（406 个节点、504 条边、13.7 km）。去掉了 14 个小片段（共 1.4 km）：79 街横路下沉路堑里的人行道，以及和网络的连接点在方框以外的路头。它们从公园里走不到，列在 `paths.json` 的 `dropped` 里。
+- **出口**：步道在第五大道一侧离开公园多边形的地方，25 m 以内合并成一个。名字用街号：拿方框里 14 条 East nn Street 和第五大道的交点做线性拟合（每条街 82.5 m，和曼哈顿实际的街距一致），按位置四舍五入。结果有三个出口：**E76**（76 街，拟合值 76.2）、**E79S** 和 **E79N**（79 街横路通到第五大道的地方南北两侧，拟合值 78.8 和 79.3）。`CONFIG.exits` 已改成这三个。
+- **地面覆盖**（后画的覆盖先画的）：公园内默认草地 → 林地（natural=wood）→ 草地（landuse=grass，林中空地）→ 硬地（游乐场、停车场、广场）→ 岩石（natural=bare_rock）→ 水（水体、the Lake、溪流画 1 格宽）→ 建筑和墙 → 不在隧道里的道路（横路在路堑里，两边是挡土墙，所以是硬障碍）→ 地面上的步道（不能盖过水和硬障碍，免得岸边被打开）→ 桥（盖过一切）。公园以外是 `outside`。
+- **还没有的**：灌丛（OSM 这里没有 scrub），在 M1.4 用树的密度定；岩石只有 OSM 标出来的 6 处，在 M1.3 用坡度补上露头。
+- **改回**：规则都在 `data/scripts/bake-osm.mjs` 和 `src/data/osm-features.js`，改完跑 `npm run bake:osm`。
+
 ---
 
 ## 风险登记（M0.5）

@@ -1,0 +1,344 @@
+{
+  "attribution": "Data © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)",
+  "frame": "W (metres)",
+  "places": [
+    {
+      "id": "alice-in-wonderland",
+      "name": "Alice in Wonderland",
+      "kind": "monument",
+      "x": 225.1,
+      "y": -440,
+      "tall": false
+    },
+    {
+      "id": "azalea-pond",
+      "name": "Azalea Pond",
+      "kind": "water",
+      "x": -38.1,
+      "y": -214.6,
+      "tall": false
+    },
+    {
+      "id": "balcony-bridge",
+      "name": "Balcony Bridge",
+      "kind": "bridge",
+      "x": -266.5,
+      "y": -44.1,
+      "tall": false
+    },
+    {
+      "id": "bank-rock-bay",
+      "name": "Bank Rock Bay",
+      "kind": "water",
+      "x": -201.4,
+      "y": -28.7,
+      "tall": false
+    },
+    {
+      "id": "bank-rock-boat-landing",
+      "name": "Bank Rock Boat Landing",
+      "kind": "landing",
+      "x": -214.5,
+      "y": -68.9,
+      "tall": false
+    },
+    {
+      "id": "belvedere-castle",
+      "name": "Belvedere Castle",
+      "kind": "castle",
+      "x": 27.5,
+      "y": 33.6,
+      "tall": true
+    },
+    {
+      "id": "belverde",
+      "name": "Belverde",
+      "kind": "monument",
+      "x": 5.2,
+      "y": 52.6,
+      "tall": false
+    },
+    {
+      "id": "bethesda-fountain",
+      "name": "Bethesda Fountain",
+      "kind": "water",
+      "x": -137.2,
+      "y": -520.2,
+      "tall": false
+    },
+    {
+      "id": "bow-bridge",
+      "name": "Bow Bridge",
+      "kind": "bridge",
+      "x": -217.7,
+      "y": -358.2,
+      "tall": false
+    },
+    {
+      "id": "bow-bridge-boat-landing",
+      "name": "Bow Bridge Boat Landing",
+      "kind": "landing",
+      "x": -207,
+      "y": -335.3,
+      "tall": false
+    },
+    {
+      "id": "cedar-hill",
+      "name": "Cedar Hill",
+      "kind": "hill",
+      "x": 240.7,
+      "y": -233.5,
+      "tall": false
+    },
+    {
+      "id": "cleopatras-needle",
+      "name": "Cleopatra's Needle",
+      "kind": "monument",
+      "x": 320.5,
+      "y": 71.7,
+      "tall": true
+    },
+    {
+      "id": "conservatory-water",
+      "name": "Conservatory Water",
+      "kind": "water",
+      "x": 185.5,
+      "y": -491.5,
+      "tall": false
+    },
+    {
+      "id": "east-drive",
+      "name": "East Drive",
+      "kind": "drive",
+      "x": 156,
+      "y": -298,
+      "tall": false
+    },
+    {
+      "id": "glade-arch",
+      "name": "Glade Arch",
+      "kind": "bridge",
+      "x": 300.7,
+      "y": -275.8,
+      "tall": false
+    },
+    {
+      "id": "greywacke-arch",
+      "name": "Greywacke Arch",
+      "kind": "arch",
+      "x": 308.1,
+      "y": 9.6,
+      "tall": false
+    },
+    {
+      "id": "group-of-bears",
+      "name": "Group of Bears",
+      "kind": "monument",
+      "x": 443.9,
+      "y": -167.1,
+      "tall": false
+    },
+    {
+      "id": "hans-christian-andersen",
+      "name": "Hans Christian Andersen",
+      "kind": "monument",
+      "x": 124.5,
+      "y": -502.1,
+      "tall": false
+    },
+    {
+      "id": "james-michael-levin-playground",
+      "name": "James Michael Levin Playground",
+      "kind": "garden",
+      "x": 337.2,
+      "y": -352.7,
+      "tall": false
+    },
+    {
+      "id": "king-jagiello-monument",
+      "name": "King Jagiello Monument",
+      "kind": "monument",
+      "x": 212.8,
+      "y": -8.4,
+      "tall": false
+    },
+    {
+      "id": "loeb-boathouse",
+      "name": "Loeb Boathouse",
+      "kind": "building",
+      "x": 40.1,
+      "y": -405.2,
+      "tall": false
+    },
+    {
+      "id": "metropolitan-museum-of-art",
+      "name": "Metropolitan Museum of Art",
+      "kind": "building",
+      "x": 407.3,
+      "y": 2.3,
+      "tall": true,
+      "ele": 28
+    },
+    {
+      "id": "navy-walk-tablet",
+      "name": "Navy Walk Tablet",
+      "kind": "monument",
+      "x": -180.3,
+      "y": -524.8,
+      "tall": false
+    },
+    {
+      "id": "oak-bridge",
+      "name": "Oak Bridge",
+      "kind": "bridge",
+      "x": -209.6,
+      "y": -30.9,
+      "tall": false
+    },
+    {
+      "id": "pilgrim-hill",
+      "name": "Pilgrim Hill",
+      "kind": "hill",
+      "x": 32.6,
+      "y": -533,
+      "tall": false
+    },
+    {
+      "id": "ramble-rustic-bridge",
+      "name": "Ramble Rustic Bridge",
+      "kind": "bridge",
+      "x": -131.9,
+      "y": -148.2,
+      "tall": false
+    },
+    {
+      "id": "ramble-stone-arch",
+      "name": "Ramble Stone Arch",
+      "kind": "bridge",
+      "x": -181.1,
+      "y": -68.7,
+      "tall": false
+    },
+    {
+      "id": "ruth-and-arthur-smadbeck-heckscher-east-playground",
+      "name": "Ruth and Arthur Smadbeck-Heckscher East Playground",
+      "kind": "garden",
+      "x": 439.3,
+      "y": -146.7,
+      "tall": false
+    },
+    {
+      "id": "shakespeare-garden",
+      "name": "Shakespeare Garden",
+      "kind": "garden",
+      "x": -69.9,
+      "y": 85.7,
+      "tall": false
+    },
+    {
+      "id": "sophie-loeb-fountain",
+      "name": "Sophie Loeb Fountain",
+      "kind": "water",
+      "x": 346.7,
+      "y": -359.1,
+      "tall": false
+    },
+    {
+      "id": "still-hunt",
+      "name": "Still Hunt",
+      "kind": "monument",
+      "x": 169.5,
+      "y": -240.7,
+      "tall": false
+    },
+    {
+      "id": "swedish-cottage-marionette-theatre",
+      "name": "Swedish Cottage Marionette Theatre",
+      "kind": "building",
+      "x": -96.7,
+      "y": 101.3,
+      "tall": false
+    },
+    {
+      "id": "the-gill",
+      "name": "The Gill",
+      "kind": "water",
+      "x": -92.8,
+      "y": -188.6,
+      "tall": false
+    },
+    {
+      "id": "the-lake",
+      "name": "The Lake",
+      "kind": "water",
+      "x": -160.4,
+      "y": -256.5,
+      "tall": false
+    },
+    {
+      "id": "the-point",
+      "name": "The Point",
+      "kind": "woods",
+      "x": -62.3,
+      "y": -399.6,
+      "tall": false
+    },
+    {
+      "id": "the-ramble",
+      "name": "The Ramble",
+      "kind": "woods",
+      "x": -104.2,
+      "y": -210.9,
+      "tall": false
+    },
+    {
+      "id": "trefoil-arch",
+      "name": "Trefoil Arch",
+      "kind": "bridge",
+      "x": 25.6,
+      "y": -496.3,
+      "tall": false
+    },
+    {
+      "id": "turtle-pond",
+      "name": "Turtle Pond",
+      "kind": "water",
+      "x": 101.6,
+      "y": 58.2,
+      "tall": false
+    },
+    {
+      "id": "vista-rock",
+      "name": "Vista Rock",
+      "kind": "peak",
+      "x": 10.6,
+      "y": 45.6,
+      "tall": false,
+      "ele": 39.6
+    },
+    {
+      "id": "wallach-walk",
+      "name": "Wallach Walk",
+      "kind": "drive",
+      "x": 274.2,
+      "y": -306.8,
+      "tall": false
+    },
+    {
+      "id": "west-drive",
+      "name": "West Drive",
+      "kind": "drive",
+      "x": -211.5,
+      "y": 38.7,
+      "tall": false
+    },
+    {
+      "id": "whisper-bench",
+      "name": "Whisper Bench",
+      "kind": "monument",
+      "x": -37.9,
+      "y": 96.5,
+      "tall": false
+    }
+  ]
+}

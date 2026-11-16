@@ -66,7 +66,7 @@
   - 根据 M0.2 的范围，从 OSM 定出 bbox；原点设在 KNYC 测站（Vista Rock），用局部东-北-上坐标；WGS84 ↔ 局部米制的转换写进 `src/data/geo.js`。
   - 完成标准：`data/baked/meta.json` 有 bbox、原点、格子大小、W×H；有往返转换的测试，误差 < 0.1 m。
 
-- [ ] **M1.2 OSM：路网、水体、建筑、地名**
+- [x] **M1.2 OSM：路网、水体、建筑、地名**
   - 用 Overpass 拿 footway/path/service、桥、水体（the Lake、the Gill、Azalea Pond）、建筑（Belvedere Castle、Rustic Shelter、Ramble Arch）和命名地点；路网转成图（节点 = 路口、出口、桥头；边 = 路段，带长度和铺面）。
   - 完成标准：`paths.json`（节点、边、铺面）、`places.json`；路网连通（或者把不连通的部分列出来并说明原因）；三个出口都在图上；栅格化后得到 `cover` 层，水 = 不可通行。
 

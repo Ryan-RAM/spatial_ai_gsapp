@@ -22,7 +22,7 @@ export const CONFIG = {
     // inside it are masked in M1.2
     bboxM: { minX: -270, minY: -540, maxX: 460, maxY: 105 },
   },
-  exits: ['E72', 'E76', 'E79'],    // D-002: Fifth Avenue entrances that count as exits
+  exits: ['E76', 'E79S', 'E79N'],  // D-002, D-015: Fifth Avenue entrances found in OSM (data/baked/paths.json)
 
   // ---------------------------------------------------------------- time (§2, §4)
   tickSeconds: 2,                  // storm time per tick

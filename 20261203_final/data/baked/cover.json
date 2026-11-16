@@ -1,0 +1,31 @@
+{
+  "file": "cover.bin",
+  "type": "uint8",
+  "W": 244,
+  "H": 215,
+  "layout": "idx = j * W + i, row 0 north",
+  "legend": [
+    "outside",
+    "path_paved",
+    "path_dirt",
+    "lawn",
+    "woodland_floor",
+    "thicket",
+    "rock",
+    "water",
+    "structure"
+  ],
+  "counts": {
+    "outside": 3671,
+    "path_paved": 7267,
+    "path_dirt": 704,
+    "lawn": 17550,
+    "woodland_floor": 14447,
+    "thicket": 0,
+    "rock": 178,
+    "water": 5964,
+    "structure": 2679
+  },
+  "source": "OpenStreetMap",
+  "attribution": "Data © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)"
+}
