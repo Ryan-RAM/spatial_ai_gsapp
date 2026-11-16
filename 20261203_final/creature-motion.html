@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Creature Motion Study</title>
+  <meta name="description" content="Four moments of the animated root creature: still, walking, lunging, stopping; the strands bend in the vertex shader, without physics.">
+  <style>:root { color-scheme: dark; } body { margin: 0; background: #0b1020; color: #dfe6f3; font: 13px system-ui, sans-serif; } canvas { display: block; width: 100%; height: auto; } p { margin: 8px 16px; color: #8a86a8; }</style>
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }</script>
+</head>
+<body>
+  <canvas id="c" width="1600" height="600" aria-label="Four frames of the creature: still, walking, lunging, stopping"></canvas>
+  <p id="cap">Still · walking 1.4 m/s · lunging 4 m/s · just stopped (strands whip forward)</p>
+  <script type="module">
+    import * as THREE from 'three';
+    import { PALETTE } from './src/render/palette.js';
+    import { makeCreature } from './src/render/creature3d.js';
+    import { makeRng } from './src/sim/rng.js';
+    const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+    r.setSize(1600, 600, false); r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.8; r.outputColorSpace = THREE.SRGBColorSpace; r.setScissorTest(true);
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(PALETTE.sky); scene.fog = new THREE.FogExp2(PALETTE.fog, 0.03);
+    scene.add(new THREE.HemisphereLight(0x55628a, 0x0d1020, 0.8));
+    const key = new THREE.DirectionalLight(0x9fb3e6, 0.8); key.position.set(-5, 8, 4); scene.add(key);
+    const warm = new THREE.PointLight(PALETTE.warm, 18, 14, 1.6); warm.position.set(4, 3, 2); scene.add(warm);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshToonMaterial({ color: PALETTE.snow })); ground.rotation.x = -Math.PI / 2; scene.add(ground);
+    const C = makeCreature(makeRng(7).next); C.group.rotation.y = 0.6; scene.add(C.group); C.group.updateMatrixWorld();
+    const cam = new THREE.PerspectiveCamera(40, 400 / 600, 0.1, 100); cam.position.set(6.5, 3.2, 3.5); cam.lookAt(0, 1.8, -1);
+    const fwd = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.6);
+    const wind = new THREE.Vector3(0, 0, 1.5);
+    const frames = [
+      { t: 2.0, v: 0 }, { t: 5.3, v: 1.4 }, { t: 8.7, v: 4.0 }, { t: 11.1, v: 0, from: 4.0 },
+    ];
+    frames.forEach((f, q) => {
+      // settle the smoothed velocity: a run-up at `from` (or v), then the frame's velocity
+      for (let k = 0; k < 40; k++) C.update(f.t - 1 + k / 40, fwd.clone().multiplyScalar(f.from ?? f.v), wind, 0.3);
+      C.update(f.t, fwd.clone().multiplyScalar(f.v), wind, 0.3);
+      r.setViewport(q * 400, 0, 400, 600); r.setScissor(q * 400, 0, 400, 600); r.render(scene, cam);
+    });
+    window.__ready = true;
+  </script>
+</body>
+</html>
