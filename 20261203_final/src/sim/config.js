@@ -48,6 +48,10 @@ export const CONFIG = {
     sightRange: 20, coneDeg: 110,  // flashlight, m, scaled by vf(t)
     hearing: 40,
     warmthMax: 100,
+    // E1: warmth falls by k x max(0, (10 - T_wc) / 10) x (0.3 + 0.7 openness) per second. k so that
+    // full exposure at the storm's worst wind chill (-12.4 °C, 20:51) empties 100 in 25 min (D-025)
+    warmthK: 0.02973,
+    shelterGain: 1,                // E2: warmth +1 per second in a warming shelter
     speed: 1.3,                    // m/s walking (D-023); running doubles it (rule M3)
     snowExponent: 1,
   },
