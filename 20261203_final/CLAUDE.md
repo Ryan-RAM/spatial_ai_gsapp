@@ -2,21 +2,21 @@
 
 本仓库是 Ryan Fu 的 Spatial AI（ARCH6956-1，Columbia GSAPP，William Martin）作业仓库，每次作业一个文件夹（`YYYYMMDD_topic/`）。小组：Ryan Fu, Lu Liu, Yifan Zhao。根目录 README 只列一次组员，子文件夹 README 只做基本导航。
 
-当前工作：**期末项目 Frostroot — The Ramble**，在 `20261116_final/`。
+当前工作：**期末项目 Frostroot — The Ramble**，在 `20261203_final/`。
 
 ---
 
 ## 1. 项目定位：一个完整的产品，不只是作业
 
 - 作业要求：https://awmartin-xyz.s3.amazonaws.com/spatial-ai/assignments/spai-2026fa-final-submission.pdf
-- 语义模型：`20261116_final/semantic_model.md`，这是唯一的设计依据。实现和模型不一致时，先改模型再改代码，或者在 `DECISIONS.md` 里写明为什么偏离。
+- 语义模型：`20261203_final/semantic_model.md`，这是唯一的设计依据。实现和模型不一致时，先改模型再改代码，或者在 `DECISIONS.md` 里写明为什么偏离。
 - 标准：按一款准备上线的游戏或工具来做。第一次打开就能看懂、能玩；性能稳定；视觉统一；有测试；能部署；能分享。课程的 6 项交付物都要做，而且是产品的一部分，不是事后补的。
 - 复用前几周的代码：`20261022_distance`（四种距离、公理检查）、`20261103_position`（位置和移动关系、伏击）、`20261110_agents`（部分知识、frontier 探索、landmark）。能移植的就移植并改进，不要重写一套平行的。
 
 ## 2. 工作方式
 
 1. **先读后做**：开始一个阶段前，先读语义模型、本文件、`ROADMAP.md`、`DECISIONS.md`、`DEVLOG.md`。
-2. **任务清单**：所有工作都在 `20261116_final/ROADMAP.md` 里，按里程碑分组，每项任务都有"完成标准"。同时用任务工具跟踪当前会话的进度。
+2. **任务清单**：所有工作都在 `20261203_final/ROADMAP.md` 里，按里程碑分组，每项任务都有"完成标准"。同时用任务工具跟踪当前会话的进度。
 3. **一步一步自己推进**：一次只做一项任务。做完要跑测试、跑基准、在浏览器里看效果，然后提交，在 ROADMAP 里勾掉，再开始下一项。不要每做完一步就停下来问。
 4. **提交**：每项任务至少一次提交，信息写清楚做了什么。不要强制推送，不要改写已推送的历史。
 5. **决定**：语义模型 §17 里的问题，以及做的过程中遇到的设计选择，先选一个合理的默认值，记到 `DECISIONS.md`（选了什么、为什么、怎么改回来），然后继续做。
@@ -66,8 +66,8 @@
 
 ## 5. 数据和授权
 
-- 数据源见语义模型 §16。抓取脚本放在 `20261116_final/data/scripts/`，原始数据放在 `data/raw/`（不提交，写进 `.gitignore`），烘焙结果放在 `data/baked/`（提交）。
-- MCP 服务器 `frostroot-data` 放在 `20261116_final/mcp/`，它和烘焙脚本共用同一套数据访问代码。
+- 数据源见语义模型 §16。抓取脚本放在 `20261203_final/data/scripts/`，原始数据放在 `data/raw/`（不提交，写进 `.gitignore`），烘焙结果放在 `data/baked/`（提交）。
+- MCP 服务器 `frostroot-data` 放在 `20261203_final/mcp/`，它和烘焙脚本共用同一套数据访问代码。
 - OpenStreetMap 数据用的是 ODbL 协议：页面上要有署名，烘焙后的派生数据要附上授权说明。其他数据源也要在页面的 Credits 里列出来。
 - 产品化的风险记到 `DECISIONS.md`，以后再处理，比如真实地名和机构名的商标问题。
 

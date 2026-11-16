@@ -5,7 +5,7 @@
 - 每项任务都有 **完成标准**。只有标准全部满足、`npm test` 通过、跑过基准（涉及性能时）、在浏览器里看过效果并提交之后，才能勾掉。
 - ⏸ = 检查点，做到这里先停，等确认后再继续（CLAUDE.md §2.6）。
 - 任务编号（M2.3 这种）用在提交信息、DECISIONS 和 DEVLOG 里。
-- 文件夹：本项目在 **`20261203_final/`**。CLAUDE.md 里写的 `20261116_final/` 指的就是这里（见 M0.1）。
+- 文件夹：本项目在 **`20261203_final/`**，全项目统一用这个名字（D-000）。
 
 **里程碑和顺序**
 
@@ -28,7 +28,7 @@
 
 - [ ] **M0.1 项目骨架**
   - 建好 `index.html`、`style.css`、`package.json`、`config.js`、`src/{sim,render,ui,data}/`、`tests/`、`bench/`、`data/{scripts,raw,baked}/`、`mcp/`、`docs/`；`.gitignore` 排除 `data/raw/` 和 `node_modules/`。
-  - 完成标准：`npm test` 能跑（至少一个占位测试通过）；`npm run bench` 能跑；页面在 `python3 -m http.server` 下打开，控制台无报错；文件夹名的差异（`20261116_final` → `20261203_final`）写进 DECISIONS D-000。
+  - 完成标准：`npm test` 能跑（至少一个占位测试通过）；`npm run bench` 能跑；页面在 `python3 -m http.server` 下打开，控制台无报错；文件夹名统一为 `20261203_final` 写进 DECISIONS D-000。
 
 - [ ] **M0.2 DECISIONS.md：§17 七个问题的默认值**
   - 每条写清楚：选了什么、为什么、怎么改回来、影响哪些参数。建议的默认值：
@@ -59,7 +59,7 @@
 所有抓取脚本放在 `data/scripts/`，和 MCP 服务器共用 `src/data/` 下的数据访问代码（CLAUDE.md §5）。原始数据不提交；烘焙结果提交，并附上授权说明。
 
 - [ ] **M1.0 网络放行**（前提）
-  - 当前云环境的代理会拦截 overpass-api.de、mesonet.agron.iastate.edu、data.cityofnewyork.us、zenodo.org、api.weather.gov、cdn.jsdelivr.net（2026-11-16 实测返回 403）。到这一步时申请把这些主机加进允许列表（会弹审批）。
+  - 2026-11-16 已放行：overpass-api.de、mesonet.agron.iastate.edu、data.cityofnewyork.us、zenodo.org、api.weather.gov、cdn.jsdelivr.net。不在这个列表上的主机，用到时再单独申请审批。
   - 完成标准：每个数据源都能用 curl 拿到 200；如果某个源拿不到，在 DECISIONS 里写明替代方案（比如手动下载后放进 `data/raw/`）。
 
 - [ ] **M1.1 研究范围与坐标框架 W**
@@ -287,8 +287,3 @@
 - [ ] **M9.5 收尾**
   - 完成标准：根目录 README 加上本文件夹的一行导航（组员只在根目录列一次）；DEVLOG 写最后一条；所有 ROADMAP 项目都已勾掉，或者写明为什么不做。
 
----
-
-## 参考
-
-- 队友的 fork 有一个分支 `yz5149-stack/spatial_ai_gsapp:final-whiteout`（"Frostroot: Whiteout"，2026-11-16）：同样是 Ramble、2016 年暴雪、设计者模式和 Web Worker epoch，但用的是 8 m 格子和 ERA5 天气。还没有决定要不要参考或者复用它，见回复里的问题。
