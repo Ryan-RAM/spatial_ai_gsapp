@@ -13,26 +13,26 @@ export const CONFIG = {
     lat: 40.77898,                 // approximate; replaced by the station coordinates in M1.1
     lon: -73.96925,
   },
-  studyArea: {                     // §3.1, D-002: bounds named here, coordinates fixed in M1.1 from OSM
+  studyArea: {                     // D-002 (§3.1): bounds named here, coordinates fixed in M1.1 from OSM
     north: '79th Street Transverse',
     south: 'the Lake',
     west: 'the Lake',
     east: 'Fifth Avenue',
   },
-  exits: ['E72', 'E76', 'E79'],    // Fifth Avenue entrances that count as exits (D-002)
+  exits: ['E72', 'E76', 'E79'],    // D-002: Fifth Avenue entrances that count as exits
 
   // ---------------------------------------------------------------- time (§2, §4)
   tickSeconds: 2,                  // storm time per tick
-  window: {                        // the evaluation night (D-005), local time America/New_York
+  window: {                        // D-005: the evaluation night, local time America/New_York
     start: '2016-01-23T17:00',
     end: '2016-01-24T05:00',
   },
   stormTotalSnowIn: 27.5,          // official storm total; calibrates the snow-to-liquid ratio (§4.2)
 
-  // ---------------------------------------------------------------- agents (§7.6, D-003)
-  survivorsPerRound: 2,
-  creaturesPerNight: 1,
-  creaturesHard: 2,
+  // ---------------------------------------------------------------- agents (§7.6)
+  survivorsPerRound: 2,            // D-003
+  creaturesPerNight: 1,            // D-003
+  creaturesHard: 2,                // D-003
   creature: {
     sightRange: 30, coneDeg: 100,  // m, scaled by vf(t)
     hearing: 45,                   // m of acoustic distance
@@ -54,9 +54,9 @@ export const CONFIG = {
   },
   replanEveryTicks: 5,             // §12
 
-  // ---------------------------------------------------------------- fitness (§11.2, D-004)
-  perspective: 'survivors',        // 'survivors' (F) or 'creature' (F')
-  lambdaCost: 0.1,
+  // ---------------------------------------------------------------- fitness (§11.2)
+  perspective: 'survivors',        // D-004: 'survivors' (F) or 'creature' (F')
+  lambdaCost: 0.1,                 // D-004, tuned in M6
 
   // ---------------------------------------------------------------- interventions (§9 I1)
   budget: { plowedM: 1200, lamps: 12, shelters: 2, signs: 6 },
@@ -67,8 +67,10 @@ export const CONFIG = {
   epochs: 50,
   childrenPerEpoch: 1,             // (1+1)-ES; 2-4 as an advanced option
 
-  // ---------------------------------------------------------------- secondary functions (§13, D-006)
-  tonightMode: true,
+  // ---------------------------------------------------------------- secondary functions (§13)
+  tonightMode: true,               // D-006: live KNYC weather, geometry unchanged
+
+  render3dStyle: 'frostroot-on-real-geometry', // D-007, finalised by the style frame (M5.1)
 
   // ---------------------------------------------------------------- performance targets (CLAUDE.md §3), checked by `npm run bench`
   targets: {

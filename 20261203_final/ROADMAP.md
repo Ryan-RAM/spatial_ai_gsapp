@@ -30,7 +30,7 @@
   - 建好 `index.html`、`style.css`、`package.json`、`config.js`、`src/{sim,render,ui,data}/`、`tests/`、`bench/`、`data/{scripts,raw,baked}/`、`mcp/`、`docs/`；`.gitignore` 排除 `data/raw/` 和 `node_modules/`。
   - 完成标准：`npm test` 能跑（至少一个占位测试通过）；`npm run bench` 能跑；页面在 `python3 -m http.server` 下打开，控制台无报错；文件夹名统一为 `20261203_final` 写进 DECISIONS D-000。
 
-- [ ] **M0.2 DECISIONS.md：§17 七个问题的默认值**
+- [x] **M0.2 DECISIONS.md：§17 七个问题的默认值**
   - 每条写清楚：选了什么、为什么、怎么改回来、影响哪些参数。建议的默认值：
     1. 格子大小 **3 m**（约 3.5 万格；基准不达标再退到 4 m）
     2. 研究范围：北到 79 街横路，南、西到 the Lake，东到第五大道；出口取第五大道 72、76、79 街附近的三个入口（以 OSM 为准）
