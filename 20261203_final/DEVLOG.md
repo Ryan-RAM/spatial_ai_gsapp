@@ -2,6 +2,18 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M5.2 3D view
+
+**Done**
+- PR Ryan-RAM/spatial_ai_gsapp#3 merged (Ryan confirmed).
+- Style frame revised to be scarier (D-031); creature roots animated in the vertex shader without physics (D-032, docs/creature-motion.png).
+- M5.2: `src/render/scene3d.js` on the page: whole area, snow as a texture, 2,427 instanced trees, lamps/shelters, footprints fading with readability, shader snowfall with the recorded wind, fog from visibility, the animated creature, survivors with flashlight and breath that thickens as they get cold. Cameras: third person (default), overview, first person. A round plays live from the page.
+- Measured: 41 draw calls, ~917k triangles; JS per frame < 0.1 ms; sim step ~0.1 ms; first screen 0.86 s on a local server.
+
+**Not measured here**: frame rate (no GPU in the container; SwiftShader numbers are meaningless). M4.3 stays open until checked on a machine with a GPU.
+
+**Next**: M5.3 2D map (layers, frames W/P/N on click), M5.4 interface.
+
 ## 2026-11-16 (continued): M5.1 style frame, checkpoint
 
 **Done**

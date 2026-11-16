@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203a"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203b"
       }
     }
   </script>
@@ -26,8 +26,21 @@
     <h1>Frostroot<span>:</span> The Ramble</h1>
     <p class="lede">23 January 2016, the night of the record blizzard. Something made of roots wakes up in the Ramble. You design the park for the storm night: who gets out?</p>
   </header>
-  <main id="app" class="app">
-    <p class="status" id="status" role="status">Loading…</p>
+  <main class="app">
+    <p class="status" id="status" role="status">Loading the Ramble and the storm…</p>
+    <section id="app" hidden>
+      <div class="stage">
+        <canvas id="view" aria-label="3D view of the Ramble in the blizzard, following a survivor"></canvas>
+        <div class="hud"><p id="clock"></p><pre id="agents"></pre></div>
+      </div>
+      <div class="controls" role="toolbar" aria-label="Simulation controls">
+        <button id="play" type="button">Pause</button>
+        <button id="speed" type="button" title="Storm seconds per second">30×</button>
+        <label>Camera <select id="camera"><option value="follow">Third person</option><option value="overview">Overview</option><option value="first">First person</option></select></label>
+        <label>Follow <select id="followSel"><option value="0">Survivor 1</option><option value="1">Survivor 2</option></select></label>
+        <button id="next" type="button" hidden>Next round</button>
+      </div>
+    </section>
   </main>
   <footer class="page-foot">
     <p>Ryan Fu, Lu Liu, Yifan Zhao &middot; ARCH6956-1, William Martin</p>
