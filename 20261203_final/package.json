@@ -13,7 +13,9 @@
     "bake:meta": "node data/scripts/bake-meta.mjs",
     "bake:osm": "node data/scripts/bake-osm.mjs",
     "bake:terrain": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-terrain.mjs",
-    "bake:trees": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-trees.mjs"
+    "bake:trees": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-trees.mjs",
+    "fetch:weather": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/fetch-weather.mjs",
+    "bake:weather": "node data/scripts/bake-weather.mjs"
   },
   "devDependencies": {
     "copc": "0.0.9"

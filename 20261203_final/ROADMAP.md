@@ -78,7 +78,7 @@
   - 数据来自"Individual structure mapping over six million trees for NYC"：位置、高度、树冠半径，常绿/落叶（数据里没有就用树冠形态推断，并写进 DECISIONS）。
   - 完成标准：`trees.bin`；`canopy` 和 `canopyEvergreen` 两个栅格；树干作为圆柱体保存（视线表在 M1.7 用上，见 D-018）；范围内的树数量写进 meta。
 
-- [ ] **M1.5 KNYC 逐小时观测**
+- [x] **M1.5 KNYC 逐小时观测**
   - 用 §16 里的 IEM ASOS 查询，取 2016-01-22 到 01-24 的数据；单位换算（°F→°C、kt→m/s、mi→m）；算出 SLR，让累计降雪等于 27.5 in（§4.2）；算风寒（NWS 公式）。
   - 完成标准：`storm-2016-01.json`；有测试检查：SLR ≈ 11.9、能见度 0.25 mi 持续约 13 小时、19:00 的数值和 §15 一致。
 
