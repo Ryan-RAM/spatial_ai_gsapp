@@ -2,10 +2,14 @@
   "name": "frostroot-the-ramble",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "bench": "node bench/run.mjs",
-    "serve": "python3 -m http.server 8000"
+    "serve": "python3 -m http.server 8000",
+    "fetch:osm": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/fetch-osm.mjs",
+    "bake:meta": "node data/scripts/bake-meta.mjs"
   }
 }

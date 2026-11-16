@@ -1,0 +1,26 @@
+{
+  "name": "Frostroot: The Ramble",
+  "frame": "W: local east-north-up, metres, origin at the KNYC station; cell (i, j) with j growing southward, idx = j * W + i",
+  "origin": {
+    "name": "KNYC, Vista Rock",
+    "lat": 40.779,
+    "lon": -73.9692,
+    "datum": "WGS84"
+  },
+  "bboxM": {
+    "minX": -270,
+    "minY": -540,
+    "maxX": 460,
+    "maxY": 105
+  },
+  "bboxDeg": [
+    -73.972399,
+    40.774137,
+    -73.963751,
+    40.779945
+  ],
+  "cellSize": 3,
+  "W": 244,
+  "H": 215,
+  "cells": 52460
+}

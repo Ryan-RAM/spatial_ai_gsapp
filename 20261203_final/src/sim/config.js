@@ -8,16 +8,19 @@ export const CONFIG = {
 
   // ---------------------------------------------------------------- place (§2, §3)
   cellSize: 3,                     // m per grid cell (D-001)
-  origin: {                        // frame W: local east-north-up, origin at the KNYC station (§5)
+  origin: {                        // frame W: local east-north-up, origin at the KNYC station (§5, D-014)
     name: 'KNYC, Vista Rock',
-    lat: 40.77898,                 // approximate; replaced by the station coordinates in M1.1
-    lon: -73.96925,
+    lat: 40.7790,                  // IEM station metadata (NWS rounds to the arcminute)
+    lon: -73.9692,
   },
-  studyArea: {                     // D-002 (§3.1): bounds named here, coordinates fixed in M1.1 from OSM
+  studyArea: {                     // D-002 (§3.1), fixed in M1.1 from OSM (D-014)
     north: '79th Street Transverse',
     south: 'the Lake',
     west: 'the Lake',
     east: 'Fifth Avenue',
+    // axis-aligned box in metres of frame W (x east, y north); the cells outside the park
+    // inside it are masked in M1.2
+    bboxM: { minX: -270, minY: -540, maxX: 460, maxY: 105 },
   },
   exits: ['E72', 'E76', 'E79'],    // D-002: Fifth Avenue entrances that count as exits
 
