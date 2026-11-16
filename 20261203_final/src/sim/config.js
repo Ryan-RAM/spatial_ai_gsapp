@@ -41,12 +41,36 @@ export const CONFIG = {
     hearing: 45,                   // m of acoustic distance
     plowedSpeedFactor: 0.7,
     litCostFactor: 3,              // light-averse: lit cells cost x3 in its plans
+    speed: 1.4,                    // m/s on flat open ground without snow (D-023)
+    snowExponent: 0.3,             // f_snow^0.3: it moves through snow as roots (§6.3)
   },
   survivor: {
     sightRange: 20, coneDeg: 110,  // flashlight, m, scaled by vf(t)
     hearing: 40,
     warmthMax: 100,
+    speed: 1.3,                    // m/s walking (D-023); running doubles it (rule M3)
+    snowExponent: 1,
   },
+
+  // ---------------------------------------------------------------- distances (§6)
+  // f_cover by cover code (src/sim/cover.js): outside, paved, dirt, lawn, woodland, thicket, rock, water, structure;
+  // 0 = impassable (rule M2)
+  coverSpeed: {
+    survivor: [0, 1.0, 0.9, 0.8, 0.6, 0, 0, 0, 0],
+    creature: [0, 1.0, 0.9, 0.8, 0.6, 1.0, 0, 0, 0],
+  },
+  snowHalfDepthCm: 25,             // f_snow = 1 / (1 + depth / 25)
+  // muffling of the acoustic distance, in metres of open air that would make a sound as faint
+  muffling: {                      // D-023
+    trunk: 4,                      // per trunk the sound passes
+    crown: 3,                      // per evergreen crown
+    structurePerM: 6,              // per metre of wall or building it passes through
+    groundPerM: 6,                 // per metre of ground (a hill or rock between)
+    snowFactor: 0.5,               // m_snow = 0.5 x snowRate (cm/h) x d_E / 10
+    windMax: 0.3,                  // w = 0.3 x min(wind / 10 m/s, 1)
+  },
+  walkQuietM: 18,                  // rule M3: walking steps count as 18 m farther
+  gustMask: 0.02,                  // threshold x max(0.4, 1 - 0.02 x gust in kt) (§6.2)
 
   // ---------------------------------------------------------------- rounds and evaluation (§7.9, §11.4)
   roundTicks: 900,                 // 30 min of storm time

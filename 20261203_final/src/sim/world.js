@@ -35,10 +35,11 @@ export function makeWorld({ meta, worldJson, worldBin, treesJson, treesBin, path
   // ground height anywhere: bilinear over the lattice of cell centres
   world.groundAt = (x, y) => {
     const fx = (x - minX) / s - 0.5; const fy = (maxY - y) / s - 0.5;
-    const i = Math.min(W - 2, Math.max(0, Math.floor(fx))); const j = Math.min(H - 2, Math.max(0, Math.floor(fy)));
-    const ux = Math.min(1, Math.max(0, fx - i)); const uy = Math.min(1, Math.max(0, fy - j));
+    const i = Math.max(0, Math.min(W - 2, Math.floor(fx))); const j = Math.max(0, Math.min(H - 2, Math.floor(fy)));
+    const ux = W > 1 ? Math.min(1, Math.max(0, fx - i)) : 0; const uy = H > 1 ? Math.min(1, Math.max(0, fy - j)) : 0;
     const k = j * W + i; const z = world.z;
-    return (1 - uy) * ((1 - ux) * z[k] + ux * z[k + 1]) + uy * ((1 - ux) * z[k + W] + ux * z[k + W + 1]);
+    const r = W > 1 ? 1 : 0; const d = H > 1 ? W : 0; // a grid one cell wide or high has no neighbour
+    return (1 - uy) * ((1 - ux) * z[k] + ux * z[k + r]) + uy * ((1 - ux) * z[k + d] + ux * z[k + d + r]);
   };
   if (treesJson && treesBin) attachTrees(world, treesJson, treesBin);
   return world;

@@ -10,6 +10,7 @@ import { CONFIG } from '../src/sim/config.js';
 import { makeRng } from '../src/sim/rng.js';
 import { loadWorld } from '../src/data/load-node.js';
 import { castRay, EYE } from '../src/sim/los.js';
+import { makeWalker } from '../src/sim/paths.js';
 
 const world = loadWorld();
 
@@ -32,6 +33,15 @@ const benches = [
       return s;
     },
   },
+  (() => {
+    const w = makeWalker(world, 'survivor', CONFIG);
+    const a = world.cellOf(-200, -150); const b = world.cellOf(330, -410); // the Lake shore -> exit E76
+    return { name: 'd_T: A* across the area (survivor)', target: null, run: () => w.travelTime(a, b) };
+  })(),
+  (() => {
+    const w = makeWalker(world, 'creature', CONFIG);
+    return { name: 'd_T: Dijkstra field, all cells', target: null, run: () => w.field(world.cellOf(0, -200)) };
+  })(),
   // M2.9 adds: 'round: 900 ticks headless' (target CONFIG.targets.roundMs)
   // M6.2 adds: 'suite: 24 rounds parallel' (target CONFIG.targets.suiteMs)
 ];

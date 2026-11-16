@@ -85,3 +85,30 @@ export function segmentClear(world, a, b) {
   const len = Math.hypot(dx, dy, dz); if (len < 1e-9) return true;
   return castRay(world, a[0], a[1], a[2], dx / len, dy / len, dz / len, len) >= len - 1e-6;
 }
+
+// What a sound passes through on the straight segment a -> b (semantic model §6.2): metres inside
+// structures and inside the ground (sampled every 0.5 m), and the trunks and evergreen crowns it
+// crosses. Ported from segmentCrossings of 20261022_distance, which counted solid cells.
+export function segmentMuffling(world, a, b) {
+  const dx = b[0] - a[0]; const dy = b[1] - a[1]; const dz = b[2] - a[2];
+  const len = Math.hypot(dx, dy, dz);
+  const out = { structureM: 0, groundM: 0, trunks: 0, crowns: 0, length: len };
+  if (len < 1e-9) return out;
+  const steps = Math.max(1, Math.ceil(len / 0.5)); const h = len / steps;
+  const seen = new Set();
+  for (let q = 0; q < steps; q++) {
+    const t = (q + 0.5) / steps;
+    const x = a[0] + dx * t; const y = a[1] + dy * t; const z = a[2] + dz * t;
+    const k = world.cellOf(x, y); if (k < 0) continue;
+    if (z < world.groundAt(x, y)) out.groundM += h;
+    else if (z <= world.structTop[k]) out.structureM += h;
+    const S = world.solids; if (!S) continue;
+    for (let p = S.cellStart[k]; p < S.cellStart[k + 1]; p++) {
+      const id = S.ids[p]; if (seen.has(id)) continue;
+      if (Math.hypot(x - S.x[id], y - S.y[id]) <= S.r[id] + h / 2 && z >= S.z0[id] && z <= S.z1[id]) {
+        seen.add(id); if (S.kind[id] === 0) out.trunks++; else out.crowns++;
+      }
+    }
+  }
+  return out;
+}

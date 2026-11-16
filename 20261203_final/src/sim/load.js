@@ -2,6 +2,7 @@
 // share one code path: readJson(name) -> object, readBytes(name) -> Uint8Array. No DOM.
 
 import { makeWorld } from './world.js';
+import { attachFingerprints } from './fingerprints.js';
 
 export const WORLD_FILES = ['meta.json', 'world.json', 'world.bin', 'trees.json', 'trees.bin', 'paths.json', 'places.json'];
 
@@ -22,4 +23,10 @@ export function loadWorldFromUrl(base, opts) {
     async (f) => new Uint8Array(await (await fetch(url(f))).arrayBuffer()),
     opts,
   );
+}
+
+// The fingerprints are large (D-021): loaded after the world, when place recognition needs them.
+export async function loadFingerprintsWith(world, readJson, readBytes) {
+  const [json, bin] = await Promise.all([readJson('fingerprints.json'), readBytes('fingerprints.bin')]);
+  return attachFingerprints(world, json, bin);
 }
