@@ -134,7 +134,7 @@ export function makeScene3D(canvas, world, { pixelRatio = Math.min(2, globalThis
   const flakesPts = new THREE.Points(fGeo, fMat); flakesPts.frustumCulled = false; scene.add(flakesPts);
 
   // ---------------------------------------------------------------- state -> scene
-  let lastLayers = null; let cameraMode = 'follow'; let followId = 0;
+  let reduced = false; let lastLayers = null; let cameraMode = 'follow'; let followId = 0;
   const camPos = new THREE.Vector3(); const camLook = new THREE.Vector3(); let camInit = false;
   const view = { renderer, scene, camera };
 
@@ -205,8 +205,8 @@ export function makeScene3D(canvas, world, { pixelRatio = Math.min(2, globalThis
       prints.count = q; prints.instanceMatrix.needsUpdate = true;
     }
     // falling snow follows the camera, drifts with the wind
-    snowUniforms.uTime.value = timeS; snowUniforms.uCenter.value.copy(camera.position); snowUniforms.uRate.value = w.snowRateCmH;
-    const to = (w.windToDeg ?? 0) * Math.PI / 180; snowUniforms.uWind.value.set(Math.sin(to) * w.windMs * 0.4, 0, -Math.cos(to) * w.windMs * 0.4);
+    snowUniforms.uTime.value = timeS; snowUniforms.uCenter.value.copy(camera.position); snowUniforms.uRate.value = w.snowRateCmH * (reduced ? 0.35 : 1);
+    const to = (w.windToDeg ?? 0) * Math.PI / 180; const wm = w.windMs * (reduced ? 0.12 : 0.4); snowUniforms.uWind.value.set(Math.sin(to) * wm, 0, -Math.cos(to) * wm);
     // camera
     const target = state.agents.find((a) => a.id === followId && !a.outcome) ?? state.agents.find((a) => !a.outcome) ?? state.creatures[0];
     if (target) {
@@ -216,7 +216,7 @@ export function makeScene3D(canvas, world, { pixelRatio = Math.min(2, globalThis
       else if (cameraMode === 'first' && target.kind === 'survivor') { want = toScene(x, y, z + 1.7); look = toScene(x + Math.sin(h) * 10, y + Math.cos(h) * 10, z + 1.4); }
       else { want = toScene(x - Math.sin(h) * 11, y - Math.cos(h) * 11, z + 6.5); look = toScene(x + Math.sin(h) * 3, y + Math.cos(h) * 3, z + 1.2); }
       if (!camInit) { camPos.copy(want); camLook.copy(look); camInit = true; }
-      camPos.lerp(want, 0.08); camLook.lerp(look, 0.12);
+      camPos.lerp(want, reduced ? 0.3 : 0.08); camLook.lerp(look, reduced ? 0.3 : 0.12); // reduced motion: no long glides
       camera.position.copy(camPos); camera.lookAt(camLook);
       for (const m of agentMeshes.values()) m.visible = m.visible && !(cameraMode === 'first' && m === agentMeshes.get(target.id));
     }
@@ -228,6 +228,7 @@ export function makeScene3D(canvas, world, { pixelRatio = Math.min(2, globalThis
     ...view, update, render, resize,
     setCamera(mode) { cameraMode = mode; camInit = false; },
     follow(id) { followId = id; },
+    setReducedMotion(v) { reduced = !!v; },
     get cameraMode() { return cameraMode; },
     stats: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
   };

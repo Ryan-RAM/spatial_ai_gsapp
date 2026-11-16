@@ -18,6 +18,7 @@ import { makeDesigner } from './designer.js';
 import { fetchTonight } from '../sim/tonight.js';
 import { drawWeather, describeObservation } from '../render/weatherPanel.js';
 import { drawHeat } from '../render/heatmap.js';
+import { makeAudio } from './audio.js';
 import { decodePlan } from '../sim/presets.js';
 
 const $ = (id) => document.getElementById(id);
@@ -61,7 +62,16 @@ function stepSim(n) {
   }
 }
 function fmtTime(t) { return new Date(Date.UTC(2016, 0, 1) + t * 1000).toISOString().slice(11, 16); }
+// sound (M9.1): off until asked for; follows the survivor in view
+const audio = makeAudio(); let heardSeen = -1;
+function sound() {
+  const s = round.state; const a = s.agents.find((x) => x.id === followId && !x.outcome); const c = s.creatures[0];
+  let danger = 0; if (a && c) { const [ax, ay] = world.center(a.cell); const [cx, cy] = world.center(c.cell); danger = Math.max(0, 1 - Math.hypot(ax - cx, ay - cy) / 60); }
+  audio.update(s.weather?.windMs ?? 0, danger);
+  const heard = a ? Math.max(-1, ...a.k.threats.filter((t) => t.how === 'heard').map((t) => t.tick)) : -1; if (heard > heardSeen) audio.creak(); heardSeen = heard; // the tick it last heard the creature
+}
 function hud() {
+  sound();
   const s = round.state; const w = s.weather;
   const lines = s.agents.map((a) => `Survivor ${a.id + 1}: ${a.outcome ?? SURVIVOR_STATES[a.state] ?? a.state ?? '…'} · warmth ${Math.round(a.warmth)} · ${frames.describeN(...world.center(a.cell))}`);
   const c = s.creatures[0]; if (c) lines.push(`Creature: ${CREATURE_STATES[c.state] ?? c.state}`);
@@ -97,14 +107,23 @@ for (const [name, label] of Object.entries(LAYERS)) {
   cb.addEventListener('change', () => { map.setLayer(name, cb.checked); map.draw(round.state); }); l.append(cb, ` ${label}`); $('layers').append(l);
 }
 const fmt = (v, d = 1) => (v == null ? '—' : v.toFixed(d));
-$('map').addEventListener('click', (e) => {
-  const r = e.target.getBoundingClientRect(); const k = devicePixelRatio || 1;
-  const p = map.pick((e.clientX - r.left) * k, (e.clientY - r.top) * k); if (!p) return;
+function showPick(px, py) {
+  const p = map.pick(px, py); if (!p) return;
   $('pick').innerHTML = `<dl><dt>W</dt><dd>${fmt(p.x)} m E, ${fmt(p.y)} m N · cell (${p.i}, ${p.j}) · z ${fmt(p.z)} m · ${p.cover} · snow ${fmt(p.snowCm, 0)} cm</dd>`
     + `<dt>P</dt><dd>${p.P ? `edge ${p.P.edge}${p.P.name ? ` (${p.P.name})` : ''}, ${fmt(p.P.s)} m along, ${fmt(Math.abs(p.P.offset))} m to the ${p.P.offset >= 0 ? "left" : "right"}` : '—'}</dd>`
     + `<dt>N</dt><dd>${p.N ? p.N.words : '—'}</dd>`
     + `<dt>E</dt><dd>${p.E ? `${fmt(p.E.distance)} m, ${fmt(Math.abs(p.E.bearing), 0)}° ${p.E.bearing >= 0 ? 'right' : 'left'} of Survivor ${followId + 1}\u2019s heading` : '—'}</dd></dl>`;
   map.draw(round.state);
+}
+$('map').addEventListener('click', (e) => { const r = e.target.getBoundingClientRect(); const k = devicePixelRatio || 1; showPick((e.clientX - r.left) * k, (e.clientY - r.top) * k); });
+// the keyboard (M9.2): arrows move the picked point 6 m (Shift: 30 m), starting at the followed survivor
+let cursor = null;
+$('map').addEventListener('keydown', (e) => {
+  const step = e.shiftKey ? 30 : 6; const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+  if (!d && e.key !== 'Enter') return; e.preventDefault();
+  if (!cursor) { const a = round.state.agents.find((x) => x.id === followId) ?? round.state.agents[0]; cursor = world.center(a.cell); }
+  if (d) cursor = [Math.min(world.maxX, Math.max(world.minX, cursor[0] + d[0])), Math.min(world.maxY, Math.max(world.minY, cursor[1] + d[1]))];
+  showPick(...map.toPx(cursor[0], cursor[1]));
 });
 $('next').addEventListener('click', () => { roundIdx++; startRound(); $('next').hidden = true; });
 addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); $('play').click(); } });
@@ -120,9 +139,11 @@ window.__app = { world, view, pool, designer, watchPlan, get round() { return ro
 
 // ---------------------------------------------------------------- the interface (M5.4)
 const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-if (prefersReduced) speed = 10;
+if (prefersReduced) { speed = 10; $('speed').textContent = '10×'; }
 const root = document.documentElement;
 try { const t = localStorage.getItem('frostroot-theme'); if (t) root.dataset.theme = t; } catch { /* storage may be blocked */ }
+$('sound').addEventListener('click', (e) => { const on = audio.toggle(); e.target.textContent = on ? 'Sound on' : 'Sound off'; e.target.setAttribute('aria-pressed', String(on)); });
+view.setReducedMotion?.(prefersReduced);
 $('theme').addEventListener('click', () => {
   const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   root.dataset.theme = dark ? 'light' : 'dark';
@@ -222,14 +243,16 @@ $('dataNote').textContent = dataNote2016;
     const env = byId[id]; if (!env) continue; const m = env.metrics;
     const card = document.createElement('article'); card.className = 'gallery-card'; card.id = `g-${id}`;
     card.innerHTML = `<img alt="Map of ${env.title}: interventions, where survivors and the creature went, and how each night ended" width="488" height="430"><h3></h3><p class="nums"></p><p class="story"></p><button type="button">Load this environment</button>`;
-    card.querySelector('h3').textContent = env.title;
+    card.querySelector('h3').textContent = env.title; card.querySelector('button').setAttribute('aria-label', `Load the environment \u201c${env.title}\u201d`);
     card.querySelector('.nums').textContent = `F ${m.F.toFixed(3)} · escaped ${pct(m.escapeRate)} · caught ${pct(m.catchRate)} · cold ${pct(m.collapseRate)} · lost ${pct(m.lostRate)} · cost ${Math.round(m.cost)} — ${env.how}`;
     card.querySelector('.story').textContent = st.stories[id];
     card.querySelector('button').addEventListener('click', () => { const p = decodePlan(env.plan); watchPlan(p); designer.adopt(p, env.title); $('view').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('status').textContent = `Watching "${env.title}".`; });
     $('galleryList').append(card); cards.push([card, env]);
   }
   // drawn once into an image (static images are far cheaper to keep on screen than live canvases)
-  const off = document.createElement('canvas'); off.style.cssText = 'position:absolute;left:-9999px;width:488px;height:430px'; document.body.append(off);
-  for (const [card, env] of cards) { drawHeat(off, world, env); card.querySelector('img').src = off.toDataURL('image/png'); }
-  off.remove();
+  const off = document.createElement('canvas'); off.setAttribute('aria-hidden', 'true'); off.style.cssText = 'position:absolute;left:-9999px;width:488px;height:430px'; document.body.append(off);
+  // after the page is up, one map per idle slot (each takes a few ms)
+  const idle = (f) => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(f, 50));
+  let q = 0; const next = () => { if (q >= cards.length) { off.remove(); return; } const [card, env] = cards[q++]; drawHeat(off, world, env); card.querySelector('img').src = off.toDataURL('image/png'); idle(next); };
+  idle(next);
 }

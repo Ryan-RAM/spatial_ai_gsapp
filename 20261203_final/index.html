@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frostroot: The Ramble</title>
   <meta name="description" content="Design Central Park's Ramble for the night of the January 2016 blizzard: plow paths, place lamps, shelters and signs, and watch who gets out before the creature of roots or the cold finds them.">
-  <link rel="stylesheet" href="style.css?v=20261203h">
+  <link rel="stylesheet" href="style.css?v=20261203k">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203h"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203j"
       }
     }
   </script>
@@ -41,7 +41,7 @@
     <p class="status" id="status" role="status">Loading the Ramble and the storm…</p>
     <section id="app" hidden>
       <div class="stage">
-        <canvas id="view" tabindex="0" aria-label="3D view of the Ramble in the blizzard, following a survivor"></canvas>
+        <canvas id="view" tabindex="0" aria-describedby="clock agents" aria-label="3D view of the Ramble in the blizzard, following a survivor"></canvas>
         <div class="hud"><p id="clock"></p><pre id="agents"></pre></div>
       </div>
       <div class="controls" role="toolbar" aria-label="Simulation controls">
@@ -53,6 +53,7 @@
         <label>Weather <select id="weatherSel"><option value="2016">January 2016 (recorded)</option><option value="tonight">Tonight (live, NWS)</option></select></label>
         <span class="spacer"></span>
         <button id="help" type="button" aria-haspopup="dialog">How to read this</button>
+        <button id="sound" type="button" aria-pressed="false" title="Wind from the record; a heartbeat when the creature is near">Sound off</button>
         <button id="theme" type="button" aria-label="Switch light and dark interface">Light / dark</button>
       </div>
       <figure class="timeline">
@@ -71,7 +72,7 @@
         <dl id="metrics"></dl>
       </section>
       <div class="mapwrap">
-        <canvas id="map" aria-label="Map of the study area: ground cover, paths, agents, their knowledge, tracks and landmarks. Click a point to see it in every frame of reference."></canvas>
+        <canvas id="map" tabindex="0" aria-describedby="pick" aria-label="Map of the study area: ground cover, paths, agents, their knowledge, tracks and landmarks. Click a point, or use the arrow keys, to see it in every frame of reference."></canvas>
         <div class="mapside">
           <fieldset id="layers"><legend>Map layers</legend></fieldset>
           <div id="pick" class="pick" aria-live="polite"><p>Click the map to see a point in every frame of reference (W, P, N, E).</p></div>
@@ -120,7 +121,18 @@
     </section>
   </main>
   <footer class="page-foot">
-    <p>Ryan Fu, Lu Liu, Yifan Zhao &middot; ARCH6956-1, William Martin</p>
+    <p>Ryan Fu, Lu Liu, Yifan Zhao &middot; ARCH6956-1, William Martin &middot; <a href="diagrams.html">How it works</a> &middot; <a href="deck.html">Slides</a></p>
+    <details class="credits">
+      <summary>Credits and licences</summary>
+      <ul>
+        <li>Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, available under the <a href="https://opendatacommons.org/licenses/odbl/1-0/">Open Database License 1.0</a>. The derived map files of this site are under the ODbL too.</li>
+        <li>Terrain and trees: 2017 New York City Topobathymetric LiDAR, <a href="https://coast.noaa.gov/digitalcoast/">NOAA Office for Coastal Management, Digital Coast</a>, collected for the City of New York (U.S. Government work).</li>
+        <li>Weather of January 2016: Central Park (KNYC) observations of the U.S. National Weather Service, from the <a href="https://mesonet.agron.iastate.edu/">Iowa Environmental Mesonet</a>, Iowa State University. Tonight mode: the <a href="https://www.weather.gov/documentation/services-web-api">National Weather Service API</a>.</li>
+        <li><a href="https://threejs.org/">three.js</a> (MIT). The trees, people, creature, snow, maps and sounds are original and made in code; the type is your device's system font.</li>
+        <li>Code: MIT licence. Every source and licence: <a href="docs/credits.md">docs/credits.md</a>, <a href="data/baked/LICENSE.md">data/baked/LICENSE.md</a>.</li>
+        <li>A design exercise with tunable defaults, set on a real night on which real people were affected; not emergency advice. No institution named here is involved in or endorses it.</li>
+      </ul>
+    </details>
   </footer>
   <script type="module" src="./src/ui/main.js"></script>
 </body>

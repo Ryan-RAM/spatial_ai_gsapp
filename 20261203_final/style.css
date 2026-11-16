@@ -144,3 +144,10 @@ label > select { min-width: 0; flex: 1 1 auto; }
 .gallery-card button { align-self: flex-start; }
 .key { white-space: nowrap; margin-right: 8px; }
 @media (max-width: 420px) { .gallery-list { grid-template-columns: 1fr; } }
+
+:root { --link: #8a4510; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --link: var(--warm); } }
+:root[data-theme="dark"] { --link: var(--warm); }
+a { color: var(--link); }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.credits { margin-top: 8px; } .credits summary { cursor: pointer; } .credits ul { padding-left: 18px; line-height: 1.5; }

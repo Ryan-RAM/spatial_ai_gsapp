@@ -4,7 +4,7 @@ import { pointOnEdge } from '../sim/interventions.js';
 
 // a small picture of a plan: the paths, plowed (light) and closed (red), lamps and shelters (warm)
 export function thumbnail(world, plan, size = 64) {
-  const c = document.createElement('canvas'); c.width = size; c.height = Math.round(size * world.H / world.W);
+  const c = document.createElement('canvas'); c.setAttribute('aria-hidden', 'true'); c.width = size; c.height = Math.round(size * world.H / world.W); // decorative: the node's text says it
   const g = c.getContext('2d'); const sx = size / (world.maxX - world.minX); const sy = c.height / (world.maxY - world.minY);
   const P = (x, y) => [(x - world.minX) * sx, (world.maxY - y) * sy];
   g.fillStyle = '#121729'; g.fillRect(0, 0, c.width, c.height);

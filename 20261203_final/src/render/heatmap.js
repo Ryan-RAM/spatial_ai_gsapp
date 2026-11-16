@@ -7,18 +7,29 @@ import { PALETTE, hex } from './palette.js';
 
 export function drawHeat(canvas, world, env) {
   const k = devicePixelRatio || 1; canvas.width = canvas.clientWidth * k; canvas.height = canvas.clientHeight * k;
-  const g = canvas.getContext('2d'); const W = canvas.width; const H = canvas.height;
+  const g = canvas.getContext('2d', { willReadFrequently: true }); const W = canvas.width; const H = canvas.height;
   const sc = Math.min(W / world.W, H / world.H); const ox = (W - world.W * sc) / 2; const oy = (H - world.H * sc) / 2;
   const px = (x, y) => [ox + ((x - world.minX) / world.s) * sc, oy + ((world.maxY - y) / world.s) * sc];
   const cell = (c) => [ox + (c % world.W) * sc, oy + Math.floor(c / world.W) * sc];
   g.fillStyle = '#0b1020'; g.fillRect(0, 0, W, H);
-  for (let c = 0; c < world.n; c++) if (world.cover[c]) { const v = world.cover[c]; g.fillStyle = v === 7 ? '#101a30' : v === 1 || v === 2 ? '#3a4260' : v === 3 ? '#1f2740' : '#171d33'; const [x, y] = cell(c); g.fillRect(x, y, sc + 0.5, sc + 0.5); }
+  // cover and heat, one pixel per cell, then scaled up in one drawImage (fast even without a GPU)
+  const img = new ImageData(world.W, world.H); const d = img.data;
+  const COV = { 7: [16, 26, 48], 1: [58, 66, 96], 2: [58, 66, 96], 3: [31, 39, 64] };
+  for (let c = 0; c < world.n; c++) { if (!world.cover[c]) { d.set([11, 16, 32, 255], c * 4); continue; } d.set([...(COV[world.cover[c]] ?? [23, 29, 51]), 255], c * 4); }
+  const heat = (flat, rgb, cap) => {
+    let mx = 1; for (let q = 1; q < flat.length; q += 2) mx = Math.max(mx, flat[q]);
+    for (let q = 0; q < flat.length; q += 2) {
+      const a = Math.min(1, 0.25 + Math.log1p(flat[q + 1]) / Math.log1p(mx)) * cap; const o = flat[q] * 4;
+      for (let k = 0; k < 3; k++) d[o + k] = d[o + k] * (1 - a) + rgb[k] * a;
+    }
+  };
+  heat(env.heat.creature, [120, 230, 150], 0.75); heat(env.heat.survivor, [210, 225, 255], 0.9);
+  const tmp = document.createElement('canvas'); tmp.width = world.W; tmp.height = world.H; tmp.getContext('2d', { willReadFrequently: true }).putImageData(img, 0, 0); // CPU canvases: no GPU round trips
+  g.imageSmoothingEnabled = false; g.drawImage(tmp, ox, oy, world.W * sc, world.H * sc);
   const plan = decodePlan(env.plan);
   const edge = (e, col, w) => { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); world.paths.edges[e].pts.forEach(([x, y], q) => { const [a, b] = px(x, y); q ? g.lineTo(a, b) : g.moveTo(a, b); }); g.stroke(); };
   for (const e of plan.plowed) edge(e, '#dfe6f3', Math.max(2, sc * 1.2));
   for (const e of plan.closed) edge(e, '#e0505a', Math.max(2, sc * 1.2));
-  const heat = (flat, rgb, cap) => { let mx = 1; for (let q = 1; q < flat.length; q += 2) mx = Math.max(mx, flat[q]); for (let q = 0; q < flat.length; q += 2) { const a = Math.min(1, 0.25 + Math.log1p(flat[q + 1]) / Math.log1p(mx)) * cap; const [x, y] = cell(flat[q]); g.fillStyle = `rgba(${rgb},${a})`; g.fillRect(x - sc * 0.3, y - sc * 0.3, sc * 1.6, sc * 1.6); } };
-  heat(env.heat.creature, '120,230,150', 0.55); heat(env.heat.survivor, '210,225,255', 0.8);
   for (const l of plan.lamps) { const [x, y] = px(...pointOnEdge(world, l.edge, l.s)); g.fillStyle = hex(PALETTE.warm); g.beginPath(); g.arc(x, y, Math.max(3, sc * 1.3), 0, 7); g.fill(); }
   for (const nd of plan.shelters) { const n = world.paths.nodes[nd]; const [x, y] = px(n.x, n.y); const r = Math.max(5, sc * 2.4); g.fillStyle = hex(PALETTE.warm); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
   for (const s of plan.signs) { const [x, y] = px(...pointOnEdge(world, s.edge, s.s)); const r = Math.max(4, sc * 1.8); g.fillStyle = '#e8f0ff'; g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y + r); g.lineTo(x - r, y + r); g.fill(); }
