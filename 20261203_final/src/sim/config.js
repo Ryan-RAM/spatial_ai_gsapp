@@ -70,6 +70,13 @@ export const CONFIG = {
     windMax: 0.3,                  // w = 0.3 x min(wind / 10 m/s, 1)
   },
   walkQuietM: 18,                  // rule M3: walking steps count as 18 m farther
+
+  // ---------------------------------------------------------------- snow and tracks (§4.2, rules S, T)
+  hindranceCm: 40,                 // S2
+  plowedCm: 5,                     // S3
+  trackFillCm: 3,                  // T2: a track is gone once 3 cm of new snow fill it (D-024; model: 10)
+  trackWindCoef: 6,                // T2: fill x (1 + 6 x openness x windFactor) (D-024; model: 2)
+  snowUpdateTicks: 15,             // recompute the snow layer every 15 ticks (30 s of storm time)
   gustMask: 0.02,                  // threshold x max(0.4, 1 - 0.02 x gust in kt) (§6.2)
 
   // ---------------------------------------------------------------- rounds and evaluation (§7.9, §11.4)
