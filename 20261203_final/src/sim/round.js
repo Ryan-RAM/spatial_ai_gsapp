@@ -22,6 +22,7 @@ import { updateWarmth } from './warmth.js';
 import { applyPlan, emptyPlan, spawnCells, exitCells } from './interventions.js';
 import { makeKnowledge } from './knowledge.js';
 import { survivorBrain } from './survivor.js';
+import { nearestExitTime } from './paths.js';
 import { creatureBrain, newMemory, mapTheWoods } from './creature.js';
 
 // the suite of §11.4: start times x spawn zones x seeds, in a fixed order
@@ -87,7 +88,7 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
       ctx.walker = walkers[a.kind];
       if (a.kind === 'creature') state.lastSounds = state.lastSounds.concat(state.sounds); // hears this tick's steps too
       (a.kind === 'creature' ? brains.creature : brains.survivor)(a, ctx);
-      if (!a.inShelter) advance(a, ctx);
+      if (!a.inShelter) { const st = advance(a, ctx); a.walkedM = (a.walkedM ?? 0) + st * world.s; }
     }
     for (const c of creatures) if (c.memory) c.memory.lastCell = c.cell;
     // warmth, escapes, collapses
@@ -95,6 +96,7 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
       if (a.outcome) continue;
       a.warmth = updateWarmth(config, a.warmth, config.tickSeconds, weather, world.openness[a.cell] / 255, a.inShelter && L.shelter[a.cell] >= 0);
       a.minWarmth = Math.min(a.minWarmth, a.warmth);
+      if (world.openness[a.cell] > 153) a.exposedTicks = (a.exposedTicks ?? 0) + 1; // openness > 0.6
       if (exits.has(a.cell)) finish(a, 'escaped');
       else if (a.warmth <= 0) finish(a, 'collapsed');
     }
@@ -117,10 +119,16 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
   }
   function run() { while (!state.done) step(); return result(); }
   function result() {
+    // path efficiency (§11.1): the shortest true route from the start to an exit, in the snow of
+    // the start, for those who escaped (one Dijkstra field per round, only if needed)
+    if (agents.some((a) => a.outcome === 'escaped' && a.shortestS == null)) {
+      const snow0 = makeSnow(world); snow0.plowed.set(L.plowed); snow0.update(storm.at(t0));
+      for (const a of agents) if (a.outcome === 'escaped') a.shortestS = nearestExitTime(walkers.survivor, a.startCell, exits, snow0.depth, L.closed);
+    }
     return {
       id: `${start}/${zone}/${seed}`, start, zone, seed, ticks: state.tick,
-      survivors: agents.map((a) => ({ outcome: a.outcome, tick: a.outcomeTick, minWarmth: +a.minWarmth.toFixed(3), start: a.startCell, end: a.cell, timesSeen: a.timesSeen, closeTicks: a.closeTicks, steps: a.k.trail.length })),
-      creatures: creatures.map((c) => ({ catches: c.catches, end: c.cell, state: c.state ?? null })),
+      survivors: agents.map((a) => ({ outcome: a.outcome, tick: a.outcomeTick, minWarmth: +a.minWarmth.toFixed(3), startWarmth: +(a.startWarmth ?? 0).toFixed(3), start: a.startCell, end: a.cell, timesSeen: a.timesSeen, closeTicks: a.closeTicks, exposedTicks: a.exposedTicks ?? 0, steps: a.k.trail.length, confusions: a.confusions ?? 0, shortestS: a.shortestS != null && Number.isFinite(a.shortestS) ? +a.shortestS.toFixed(1) : null })),
+      creatures: creatures.map((c) => ({ catches: c.catches, end: c.cell, state: c.state ?? null, walkedM: c.walkedM ?? 0 })),
     };
   }
   return { state, step, run, result };

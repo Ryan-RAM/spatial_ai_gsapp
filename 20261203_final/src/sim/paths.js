@@ -115,3 +115,10 @@ export function walkerFor(world, kind, config) {
   if (!cache.has(world)) cache.set(world, {});
   const c = cache.get(world); return (c[kind] ??= makeWalker(world, kind, config));
 }
+
+// the time from a cell to the nearest of a set of cells (e.g. the exits), on the true map
+export function nearestExitTime(walker, from, exitSet, snow, closed = null) {
+  const field = walker.field(from, { snow, speedOf: closed ? (k) => (closed[k] ? 0 : walker.base[k]) : null });
+  let best = Infinity; for (const e of exitSet) if (field[e] < best) best = field[e];
+  return best;
+}

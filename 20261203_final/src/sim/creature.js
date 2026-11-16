@@ -158,11 +158,14 @@ export function creatureBrain(c, ctx) {
   }
   if (c.state === 'patrolling' && (!c.goal || c.cell === c.goal)) c.goal = patrolTarget(world, k, c);
   // ---- plan (at most every few ticks, unless it has nowhere to go or something new happened)
-  const due = !c.route || c.routeIdx + 1 >= c.route.length || c.needsPlan || (target && tick - (c.plannedAt ?? -99) >= config.replanEveryTicks);
+  // M3.7: at most one plan every replanEveryTicks while it has a route; at once when idle
+  const since = tick - (c.plannedAt ?? -99); const idle = !c.route || c.routeIdx + 1 >= c.route.length;
+  const due = idle ? since >= 1 : since >= config.replanEveryTicks && (c.needsPlan || target);
   if (due && c.goal != null && c.goal !== c.cell) {
     c.extraCost = c.extraCost ?? lightCost(world, config, layers);
     const r = plan(ctx.walker, k, c.cell, { to: c.goal, snow: ctx.snow.depth, extra: c.extraCost, unknown: () => 0.5 });
     c.route = r ? r.cells : null; c.routeIdx = 0; c.plannedAt = tick; c.needsPlan = false;
+    c.planCount = (c.planCount ?? 0) + 1;
     if (!r) c.goal = null;
   }
   c.running = c.state === 'chasing';
