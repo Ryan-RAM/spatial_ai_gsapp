@@ -2,6 +2,16 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M5.1 style frame, checkpoint
+
+**Done**
+- M4.1/4.2/4.4: full bench, every measured target met (round 62 ms, suite 0.72 s on 4 threads).
+- M5.1 style frame: `style-frame.html` renders the path west of Azalea Pond at 19:00 from the real data (terrain, 79 LiDAR trees, 66 cm of snow with drift, fog from the recorded 745 m visibility, snowfall rate), stylised with a toon ramp, outlines and the warm = safety palette; `docs/style-frame.png` (2x), `docs/style-frame.md` (what is data, what is stylised, 5 reference directions, open questions); palette tokens in `src/render/palette.js`; reusable pieces in `src/render/kit.js`.
+
+**Waiting for Ryan** (CLAUDE.md §2.6 checkpoint): the style frame, and the PR Ryan-RAM/spatial_ai_gsapp#3 (sync of 20261110_agents) is still open.
+
+**Next after the OK**: M5.2 3D view (InstancedMesh trees, snow height texture, live agents), M4.3 render timing, M5.3 2D map, M5.4 UI.
+
 ## 2026-11-16 (continued): M3 done
 
 **Done**

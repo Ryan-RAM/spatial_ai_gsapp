@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frostroot Style Frame</title>
+  <meta name="description" content="Style frame of Frostroot: The Ramble: the path just west of Azalea Pond at 19:00 on 23 January 2016, real terrain, trees, snow and visibility, stylised.">
+  <style>
+    :root { --bg: #0b1020; --fg: #dfe6f3; --muted: #8a86a8; color-scheme: dark; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { margin: 0; background: var(--bg); color: var(--fg); }
+    #frame { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+    .cap { position: absolute; left: 16px; bottom: 12px; font-size: 13px; color: var(--muted); text-shadow: 0 1px 2px #000; max-width: calc(100% - 32px); }
+    .wrap { position: relative; }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="frame" width="1600" height="900" aria-label="The Ramble at 19:00 in the blizzard: two survivors with flashlights on a path west of Azalea Pond, a lamp, and a creature of roots among the trees"></canvas>
+    <p class="cap" id="cap">Loading the Ramble…</p>
+  </div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { loadWorldFromUrl } from './src/sim/load.js';
+    import { makeStorm, localSeconds } from './src/sim/storm.js';
+    import { makeSnow } from './src/sim/snow.js';
+    import { makeFrames } from './src/sim/frames.js';
+    import { makeRng } from './src/sim/rng.js';
+    import { PALETTE } from './src/render/palette.js';
+    import { snowSurface, tree, survivor, creature, lamp, snowfall, footprints, toScene } from './src/render/kit.js';
+
+    const world = await loadWorldFromUrl(new URL('./data/baked/', location.href));
+    const storm = makeStorm(await (await fetch('./data/baked/storm-2016-01.json')).json());
+    const s = storm.at(localSeconds('2016-01-23T19:00'));
+    const snow = makeSnow(world); snow.update(s);
+    const F = makeFrames(world); const rnd = makeRng(20260123).next;
+
+    // the scene: the path just west of Azalea Pond (§15), 120 x 90 m
+    const cx = -58, cy = -214; const win = { minX: cx - 60, maxX: cx + 60, minY: cy - 50, maxY: cy + 40, step: 1 };
+    const canvas = document.getElementById('frame');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(1); renderer.setSize(1600, 900, false);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(PALETTE.sky);
+    // fog from the recorded visibility: extinction sigma = 3.912 / V (contrast 2 % at V)
+    scene.fog = new THREE.FogExp2(PALETTE.fog, 3.912 / s.visibilityM);
+    scene.add(new THREE.HemisphereLight(0x6f7fb0, 0x1a1f33, 0.9));
+    const moon = new THREE.DirectionalLight(0x9fb3e6, 0.55); moon.position.set(-40, 60, 30); scene.add(moon);
+
+    const depthAt = (x, y) => { const k = world.cellOf(x, y); return k >= 0 ? snow.depth[k] / 100 : 0; };
+    scene.add(snowSurface(world, snow.depth, win));
+    // camera and subject first: trees standing on the line of sight to the subject are left out
+    // (the only liberty with the data; every other tree is at its real place and size)
+    const P0 = F.toP(cx, cy); const [sx0, sy0] = F.fromP({ edge: P0.edge, s: P0.s, offset: 0 });
+    const camXY = [sx0 - 15, sy0 - 13];
+    const blocks = (x, y) => { const vx = sx0 - camXY[0], vy = sy0 - camXY[1]; const L2 = vx * vx + vy * vy; const t = Math.max(0, Math.min(1, ((x - camXY[0]) * vx + (y - camXY[1]) * vy) / L2)); return Math.hypot(x - camXY[0] - t * vx, y - camXY[1] - t * vy) < 3 || Math.hypot(x - camXY[0], y - camXY[1]) < 6; };
+    // the real trees in the window
+    let nTrees = 0; let nLeft = 0;
+    for (let t = 0; t < world.trees.count; t++) {
+      const [x, y, z, h, cr, tr] = world.trees.data.subarray(t * 6, t * 6 + 6);
+      if (x < win.minX || x > win.maxX || y < win.minY || y > win.maxY) continue;
+      if (blocks(x, y)) { nLeft++; continue; }
+      scene.add(tree({ x, y, z: world.groundAt(x, y) + depthAt(x, y) * 0.2, h, crown: cr, trunk: tr, evergreen: !!world.trees.evergreen[t] }, rnd)); nTrees++;
+    }
+    // the survivors on the path, a lamp a little ahead, the creature among the trees behind
+    const P = F.toP(cx, cy); const edge = world.paths.edges[P.edge];
+    const [px, py] = F.fromP({ edge: P.edge, s: P.s, offset: 0 });
+    const [qx, qy] = F.fromP({ edge: P.edge, s: Math.min(edge.len, P.s + 2.2), offset: 0 });
+    const heading = (Math.atan2(qx - px, qy - py) * 180 / Math.PI + 360) % 360;
+    const place = (obj, x, y, lift = 0) => { obj.position.copy(toScene(x, y, world.groundAt(x, y) + depthAt(x, y) * 0.55 + lift)); scene.add(obj); return obj; };
+    place(survivor({ coat: PALETTE.coat1, heading }), px, py);
+    place(survivor({ coat: PALETTE.coat2, heading: heading + 12 }), px - 1.6 * Math.sin(heading * Math.PI / 180) + 1.1, py - 1.6 * Math.cos(heading * Math.PI / 180) - 0.6);
+    const [lx, ly] = F.fromP({ edge: P.edge, s: Math.max(0, P.s - 9), offset: 1.6 });
+    place(lamp(), lx, ly);
+    // footprints behind them along the path
+    const steps = []; for (let d = 1; d < 16; d += 0.7) { const [fx, fy] = F.fromP({ edge: P.edge, s: Math.max(0, P.s - d), offset: 0 }); steps.push([fx, fy, -heading * Math.PI / 180]); }
+    scene.add(footprints(world, depthAt, steps));
+    // the creature: among the trees 14 m off to the side, in profile toward them, its eyes to the camera
+    const cxr = px + 10, cyr = py - 9; const ch = (Math.atan2(px - cxr, py - cyr) * 180 / Math.PI + 360) % 360 - 35;
+    place(creature(makeRng(7).next, { heading: ch }), cxr, cyr, -0.3);
+    // falling snow from the snowfall rate
+    const cam = new THREE.PerspectiveCamera(42, 16 / 9, 0.3, 400);
+    const eye = toScene(camXY[0], camXY[1], world.groundAt(px, py) + 6.5); cam.position.copy(eye);
+    cam.lookAt(toScene(px + 3, py + 1, world.groundAt(px, py) + 1.2));
+    scene.add(snowfall(cam.position, 70, s.snowRateCmH, rnd));
+    renderer.render(scene, cam);
+    document.getElementById('cap').textContent = `The Ramble, west of Azalea Pond · 23 Jan 2016, 19:00 · ${s.tempC.toFixed(0)} °C, wind ${s.windFromDeg.toFixed(0)}° ${s.windMs.toFixed(1)} m/s, visibility ${Math.round(s.visibilityM)} m, ${s.cumSnowCm.toFixed(0)} cm of snow · ${nTrees} real trees (${nLeft} on the sightline left out)`;
+    window.__styleFrameReady = true;
+  </script>
+</body>
+</html>
