@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frostroot: The Ramble</title>
   <meta name="description" content="Design Central Park's Ramble for the night of the January 2016 blizzard: plow paths, place lamps, shelters and signs, and watch who gets out before the creature of roots or the cold finds them.">
-  <link rel="stylesheet" href="style.css?v=20261203a">
+  <link rel="stylesheet" href="style.css?v=20261203e">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203c"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203d"
       }
     }
   </script>
@@ -26,11 +26,22 @@
     <h1>Frostroot<span>:</span> The Ramble</h1>
     <p class="lede">23 January 2016, the night of the record blizzard. Something made of roots wakes up in the Ramble. You design the park for the storm night: who gets out?</p>
   </header>
+  <dialog id="intro" aria-labelledby="introTitle">
+    <h2 id="introTitle">How to read this</h2>
+    <p>This is the Ramble in Central Park on the night of the January 2016 blizzard: real paths, terrain, trees and hour-by-hour weather. Two survivors try to reach Fifth Avenue. Something made of roots hunts them, and the cold works against them too.</p>
+    <ul>
+      <li><b>Warm light means safety</b>: lamps, flashlights, warming shelters.</li>
+      <li>The <b>3D view</b> follows a survivor; the <b>map</b> below shows what each agent knows, their tracks, landmarks and plans.</li>
+      <li>The <b>timeline</b> is the real storm: click an hour to start the next round then.</li>
+      <li>Keys: <kbd>Space</kbd> play/pause · <kbd>+</kbd>/<kbd>−</kbd> speed · <kbd>C</kbd> camera · <kbd>1</kbd>/<kbd>2</kbd> follow · <kbd>K</kbd> what the agent knows · <kbd>N</kbd> next round</li>
+    </ul>
+    <form method="dialog"><button type="submit" autofocus>Into the woods</button></form>
+  </dialog>
   <main class="app">
     <p class="status" id="status" role="status">Loading the Ramble and the storm…</p>
     <section id="app" hidden>
       <div class="stage">
-        <canvas id="view" aria-label="3D view of the Ramble in the blizzard, following a survivor"></canvas>
+        <canvas id="view" tabindex="0" aria-label="3D view of the Ramble in the blizzard, following a survivor"></canvas>
         <div class="hud"><p id="clock"></p><pre id="agents"></pre></div>
       </div>
       <div class="controls" role="toolbar" aria-label="Simulation controls">
@@ -39,7 +50,18 @@
         <label>Camera <select id="camera"><option value="follow">Third person</option><option value="overview">Overview</option><option value="first">First person</option></select></label>
         <label>Follow <select id="followSel"><option value="0">Survivor 1</option><option value="1">Survivor 2</option></select></label>
         <button id="next" type="button" hidden>Next round</button>
+        <span class="spacer"></span>
+        <button id="help" type="button" aria-haspopup="dialog">How to read this</button>
+        <button id="theme" type="button" aria-label="Switch light and dark interface">Light / dark</button>
       </div>
+      <figure class="timeline">
+        <canvas id="timeline" tabindex="0" aria-label="The storm from 17:00 to 05:00: snowfall bars and visibility line; click or use the arrow keys to choose the start of the next round"></canvas>
+        <figcaption id="tlcap">The night of 23–24 January 2016 at Central Park: snowfall per hour (bars) and visibility (line). Next round starts at <b id="tlnext">17:00</b>.</figcaption>
+      </figure>
+      <section class="metrics" aria-labelledby="metricsTitle">
+        <h2 id="metricsTitle">This night so far</h2>
+        <dl id="metrics"></dl>
+      </section>
       <div class="mapwrap">
         <canvas id="map" aria-label="Map of the study area: ground cover, paths, agents, their knowledge, tracks and landmarks. Click a point to see it in every frame of reference."></canvas>
         <div class="mapside">
