@@ -12,6 +12,10 @@
     "fetch:osm": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/fetch-osm.mjs",
     "bake:meta": "node data/scripts/bake-meta.mjs",
     "bake:osm": "node data/scripts/bake-osm.mjs",
-    "bake:terrain": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-terrain.mjs"
+    "bake:terrain": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-terrain.mjs",
+    "bake:trees": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-trees.mjs"
+  },
+  "devDependencies": {
+    "copc": "0.0.9"
   }
 }

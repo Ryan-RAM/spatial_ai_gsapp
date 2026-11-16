@@ -14,10 +14,10 @@ import { openGeoTiff, httpRangeReader, readWindow } from '../../src/data/geotiff
 import { toStatePlane, fromStatePlane, FT_US } from '../../src/data/stateplane.js';
 import { slopeDeg, terrainOpenness, upwindSx, driftFromSx, WIND_DIRS } from '../../src/data/terrain.js';
 import { parseOsmXml } from '../../src/data/osm.js';
+import { DEM_URL } from '../../src/data/sources.js';
 import { areas, project } from '../../src/data/osm-features.js';
 import { pointInRings } from '../../src/data/raster.js';
 
-export const DEM_URL = 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NYC_topobathy_BE_DEM_2017_9307/be_NYC_025.tif';
 const MARGIN = 60;   // m around the bbox, so that slope, openness and upwind fetch are right at the edge
 const FETCH = 100;   // m of upwind fetch for Sx (Winstral et al. 2002)
 

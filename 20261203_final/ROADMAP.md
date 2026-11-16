@@ -74,9 +74,9 @@
   - 取 DEM（NAVD88），重采样到格子大小；离线算出派生量：`z`、`slope`、`openness`、漂移系数 `drift`（按风向分 8 个方向）。
   - 完成标准：`terrain.bin`（Float32）加元数据；Vista Rock 和 the Lake 水面的高差和实测相差不超过 2 m；坡度的直方图写进 DEVLOG。
 
-- [ ] **M1.4 单株树木**
+- [x] **M1.4 单株树木**
   - 数据来自"Individual structure mapping over six million trees for NYC"：位置、高度、树冠半径，常绿/落叶（数据里没有就用树冠形态推断，并写进 DECISIONS）。
-  - 完成标准：`trees.bin`；`canopy` 和 `canopyEvergreen` 两个栅格；树干变成 `solids` 区间；范围内的树数量写进 meta。
+  - 完成标准：`trees.bin`；`canopy` 和 `canopyEvergreen` 两个栅格；树干作为圆柱体保存（视线表在 M1.7 用上，见 D-018）；范围内的树数量写进 meta。
 
 - [ ] **M1.5 KNYC 逐小时观测**
   - 用 §16 里的 IEM ASOS 查询，取 2016-01-22 到 01-24 的数据；单位换算（°F→°C、kt→m/s、mi→m）；算出 SLR，让累计降雪等于 27.5 in（§4.2）；算风寒（NWS 公式）。

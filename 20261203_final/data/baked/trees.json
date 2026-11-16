@@ -1,0 +1,44 @@
+{
+  "file": "trees.bin",
+  "count": 2427,
+  "layout": {
+    "float32": [
+      "x",
+      "y",
+      "groundZ",
+      "height",
+      "crownRadius",
+      "trunkRadius"
+    ],
+    "stride": 6,
+    "then": "uint8 evergreen per tree"
+  },
+  "units": "m, frame W; heights above ground",
+  "canopyFile": "canopy.bin",
+  "canopyLayout": "three Uint8 layers of W x H (idx = j * W + i): canopy share, evergreen canopy share, low vegetation (0.5-3 m) return share x4; 0-255 = 0-1",
+  "W": 244,
+  "H": 215,
+  "source": "NYC 2017 topobathymetric LiDAR point cloud (NOAA Digital Coast mission 9306, COPC, UTM 18N / NAVD88 m), tiles 990220 990222 992220 992222",
+  "method": "CHM at 1 m (max height above the 2017 DEM of unclassified returns, buildings masked) -> 3x3 Gaussian -> local maxima, window 1.5-4.5 m by height, min 4 m -> crowns by seeded region growing (>= 45 % of the top, <= 0.6 h + 1 m, <= 12 m) -> evergreen from OSM leaf tags: needleleaved/evergreen woods, and in mixed woods the denser half of the crowns by ground-return share (D-018). Evergreen is an estimate.",
+  "mixedWoodSplit": 0.052,
+  "groundShareOtsu": 0.113,
+  "stats": {
+    "points": 18405116,
+    "vegetationPoints": 12167707,
+    "evergreen": 8,
+    "height": {
+      "p10": 9.37,
+      "median": 20.24,
+      "p90": 26.57,
+      "max": 33.8
+    },
+    "crownRadius": {
+      "p10": 3.04,
+      "median": 5.29,
+      "p90": 8.27
+    },
+    "canopyShareOfParkCells": 0.592,
+    "mixedWoodTrees": 17,
+    "needleWoodTrees": 0
+  }
+}
