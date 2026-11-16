@@ -45,10 +45,10 @@
   - 列出从前几周移植的模块和改法：`los.js`、`rays.js`、`paths.js`、`metrics.js`（20261022）；`relations.js`、`creature.js` 里的伏击（20261103）；`knowledge.js`（20261110）。写进 `docs/porting.md`：来源文件 → 新文件 → 要改的地方（typed array、真实地形、风）。
   - 完成标准：每个被移植的文件在新文件头部注明来源；不出现"平行重写"的同名功能。
 
-- [ ] **M0.4 DEVLOG.md 和会话流程**
+- [x] **M0.4 DEVLOG.md 和会话流程**
   - 完成标准：DEVLOG 有第一条记录（做了什么、下一步、问题）；README 只做导航，链接语义模型、ROADMAP、DECISIONS。
 
-- [ ] **M0.5 产品化风险登记**
+- [x] **M0.5 产品化风险登记**
   - 真实地名和机构名（Lenox Hill Hospital、Central Park Conservancy、Belvedere Castle）的商标问题；暴雪题材的敏感度；数据授权。
   - 完成标准：DECISIONS 里有"风险"一节，每条写清楚现在怎么处理、以后怎么处理。
 
