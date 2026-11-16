@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frostroot: The Ramble</title>
   <meta name="description" content="Design Central Park's Ramble for the night of the January 2016 blizzard: plow paths, place lamps, shelters and signs, and watch who gets out before the creature of roots or the cold finds them.">
-  <link rel="stylesheet" href="style.css?v=20261203f">
+  <link rel="stylesheet" href="style.css?v=20261203g">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203f"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203g"
       }
     }
   </script>
@@ -50,14 +50,22 @@
         <label>Camera <select id="camera"><option value="follow">Third person</option><option value="overview">Overview</option><option value="first">First person</option></select></label>
         <label>Follow <select id="followSel"><option value="0">Survivor 1</option><option value="1">Survivor 2</option></select></label>
         <button id="next" type="button" hidden>Next round</button>
+        <label>Weather <select id="weatherSel"><option value="2016">January 2016 (recorded)</option><option value="tonight">Tonight (live, NWS)</option></select></label>
         <span class="spacer"></span>
         <button id="help" type="button" aria-haspopup="dialog">How to read this</button>
         <button id="theme" type="button" aria-label="Switch light and dark interface">Light / dark</button>
       </div>
       <figure class="timeline">
         <canvas id="timeline" tabindex="0" aria-label="The storm from 17:00 to 05:00: snowfall bars and visibility line; click or use the arrow keys to choose the start of the next round"></canvas>
-        <figcaption id="tlcap">The night of 23–24 January 2016 at Central Park: snowfall per hour (bars) and visibility (line). Next round starts at <b id="tlnext">17:00</b>.</figcaption>
+        <figcaption id="tlcap"><span id="tlwhat">The night of 23–24 January 2016 at Central Park</span>: snowfall per hour (bars) and visibility (line). Next round starts at <b id="tlnext">17:00</b>.</figcaption>
       </figure>
+      <details class="data" open>
+        <summary>The real night: the data behind it</summary>
+        <p id="dataNote" class="muted"></p>
+        <canvas id="weather" aria-label="Hourly temperature, wind and gusts, visibility and snow fallen, with the current moment; hover for the observation"></canvas>
+        <p id="obs" class="muted" aria-live="polite">Hover the charts to see an observation.</p>
+        <p class="muted">Data path: KNYC weather station on Vista Rock → Iowa Environmental Mesonet archive → <code>frostroot-data</code> MCP server → <code>npm run bake</code> → this page.</p>
+      </details>
       <section class="metrics" aria-labelledby="metricsTitle">
         <h2 id="metricsTitle">This night so far</h2>
         <dl id="metrics"></dl>

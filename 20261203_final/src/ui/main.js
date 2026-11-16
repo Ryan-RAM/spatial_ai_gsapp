@@ -15,13 +15,16 @@ import { makeScene3D } from '../render/scene3d.js';
 import { makeMap2D, LAYERS } from '../render/map2d.js';
 import { makePool } from './pool.js';
 import { makeDesigner } from './designer.js';
+import { fetchTonight } from '../sim/tonight.js';
+import { drawWeather, describeObservation } from '../render/weatherPanel.js';
 
 const $ = (id) => document.getElementById(id);
 const status = $('status');
 
 const base = new URL('../../data/baked/', import.meta.url);
 const world = await loadWorldFromUrl(base);
-const storm = makeStorm(await (await fetch(new URL('storm-2016-01.json', base))).json());
+const record2016 = await (await fetch(new URL('storm-2016-01.json', base))).json();
+let record = record2016; let storm = makeStorm(record);
 const frames = makeFrames(world);
 const night = nightsOf(evaluationSuite(CONFIG))[0];
 let plan = emptyPlan(); let layers = applyPlan(world, CONFIG, plan);
@@ -128,7 +131,7 @@ $('intro').addEventListener('close', () => $('view').focus());
 try { if (!localStorage.getItem('frostroot-intro')) { $('intro').showModal(); localStorage.setItem('frostroot-intro', '1'); } } catch { $('intro').showModal(); }
 
 // the timeline: the storm over the evaluation window, hour by hour
-const T0 = localSeconds(CONFIG.window.start); const T1 = localSeconds(CONFIG.window.end);
+let T0 = localSeconds(CONFIG.window.start); let T1 = localSeconds(CONFIG.window.end); let tonight = false;
 const HOURS = CONFIG.suite.startTimes;
 let tlSel = 0;
 function drawTimeline() {
@@ -144,10 +147,10 @@ function drawTimeline() {
   for (let t = T0; t <= T1; t += 600) { const v = Math.log(storm.at(t).visibilityM / 300) / Math.log(16100 / 300); const y = (H - 14) * (1 - Math.max(0, Math.min(1, v))); t === T0 ? g.moveTo(x(t), y) : g.lineTo(x(t), y); }
   g.stroke();
   g.fillStyle = css.getPropertyValue('--muted'); g.font = `${11 * k}px system-ui`;
-  HOURS.forEach((h, q) => { const t = localSeconds(h < '12:00' ? `2016-01-24T${h}` : `2016-01-23T${h}`); g.fillText(h, x(t) + 3, H - 2); if (q === tlSel) { g.strokeStyle = css.getPropertyValue('--accent'); g.lineWidth = 2 * k; g.strokeRect(x(t) + 1, 1, x(t + 7200) - x(t) - 2, H - 16); } });
+  if (!tonight) HOURS.forEach((h, q) => { const t = localSeconds(h < '12:00' ? `2016-01-24T${h}` : `2016-01-23T${h}`); g.fillText(h, x(t) + 3, H - 2); if (q === tlSel) { g.strokeStyle = css.getPropertyValue('--accent'); g.lineWidth = 2 * k; g.strokeRect(x(t) + 1, 1, x(t + 7200) - x(t) - 2, H - 16); } });
   if (round) { g.fillStyle = css.getPropertyValue('--accent'); g.fillRect(x(round.state.t) - k, 0, 2 * k, H - 14); }
 }
-function chooseHour(q) { tlSel = (q + HOURS.length) % HOURS.length; const h = HOURS[tlSel]; nextStart = h < '12:00' ? `2016-01-24T${h}` : `2016-01-23T${h}`; $('tlnext').textContent = h; drawTimeline(); }
+function chooseHour(q) { if (tonight) return; tlSel = (q + HOURS.length) % HOURS.length; const h = HOURS[tlSel]; nextStart = h < '12:00' ? `2016-01-24T${h}` : `2016-01-23T${h}`; $('tlnext').textContent = h; drawTimeline(); }
 $('timeline').addEventListener('click', (e) => { const r = e.target.getBoundingClientRect(); chooseHour(Math.floor(((e.clientX - r.left) / r.width) * HOURS.length)); });
 $('timeline').addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { chooseHour(tlSel + 1); e.preventDefault(); } if (e.key === 'ArrowLeft') { chooseHour(tlSel - 1); e.preventDefault(); } });
 setInterval(drawTimeline, 1000); drawTimeline();
@@ -172,3 +175,36 @@ addEventListener('keydown', (e) => {
   else if (e.key === 'k' || e.key === 'K') { const cb = [...document.querySelectorAll('#layers input')][Object.keys(LAYERS).indexOf('knowledge')]; cb.click(); }
   else if ((e.key === 'n' || e.key === 'N') && !$('next').hidden) $('next').click();
 });
+
+// ---------------------------------------------------------------- the data, and tonight (M7)
+let hoverT = null;
+function drawData() {
+  const r = drawWeather($('weather'), record, { t0: T0, t1: T1, now: round?.state.t, hoverT });
+  if (r) $('obs').textContent = describeObservation(r);
+}
+$('weather').addEventListener('mousemove', (e) => { const rc = e.target.getBoundingClientRect(); const left = 120; hoverT = T0 + ((e.clientX - rc.left - left) / (rc.width - left - 8)) * (T1 - T0); drawData(); });
+$('weather').addEventListener('mouseleave', () => { hoverT = null; drawData(); });
+setInterval(drawData, 1000); drawData();
+
+$('weatherSel').addEventListener('change', async (e) => {
+  if (e.target.value === 'tonight') {
+    $('dataNote').textContent = 'Fetching tonight\u2019s observations at Central Park from the National Weather Service…';
+    try {
+      record = await fetchTonight(); tonight = true;
+      storm = makeStorm(record);
+      T1 = storm.end; T0 = Math.max(storm.start, T1 - 12 * 3600);
+      nextStart = new Date(Date.UTC(2016, 0, 1) + (T1 - 30 * 60) * 1000).toISOString().slice(0, 16);
+      $('tlwhat').textContent = 'The last 12 hours at Central Park'; $('tlnext').textContent = nextStart.slice(11);
+      $('dataNote').textContent = `Tonight at Central Park: ${record.records.length} hourly observations from the NWS, the latest at ${record.records[record.records.length - 1].time.replace('T', ' ')}. Same paths, trees and terrain; this weather. Snow from precipitation at 10:1 (nothing to calibrate on).`;
+    } catch (err) {
+      e.target.value = '2016'; tonight = false; record = record2016; storm = makeStorm(record);
+      $('dataNote').textContent = `Could not reach the National Weather Service (${err.message}); staying with January 2016.`;
+    }
+  } else {
+    tonight = false; record = record2016; storm = makeStorm(record); T0 = localSeconds(CONFIG.window.start); T1 = localSeconds(CONFIG.window.end); nextStart = null;
+    $('dataNote').textContent = dataNote2016; $('tlwhat').textContent = 'The night of 23–24 January 2016 at Central Park'; chooseHour(tlSel);
+  }
+  watchPlan(plan); drawTimeline(); drawData();
+});
+const dataNote2016 = 'The hourly record of Central Park (KNYC) for 23–24 January 2016, from the Iowa Environmental Mesonet archive, through our MCP server, baked into the page. Snow from precipitation at 11.85:1, calibrated so the storm totals the official 27.5 in (70 cm).';
+$('dataNote').textContent = dataNote2016;

@@ -1,0 +1,137 @@
+{
+ "note": "3 real KNYC observations from api.weather.gov (2026-11-16) plus one hand-made snowy hour for the conversion test",
+ "features": [
+  {
+   "properties": {
+    "timestamp": "2026-11-16T16:51:00+00:00",
+    "temperature": {
+     "unitCode": "wmoUnit:degC",
+     "value": 11.1,
+     "qualityControl": "V"
+    },
+    "windDirection": {
+     "unitCode": "wmoUnit:degree_(angle)",
+     "value": 300,
+     "qualityControl": "V"
+    },
+    "windSpeed": {
+     "unitCode": "wmoUnit:km_h-1",
+     "value": 14.76,
+     "qualityControl": "V"
+    },
+    "windGust": {
+     "unitCode": "wmoUnit:km_h-1",
+     "value": 31.68,
+     "qualityControl": "C"
+    },
+    "visibility": {
+     "unitCode": "wmoUnit:m",
+     "value": 16090,
+     "qualityControl": "C"
+    },
+    "precipitationLastHour": {
+     "unitCode": "wmoUnit:mm",
+     "value": null,
+     "qualityControl": "Z"
+    },
+    "textDescription": "Clear"
+   }
+  },
+  {
+   "properties": {
+    "timestamp": "2026-11-16T15:51:00+00:00",
+    "temperature": {
+     "unitCode": "wmoUnit:degC",
+     "value": 10,
+     "qualityControl": "V"
+    },
+    "windDirection": {
+     "unitCode": "wmoUnit:degree_(angle)",
+     "value": 340,
+     "qualityControl": "V"
+    },
+    "windSpeed": {
+     "unitCode": "wmoUnit:km_h-1",
+     "value": 11.16,
+     "qualityControl": "V"
+    },
+    "windGust": {
+     "unitCode": "wmoUnit:km_h-1",
+     "value": null,
+     "qualityControl": "Z"
+    },
+    "visibility": {
+     "unitCode": "wmoUnit:m",
+     "value": 16090,
+     "qualityControl": "C"
+    },
+    "precipitationLastHour": {
+     "unitCode": "wmoUnit:mm",
+     "value": null,
+     "qualityControl": "Z"
+    },
+    "textDescription": "Clear"
+   }
+  },
+  {
+   "properties": {
+    "timestamp": "2026-11-16T14:51:00+00:00",
+    "temperature": {
+     "unitCode": "wmoUnit:degC",
+     "value": 8.3,
+     "qualityControl": "V"
+    },
+    "windDirection": {
+     "unitCode": "wmoUnit:degree_(angle)",
+     "value": null,
+     "qualityControl": "Z"
+    },
+    "windSpeed": {
+     "unitCode": "wmoUnit:km_h-1",
+     "value": 5.4,
+     "qualityControl": "V"
+    },
+    "windGust": {
+     "unitCode": "wmoUnit:km_h-1",
+     "value": null,
+     "qualityControl": "Z"
+    },
+    "visibility": {
+     "unitCode": "wmoUnit:m",
+     "value": 16090,
+     "qualityControl": "C"
+    },
+    "precipitationLastHour": {
+     "unitCode": "wmoUnit:mm",
+     "value": null,
+     "qualityControl": "Z"
+    },
+    "textDescription": ""
+   }
+  },
+  {
+   "properties": {
+    "timestamp": "2016-01-23T23:51:00+00:00",
+    "temperature": {
+     "value": -3.9
+    },
+    "windDirection": {
+     "value": 350
+    },
+    "windSpeed": {
+     "value": 13.0
+    },
+    "windGust": {
+     "value": 40.0
+    },
+    "visibility": {
+     "value": 402
+    },
+    "precipitationLastHour": {
+     "value": 1.8
+    },
+    "textDescription": "Heavy Snow and Freezing Fog"
+   }
+  }
+ ]
+}
