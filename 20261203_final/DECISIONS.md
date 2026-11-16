@@ -272,6 +272,13 @@
 - **失败**：没网、限流、观测少于 2 条，就退回 2016 年，并在数据面板上说明原因。
 - **改回**：去掉 `#weatherSel` 的 Tonight 选项；转换逻辑在 `tonight.js`，雪水比是 `TONIGHT_SLR`。
 
+## D-036 图解从模拟里画，用 Playwright 导出（M8.1）
+
+- **选择**：`diagrams.html` 是页面的一部分（"How it works"），每张图都用和主页相同的世界、风暴、round 和渲染器现场画出（`src/ui/diagrams.js`，种子是第一个评估夜）。`tools/export-diagrams.cjs` 用 Playwright + Chromium 把每个 `<figure>` 截成 2x PNG 写进 `docs/diagrams/`，手动和自动模式从主页上截，再生成带说明的 `docs/diagrams/README.md`。`npm run diagrams`。
+- **Playwright 不进 package.json**：它只是导出 PNG 的开发工具，体积大；页面和测试都不需要它。脚本找不到它就提示怎么装。
+- **图 9（窄桥）是摆出来的**：24 个 round 里幸存者从没在桥上等过别人（出生区离桥远）。所以在 Oak Bridge 两端各放一个幸存者，用真实的 `advance()`、M1 规则和寻路走 60 个 tick；图注里写明了。
+- **改回**：删掉 `diagrams.html`、`src/ui/diagrams.js`、`tools/`。
+
 ---
 
 ## 风险登记（M0.5）

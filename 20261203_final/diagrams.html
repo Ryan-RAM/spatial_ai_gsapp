@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frostroot Diagrams</title>
+  <meta name="description" content="How Frostroot: The Ramble meets each requirement of the Spatial AI final project, one diagram per requirement, drawn from the simulation itself.">
+  <link rel="stylesheet" href="style.css?v=20261203g">
+  <style>
+    main.diagrams { max-width: 1180px; margin: 0 auto; padding: 0 16px 48px; }
+    figure[data-d] { margin: 28px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+    figure[data-d] h2 { margin: 0 0 4px; font-size: 18px; }
+    figure[data-d] .req { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+    figure[data-d] canvas { width: 100%; height: 520px; display: block; border-radius: 6px; background: #0b1020; }
+    figure[data-d] .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    figure[data-d] .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    figure[data-d] .pair canvas, figure[data-d] .three canvas { height: 380px; }
+    figure[data-d] .three canvas { height: 300px; }
+    figcaption { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+    table.d { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    table.d th, table.d td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin: 0 4px 0 10px; vertical-align: -1px; border: 1px solid var(--line); }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 12px; font-size: 14px; }
+    .flow span { padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+    .flow b { color: var(--muted); }
+    @media (max-width: 760px) { figure[data-d] .pair, figure[data-d] .three { grid-template-columns: 1fr; } figure[data-d] canvas { height: 340px; } }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <header class="page-head">
+    <p class="eyebrow"><a href="index.html">Frostroot: The Ramble</a> &middot; How it works</p>
+    <h1>One diagram per requirement</h1>
+    <p class="lede">Every picture below is drawn live from the simulation: the same baked world, the same storm record, the same rounds as the main page (seed of the first evaluation night). <span id="progress" aria-live="polite">Drawing…</span></p>
+  </header>
+  <main class="diagrams">
+    <figure data-d="01"><h2>1. The baseline, from a semantic model</h2><p class="req">Requirement: baseline environment from a semantic model · <a href="semantic_model.md">semantic_model.md</a> §3</p>
+      <canvas id="c01" aria-label="The Ramble at 17:00 with the empty plan: ground cover, paths and named places"></canvas>
+      <figcaption>The Ramble at 17:00 on 23 January 2016, empty plan. Ground cover (paths, lawn, woodland, thickets, rock, water, structures) at 3 m cells from OpenStreetMap and the 2017 NYC LiDAR terrain; the 406-node path graph; the 42 named places of frame N.</figcaption></figure>
+
+    <figure data-d="02"><h2>2. Location: one occupant in every frame</h2><p class="req">Requirement: at least two notions of location · §5</p>
+      <canvas id="c02" aria-label="A survivor located in frames W, P, N and E"></canvas>
+      <table class="d" id="t02"></table>
+      <figcaption>The white dot is one survivor. Blue: its path edge and the metres along it (P). Orange dashes: the named place it is described by (N). Green: its own heading (E). The landmark chain (fig. 5) is a fifth notion, built by the agent itself.</figcaption></figure>
+
+    <figure data-d="03"><h2>3. Distance: four ways apart, and which axioms hold</h2><p class="req">Requirement: at least two notions of distance · §6</p>
+      <canvas id="c03" aria-label="The four distances between a survivor and the creature"></canvas>
+      <table class="d" id="t03a"></table>
+      <table class="d" id="t03b"></table>
+      <figcaption>Checked on random triples of path cells with the same checker as the tests. Only d_E and d_V are metrics here. Travel time is asymmetric (uphill is slower, Tobler; snow and cover differ by kind). Acoustic distance is asymmetric in wind (sound carries downwind) and breaks the triangle inequality, because a detour around a wall can sound nearer than the direct line through it. d_V is a metric on fingerprints but only a pseudometric on places: two different spots that look alike are close, which is why survivors confuse places in a whiteout.</figcaption></figure>
+
+    <figure data-d="04"><h2>4. Limited knowledge: each agent's own map</h2><p class="req">Requirement: at least two kinds of agents, with limited knowledge, scanning · §7.6–7.7</p>
+      <div class="three"><canvas id="c04a" aria-label="The true map"></canvas><canvas id="c04b" aria-label="What a survivor knows"></canvas><canvas id="c04c" aria-label="What the creature knows"></canvas></div>
+      <figcaption id="n04"></figcaption></figure>
+
+    <figure data-d="05"><h2>5. Spatial memory: landmarks, and a dead end avoided</h2><p class="req">Requirement: spatial memory, landmarks used later · §7.8, §12</p>
+      <canvas id="c05" aria-label="Landmark chain and dead ends"></canvas>
+      <figcaption id="n05"></figcaption></figure>
+
+    <figure data-d="06"><h2>6. Goals with measurable metrics</h2><p class="req">Requirement: goals with metrics · §11.1 — 24 rounds each (3 nights × 8 start times), common random numbers</p>
+      <table class="d" id="t06"></table>
+      <figcaption>F = escaped − ½ taken by the cold − 0.2 × mean escape time / 30 min − λ × cost. F′ is the creature's side: catches, and how early. The same suite scores every plan, so the numbers are comparable.</figcaption></figure>
+
+    <figure data-d="07"><h2>7. Planning with limited knowledge</h2><p class="req">Requirement: planning · §12</p>
+      <canvas id="c07" aria-label="Planned route against the route walked"></canvas>
+      <figcaption id="n07"></figcaption></figure>
+
+    <figure data-d="08"><h2>8. Partial observability: vision shrinks with the storm</h2><p class="req">Requirement: physical environment, partial observability · §3, P1–P4</p>
+      <div class="pair"><canvas id="c08a" aria-label="Vision at 17:00"></canvas><canvas id="c08b" aria-label="Vision at the worst visibility of the night"></canvas></div>
+      <figcaption>Sight range = base × visibility factor from the observed visibility (the fog density in 3D uses the same number). The cones are cut by the horizon: trunks, rocks and terrain from the LiDAR.</figcaption></figure>
+
+    <figure data-d="09"><h2>9. Many agents consuming space</h2><p class="req">Requirement: multiple agents consuming space · M1</p>
+      <canvas id="c09" aria-label="Two survivors meeting on a narrow bridge"></canvas>
+      <figcaption><span id="n09"></span> Staged: in the 24 evaluation rounds survivors never meet on a bridge, so two are placed at either end of one; everything after that is the simulation’s own movement rule and planner.</figcaption></figure>
+
+    <figure data-d="10"><h2>10. Dynamic: snow depth at 17:00 and 23:00</h2><p class="req">Requirement: dynamic or static, deterministic or not · §4 (dynamic; seeded, so repeatable)</p>
+      <div class="pair"><canvas id="c10a" aria-label="Snow depth at 17:00"></canvas><canvas id="c10b" aria-label="Snow depth at 23:00"></canvas></div>
+      <figcaption>Snow from the hourly record (11.85:1, 70 cm total), redistributed by the observed wind with the baked drift coefficients: lee of rocks and slopes fills, open ground scours. Tracks fill in at 3 cm.</figcaption></figure>
+
+    <figure data-d="11"><h2>11. Obstacles</h2><p class="req">Requirement: obstacles</p>
+      <canvas id="c11" aria-label="The obstacle layer"></canvas>
+      <figcaption id="n11"></figcaption></figure>
+
+    <figure data-d="12"><h2>12. Hindrances and affordances: every intervention has two sides</h2><p class="req">Requirement: hindrances and affordances · §11.3</p>
+      <table class="d"><thead><tr><th>Intervention</th><th>For the survivors</th><th>Against them</th></tr></thead><tbody>
+        <tr><td>Lamp</td><td>sight range ×2 in the light; a warm place to head for</td><td>they are seen from ×1.5 farther; the creature learns where people go</td></tr>
+        <tr><td>Plowed path</td><td>fast (no snow hindrance) and quiet</td><td>tracks stay readable; predictable routes for an ambush</td></tr>
+        <tr><td>Closed path</td><td>keeps them out of a dead end</td><td>funnels everyone through fewer junctions</td></tr>
+        <tr><td>Warming shelter</td><td>warmth recovers inside</td><td>a known place to wait; the creature patrols it</td></tr>
+        <tr><td>Sign</td><td>a fix: a lost survivor learns where it is and the way out</td><td>only if seen, and it costs budget</td></tr>
+        <tr><td>Deep snow (nature)</td><td>—</td><td>slow and loud (+5 m) for survivors; the creature walks over it</td></tr>
+        <tr><td>Evergreen canopy, thickets</td><td>cover from sight and wind</td><td>thickets are the creature's road, closed to survivors</td></tr>
+      </tbody></table>
+      <figcaption>Hindrances slow or expose; affordances speed up, warm or orient. The designer only ever changes the affordances; the hindrances are the storm and the place.</figcaption></figure>
+
+    <figure data-d="13"><h2>13. Manual mode: side by side, and the lineage</h2><p class="req">Requirement: manual mode · §11.5</p>
+      <p class="muted">Captured from the main page by <code>tools/export-diagrams.cjs</code>: <a href="docs/diagrams/13-manual.png">docs/diagrams/13-manual.png</a>.</p></figure>
+
+    <figure data-d="14"><h2>14. Automatic mode: the fitness curve and the best plan</h2><p class="req">Requirement: automated mode with epochs · §11.6</p>
+      <p class="muted">Captured from the main page by <code>tools/export-diagrams.cjs</code>: <a href="docs/diagrams/14-auto.png">docs/diagrams/14-auto.png</a>.</p></figure>
+
+    <figure data-d="15"><h2>15. Secondary function: the real night, and tonight</h2><p class="req">Requirement: secondary function · §13</p>
+      <div class="flow"><span>KNYC ASOS on Vista Rock, hourly METAR</span><b>→</b><span>Iowa Environmental Mesonet archive</span><b>→</b><span><code>frostroot-data</code> MCP server</span><b>→</b><span><code>npm run bake</code> → storm-2016-01.json</span><b>→</b><span>storm clock in the simulation</span></div>
+      <canvas id="c15" style="height:300px" aria-label="Hourly temperature, wind, visibility and snow for the night"></canvas>
+      <figcaption>Tonight mode swaps in the last 30 observations from api.weather.gov (same station), keeping the geometry. The terrain, trees and paths are the other half of the place as data: 3D LiDAR solids block sight and sound, and the snow surface changes with time (figs. 8, 10, 11).</figcaption></figure>
+  </main>
+  <script type="module" src="src/ui/diagrams.js?v=20261203a"></script>
+</body>
+</html>

@@ -33,6 +33,12 @@ export function makeMap2D(canvas, world, frames) {
     canvas.width = w; canvas.height = h;
     scale = Math.min(w / world.W, h / world.H); ox = (w - world.W * scale) / 2; oy = (h - world.H * scale) / 2;
   }
+  // zoom to a box in W metres { x0, x1, y0, y1 } (the diagrams use it); resize() resets to the whole map
+  function setView({ x0, x1, y0, y1 }) {
+    const w = canvas.width; const h = canvas.height;
+    scale = Math.min(w / ((x1 - x0) / world.s), h / ((y1 - y0) / world.s));
+    ox = w / 2 - (((x0 + x1) / 2 - world.minX) / world.s) * scale; oy = h / 2 - ((world.maxY - (y0 + y1) / 2) / world.s) * scale;
+  }
 
   function cellOverlay(state, agent) {
     // per-cell layers drawn into a W x H image, scaled up with the base
@@ -105,5 +111,5 @@ export function makeMap2D(canvas, world, frames) {
     return picked;
   }
 
-  return { draw, resize, pick, on, setLayer: (name, v) => { on[name] = v; }, follow: (id) => { followId = id; }, toPx, toW };
+  return { draw, resize, setView, pick, on, ctx, get scale() { return scale; }, setLayer: (name, v) => { on[name] = v; }, follow: (id) => { followId = id; }, toPx, toW };
 }
