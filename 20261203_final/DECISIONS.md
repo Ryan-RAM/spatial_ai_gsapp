@@ -66,6 +66,25 @@
 - **为什么**：和前三周的作业一样；模拟核心、烘焙脚本、bench、页面都从同一个位置读取，而且这个文件不碰 DOM、不导入任何东西。
 - **改回**：移动文件，更新 import map 和各处 import。
 
+## D-011 OSM 数据走官方 API，不走 Overpass
+
+- **选择**：OSM 的路网、水体、建筑、地名用官方 API 的 `GET https://api.openstreetmap.org/api/0.6/map?bbox=…` 取（返回 OSM XML），在 `data/scripts/` 里自己解析。
+- **为什么**：overpass-api.de 已经放行，但从这个云环境连过去每次都在 TLS 握手时被对方断开（2026-11-16 多次重试，代理日志是 `tunnel closed after 2s`，不是策略拦截）。官方 API 给的是同一份 OSM 数据，研究范围约 0.005 平方度，远小于它 0.25 平方度的上限；测试请求返回 200。
+- **改回**：Overpass 恢复后，可以把抓取脚本换成 Overpass QL（输出相同的中间格式）。
+
+## D-012 地形：NOAA Digital Coast 上的 2017 NYC 裸地 DEM，只读 Ramble 那一块
+
+- **选择**：用 NOAA Digital Coast 公开的 `NYC_topobathy_BE_DEM_2017_9307`（2017 年 NYC 地形水深 LiDAR 的裸地 DEM，就是 §16 写的那次测量）。Ramble 在 `be_NYC_025.tif` 里。这个文件是 Cloud-Optimized GeoTIFF（512 像素分块、DEFLATE 加浮点预测、带金字塔），所以只用 HTTP 范围请求读 Ramble 范围内的几个分块，不下载整个 834 MB 的文件。
+- **为什么**：备选的几个都不合适：NYC Open Data 的 1 英尺 DEM 是 2010 年 LiDAR，而且压缩包有 26.6 GB（磁盘只有约 30 GB）；USGS 3DEP 在这里只有 2013 年纽约和新泽西的项目，没有 2017；2017 年的原始点云整个城市有 180 GB。
+- **注意**：像素是 1 个单位，坐标是纽约州平面坐标系长岛区（东距 979137、北距 225000），水平单位很可能是美国测量英尺；高程单位要在 M1.3 读 GeoKey 并用 Vista Rock 和 the Lake 的已知高程核对，确认之后再换算成米。
+- **改回**：换成别的 DEM 只需要改 `data/scripts/` 里的地形抓取脚本，输出格式（`terrain.bin`）不变。
+
+## D-013 数据主机的放行
+
+- **选择**：Ryan 在 2026-11-16 预先批准了 overpass-api.de、mesonet.agron.iastate.edu、data.cityofnewyork.us、zenodo.org、api.weather.gov、cdn.jsdelivr.net；之后按需单独批准了 api.openstreetmap.org、maps.nyc.gov、NYC Open Data 的 S3 资源桶、tnmaccess.nationalmap.gov、prd-tnm.s3.amazonaws.com、noaa-nos-coastal-lidar-pds.s3.amazonaws.com。
+- **为什么**：云环境默认只放行软件包仓库；不在列表上的主机都要先问 Ryan。
+- **改回**：在环境设置里删掉这些主机。
+
 ---
 
 ## 风险登记（M0.5）

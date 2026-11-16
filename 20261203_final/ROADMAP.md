@@ -58,8 +58,8 @@
 
 所有抓取脚本放在 `data/scripts/`，和 MCP 服务器共用 `src/data/` 下的数据访问代码（CLAUDE.md §5）。原始数据不提交；烘焙结果提交，并附上授权说明。
 
-- [ ] **M1.0 网络放行**（前提）
-  - 2026-11-16 已放行：overpass-api.de、mesonet.agron.iastate.edu、data.cityofnewyork.us、zenodo.org、api.weather.gov、cdn.jsdelivr.net。不在这个列表上的主机，用到时再单独申请审批。
+- [x] **M1.0 网络放行**（前提）
+  - 2026-11-16 已放行，主机列表见 D-013；OSM 改走官方 API（D-011），地形取 NOAA 的 2017 COG（D-012）。不在列表上的主机，用到时再单独申请审批。
   - 完成标准：每个数据源都能用 curl 拿到 200；如果某个源拿不到，在 DECISIONS 里写明替代方案（比如手动下载后放进 `data/raw/`）。
 
 - [ ] **M1.1 研究范围与坐标框架 W**
