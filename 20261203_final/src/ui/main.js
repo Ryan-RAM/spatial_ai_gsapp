@@ -13,6 +13,7 @@ import { applyPlan, emptyPlan } from '../sim/interventions.js';
 import { makeFrames } from '../sim/frames.js';
 import { makeScene3D } from '../render/scene3d.js';
 import { makeMap2D, LAYERS } from '../render/map2d.js';
+import { makePool } from './pool.js';
 
 const $ = (id) => document.getElementById(id);
 const status = $('status');
@@ -99,7 +100,8 @@ status.hidden = true; $('app').hidden = false;
 // size the canvas only once it is visible (a hidden canvas measures 0 x 0)
 addEventListener('resize', resize); resize();
 hud(); requestAnimationFrame(frame);
-window.__app = { world, view, get round() { return round; }, stepSim, setSpeed: (s) => { speed = s; }, pause: () => { playing = false; } };
+let poolP = null; const pool = () => (poolP ??= makePool(world, { base }));
+window.__app = { world, view, pool, get round() { return round; }, stepSim, setSpeed: (s) => { speed = s; }, pause: () => { playing = false; } };
 
 // ---------------------------------------------------------------- the interface (M5.4)
 const prefersReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
