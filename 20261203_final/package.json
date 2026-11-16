@@ -11,6 +11,7 @@
     "serve": "python3 -m http.server 8000",
     "fetch:osm": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/fetch-osm.mjs",
     "bake:meta": "node data/scripts/bake-meta.mjs",
-    "bake:osm": "node data/scripts/bake-osm.mjs"
+    "bake:osm": "node data/scripts/bake-osm.mjs",
+    "bake:terrain": "NODE_USE_ENV_PROXY=1 node --disable-warning=UNDICI-EHPA data/scripts/bake-terrain.mjs"
   }
 }

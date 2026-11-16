@@ -70,7 +70,7 @@
   - 用 Overpass 拿 footway/path/service、桥、水体（the Lake、the Gill、Azalea Pond）、建筑（Belvedere Castle、Rustic Shelter、Ramble Arch）和命名地点；路网转成图（节点 = 路口、出口、桥头；边 = 路段，带长度和铺面）。
   - 完成标准：`paths.json`（节点、边、铺面）、`places.json`；路网连通（或者把不连通的部分列出来并说明原因）；三个出口都在图上；栅格化后得到 `cover` 层，水 = 不可通行。
 
-- [ ] **M1.3 NYC 2017 LiDAR 地形**
+- [x] **M1.3 NYC 2017 LiDAR 地形**
   - 取 DEM（NAVD88），重采样到格子大小；离线算出派生量：`z`、`slope`、`openness`、漂移系数 `drift`（按风向分 8 个方向）。
   - 完成标准：`terrain.bin`（Float32）加元数据；Vista Rock 和 the Lake 水面的高差和实测相差不超过 2 m；坡度的直方图写进 DEVLOG。
 

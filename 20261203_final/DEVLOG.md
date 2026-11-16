@@ -12,7 +12,9 @@ Newest entry first. Each session ends with a few lines: what was done, what is n
 
 **Bench** (2026-11-16, 87b39e2): rng 1e6 draws 8.1 ms. No sim benchmarks yet.
 
-**Next**
+**M1.3 terrain numbers** (terrain.json): z 13.6–42.6 m, median 24.2 m; the Lake 16.8 m; Vista Rock node 41.25 m (ref. 39.6); Reservoir 34.9 m (ref. 37). Slope histogram, cells: 0–5° 26,998 · 5–10° 13,848 · 10–15° 6,587 · 15–20° 2,463 · 20–30° 1,778 · 30–45° 585 · 45–90° 201. DEM download: 36 tiles of be_NYC_025.tif (cached in data/raw/dem/); bake 6 s from cache.
+
+**Next (superseded, see below)**
 - M1.0: check every data source returns 200 now that the hosts are allowed.
 - M1.1: fix the bbox and origin from OSM, write `src/data/geo.js` with round-trip tests.
 

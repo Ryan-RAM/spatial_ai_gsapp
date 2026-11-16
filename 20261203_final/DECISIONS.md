@@ -102,6 +102,14 @@
 - **还没有的**：灌丛（OSM 这里没有 scrub），在 M1.4 用树的密度定；岩石只有 OSM 标出来的 6 处，在 M1.3 用坡度补上露头。
 - **改回**：规则都在 `data/scripts/bake-osm.mjs` 和 `src/data/osm-features.js`，改完跑 `npm run bake:osm`。
 
+## D-016 地形的读取、换算和核对（M1.3）
+
+- **坐标**：DEM 是 EPSG:6539（NAD83(2011) / New York Long Island，美国测量英尺），高程是 NAVD88 美国测量英尺（GeoKey 读出来确认的）。投影自己实现（`src/data/stateplane.js`，兰伯特等角圆锥，两条标准纬线），反算 NOAA 瓦片索引里的范围误差 < 0.0002°。NAD83(2011) 和 WGS84 在纽约差约 1–1.5 m，不到半格，忽略。
+- **重采样**：每个 3 m 格取落在格内的 1 英尺像素的平均值（约 97 个像素）。像素到 frame W 的映射在 1 km 范围内用仿射近似，实测误差 < 5 cm。
+- **派生量**：坡度（中心差分，整数度）；地形开敞度（8 个方向、30 m 内的最大仰角，`1 − mean(sin)`）；积雪漂移系数按 8 个来风方向各存一份：Winstral 的 Sx（迎风方向 100 m 内的最大坡角），`drift = clamp(1 + Sx/15°, 0.5, 2)`。树冠的影响在 M1.4 加上。
+- **核对标准的修改**：ROADMAP 原来写"Vista Rock 和 the Lake 的高差"，但找不到 the Lake 水面高程的可靠实测值，所以改成两个有记录的点：Vista Rock 峰顶节点（OSM ele = 39.6 m，即 130 英尺）DEM 得 41.25 m，差 1.65 m（≤ 2 m）；水库水面（OSM ele = 37 m，水位本来就会变）DEM 得 34.86 m，差 2.1 m（≤ 3 m）。the Lake 水面 16.8 m 记录下来备查。另外加了一项配准检查：下沉的 79 街横路在 OSM 里的位置，在 DEM 里确实比两侧低。
+- **改回**：`data/scripts/bake-terrain.mjs` 里的常数（MARGIN、FETCH）；漂移公式在 `src/data/terrain.js`。
+
 ---
 
 ## 风险登记（M0.5）

@@ -1,0 +1,109 @@
+{
+  "file": "terrain.bin",
+  "W": 244,
+  "H": 215,
+  "layout": "idx = j * W + i, row 0 north",
+  "sections": [
+    {
+      "name": "z",
+      "type": "float32",
+      "unit": "m NAVD88",
+      "offset": 0,
+      "bytes": 209840
+    },
+    {
+      "name": "slope",
+      "type": "uint8",
+      "unit": "degrees",
+      "offset": 209840,
+      "bytes": 52460
+    },
+    {
+      "name": "openness",
+      "type": "uint8",
+      "unit": "0-255 = 0-1, terrain only (canopy added in M1.4)",
+      "offset": 262300,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_N",
+      "type": "uint8",
+      "unit": "factor x 100, wind from N",
+      "offset": 314760,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_NE",
+      "type": "uint8",
+      "unit": "factor x 100, wind from NE",
+      "offset": 367220,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_E",
+      "type": "uint8",
+      "unit": "factor x 100, wind from E",
+      "offset": 419680,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_SE",
+      "type": "uint8",
+      "unit": "factor x 100, wind from SE",
+      "offset": 472140,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_S",
+      "type": "uint8",
+      "unit": "factor x 100, wind from S",
+      "offset": 524600,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_SW",
+      "type": "uint8",
+      "unit": "factor x 100, wind from SW",
+      "offset": 577060,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_W",
+      "type": "uint8",
+      "unit": "factor x 100, wind from W",
+      "offset": 629520,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_NW",
+      "type": "uint8",
+      "unit": "factor x 100, wind from NW",
+      "offset": 681980,
+      "bytes": 52460
+    }
+  ],
+  "source": "NYC 2017 topobathymetric LiDAR, bare-earth DEM (NOAA Digital Coast, mission 9307), EPSG:6539 ftUS, NAVD88 ftUS",
+  "url": "https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NYC_topobathy_BE_DEM_2017_9307/be_NYC_025.tif",
+  "resample": "mean of the 1 ft pixels whose centres fall in each 3 m cell",
+  "drift": "clamp(1 + Sx / 15 deg, 0.5, 2), Sx = maximum upwind slope over 100 m (Winstral et al. 2002)",
+  "stats": {
+    "zMin": 13.56,
+    "zMedian": 24.19,
+    "zMax": 42.55,
+    "vistaRockTop": 41.25,
+    "vistaRockOsm": 39.6,
+    "reservoirSurface": 34.86,
+    "reservoirOsm": 37,
+    "lakeSurfaceMedian": 16.82,
+    "slopeHistogram": {
+      "0-5": 26998,
+      "5-10": 13848,
+      "10-15": 6587,
+      "15-20": 2463,
+      "20-30": 1778,
+      "30-45": 585,
+      "45-90": 201
+    },
+    "affineErrorM": 0.0001
+  }
+}
