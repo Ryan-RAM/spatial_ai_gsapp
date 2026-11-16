@@ -140,7 +140,7 @@
   - 在原来的 dead_end、clearing、exit、heard、sighting、catch 之外，加上 junction、bridge、named_place、lamp、shelter、sign；`confidence` 会衰减。
   - 完成标准：测试：地标都以链式相对位置存储，可以还原成绝对位置；heard 和 sighting 的置信度随时间下降。
 
-- [ ] **M3.3 生物**（§7.6、§12）
+- [x] **M3.3 生物**（§7.6、§12）
   - 状态机：waking → mapping（frontier 探索，来自 20261110）→ patrolling、investigating、tracking（读脚印）、chasing、searching（搜记得的死胡同）、ambushing（伏击点来自 20261103 的 `ambushSpot`，改成在路网上找咽喉点）。
   - 完成标准：每个状态都有一个能触发它的测试场景；怕光（亮格在规划里代价 ×3）、走铲过的路慢（×0.7）有测试；同一晚的几轮之间保留记忆。
 

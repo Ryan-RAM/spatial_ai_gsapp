@@ -42,12 +42,15 @@ export const CONFIG = {
     plowedSpeedFactor: 0.7,
     litCostFactor: 3,              // light-averse: lit cells cost x3 in its plans
     speed: 1.4,                    // m/s on flat open ground without snow (D-023)
+    mappingTicks: 900,             // the dusk mapping phase before a night's rounds: 30 min (D-029)
+    mappingStart: '2016-01-23T16:30',
     snowExponent: 0.3,             // f_snow^0.3: it moves through snow as roots (§6.3)
   },
   survivor: {
     sightRange: 20, coneDeg: 110,  // flashlight, m, scaled by vf(t)
     hearing: 40,
     warmthMax: 100,
+    startWarmth: [55, 85],         // they have been out in the storm already: seeded per survivor (D-029)
     // E1: warmth falls by k x max(0, (10 - T_wc) / 10) x (0.3 + 0.7 openness) per second. k so that
     // full exposure at the storm's worst wind chill (-12.4 °C, 20:51) empties 100 in 25 min (D-025)
     warmthK: 0.02973,

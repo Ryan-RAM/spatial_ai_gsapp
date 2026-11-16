@@ -20,6 +20,9 @@ import { walkerFor } from './paths.js';
 import { makeOccupancy, advance, catches } from './movement.js';
 import { updateWarmth } from './warmth.js';
 import { applyPlan, emptyPlan, spawnCells, exitCells } from './interventions.js';
+import { makeKnowledge } from './knowledge.js';
+import { survivorBrain } from './survivor.js';
+import { creatureBrain, newMemory, mapTheWoods } from './creature.js';
 
 // the suite of §11.4: start times x spawn zones x seeds, in a fixed order
 export function evaluationSuite(config = CONFIG, baseSeed = config.seed) {
@@ -52,7 +55,10 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
   for (let q = 0; q < config.survivorsPerRound; q++) {
     let k; do k = rngSpawn.pick(cells); while (occupancy.at(k) !== -1);
     occupancy.put(q, k);
-    agents.push({ id: q, kind: 'survivor', cell: k, heading: 90, running: false, route: null, routeIdx: 0, carry: 0, waited: 0, warmth: config.survivor.warmthMax, minWarmth: config.survivor.warmthMax, outcome: null, outcomeTick: null, rng: substream(seed, `survivor:${q}`), timesSeen: 0, closeTicks: 0 });
+    const rng = substream(seed, `survivor:${q}`);
+    const [w0, w1] = config.survivor.startWarmth ?? [config.survivor.warmthMax, config.survivor.warmthMax];
+    const warmth = w0 + (w1 - w0) * rng.next();
+    agents.push({ id: q, kind: 'survivor', cell: k, heading: 90, running: false, route: null, routeIdx: 0, carry: 0, waited: 0, warmth, minWarmth: warmth, startWarmth: warmth, outcome: null, outcomeTick: null, rng, timesSeen: 0, closeTicks: 0, k: makeKnowledge(world, 'survivor', config), startCell: k });
   }
   const creatures = [];
   const nCreatures = config.creaturesPerNight;
@@ -70,6 +76,8 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
   function step() {
     if (state.done) return state;
     const weather = storm.at(state.t);
+    // the sounds of this tick so far count too: the creature acts after the survivors
+    state.lastSounds = state.sounds;
     state.weather = weather;
     if (state.tick % config.snowUpdateTicks === 0) snow.update(weather);
     state.sounds = [];
@@ -77,9 +85,11 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
     for (const a of [...agents, ...creatures]) {
       if (a.outcome) continue;
       ctx.walker = walkers[a.kind];
+      if (a.kind === 'creature') state.lastSounds = state.lastSounds.concat(state.sounds); // hears this tick's steps too
       (a.kind === 'creature' ? brains.creature : brains.survivor)(a, ctx);
       if (!a.inShelter) advance(a, ctx);
     }
+    for (const c of creatures) if (c.memory) c.memory.lastCell = c.cell;
     // warmth, escapes, collapses
     for (const a of agents) {
       if (a.outcome) continue;
@@ -109,8 +119,8 @@ export function makeRound(world, storm, { config = CONFIG, plan = emptyPlan(), l
   function result() {
     return {
       id: `${start}/${zone}/${seed}`, start, zone, seed, ticks: state.tick,
-      survivors: agents.map((a) => ({ outcome: a.outcome, tick: a.outcomeTick, minWarmth: +a.minWarmth.toFixed(3), end: a.cell, timesSeen: a.timesSeen, closeTicks: a.closeTicks })),
-      creatures: creatures.map((c) => ({ catches: c.catches, end: c.cell })),
+      survivors: agents.map((a) => ({ outcome: a.outcome, tick: a.outcomeTick, minWarmth: +a.minWarmth.toFixed(3), start: a.startCell, end: a.cell, timesSeen: a.timesSeen, closeTicks: a.closeTicks, steps: a.k.trail.length })),
+      creatures: creatures.map((c) => ({ catches: c.catches, end: c.cell, state: c.state ?? null })),
     };
   }
   return { state, step, run, result };
@@ -145,9 +155,50 @@ export const baselineBrains = {
   },
 };
 
-export function runSuite(world, storm, { config = CONFIG, plan = emptyPlan(), brains = baselineBrains, suite = evaluationSuite(config) } = {}) {
+// The agents of M3: survivors with partial knowledge, the creature with its night-long memory.
+export const agentBrains = {
+  survivor: survivorBrain,
+  creature: creatureBrain,
+  creatureStart({ world, memory, occupancy }) {
+    const k = memory?.lastCell; if (k != null && occupancy.at(k) === -1) return k;
+    for (let d = 1; d < 20; d++) for (let c = Math.max(0, k - d); c <= k + d; c++) if (occupancy.at(c) === -1 && world.cover[c] !== 0) return c;
+    return null;
+  },
+};
+
+// The suite grouped into nights: one per (zone, seed), each a dusk mapping phase and then its
+// rounds in time order, the creature keeping its memory (§7.9). Nights are independent, so they
+// can run in parallel (M6.2).
+export function nightsOf(suite) {
+  const by = new Map();
+  for (const r of suite) { const key = `${r.zone}/${r.id.split('/')[2]}`; if (!by.has(key)) by.set(key, []); by.get(key).push(r); }
+  return [...by.entries()].map(([key, rounds]) => ({ key, zone: rounds[0].zone, seed: rounds[0].seed, rounds }));
+}
+
+// where the creature wakes: a seeded cell in the heart of the Ramble, away from the spawn zone
+export function wakeCell(world, config, seed, zone) {
+  const rng = substream(seed, 'creature:wake'); const z = config.spawnZones.find((q) => q.id === zone);
+  const pass = walkerFor(world, 'creature', config).passable;
+  for (let q = 0; q < 2000; q++) {
+    const x = -160 + rng.next() * 200; const y = -300 + rng.next() * 200; const c = world.cellOf(x, y);
+    if (c >= 0 && pass(c) && world.horizon?.rowOf[c] >= 0 && Math.hypot(x - z.x, y - z.y) > 60) return c;
+  }
+  return world.cellOf(-100, -200);
+}
+
+export function runNight(world, storm, { config = CONFIG, plan = emptyPlan(), layers = null, night, brains = agentBrains }) {
+  const L = layers ?? applyPlan(world, config, plan);
+  const memory = newMemory(world, config);
+  const mapping = mapTheWoods(world, config, { memory, startCell: wakeCell(world, config, night.seed, night.zone), ticks: config.creature.mappingTicks, layers: L, weather: storm.at(localSeconds(config.creature.mappingStart)) });
+  memory.lastCell = mapping.endCell ?? memory.trail[memory.trail.length - 1];
+  const mapped = { ticks: mapping.ticks, cellsSeen: memory.knownCount, newCellsPerTick: mapping.newCells / Math.max(1, mapping.ticks), done: mapping.done };
+  const rounds = night.rounds.map((r) => makeRound(world, storm, { config, plan, layers: L, start: r.start, zone: r.zone, seed: r.seed, brains, creatureMemory: memory }).run());
+  return { key: night.key, mapping: mapped, memoryCellsEnd: memory.knownCount, rounds };
+}
+
+export function runSuite(world, storm, { config = CONFIG, plan = emptyPlan(), brains = agentBrains, suite = evaluationSuite(config) } = {}) {
   const layers = applyPlan(world, config, plan);
-  return suite.map((r) => makeRound(world, storm, { config, plan, layers, start: r.start, zone: r.zone, seed: r.seed, brains }).run());
+  return nightsOf(suite).map((night) => runNight(world, storm, { config, plan, layers, night, brains }));
 }
 
 export { makeStorm };
