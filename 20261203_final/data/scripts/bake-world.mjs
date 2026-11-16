@@ -8,6 +8,7 @@
 //     openness   Uint8   0-255: exposure to sky and wind = terrain openness x canopy shelter
 //     canopy     Uint8   0-255 share of the cell under crowns
 //     canopyEv   Uint8   0-255 share under evergreen crowns
+//     structH    Uint8   structure height above ground, 0.5 m steps
 //     drift_*    Uint8 x 8  snow drift factor x 100 for winds from N, NE, ... NW (terrain lee, damped under canopy)
 // Run: npm run bake:world
 
@@ -39,6 +40,7 @@ const sec = (name) => tMeta.sections.find((s) => s.name === name);
 const z = new Float32Array(tBuf.buffer.slice(sec('z').offset, sec('z').offset + n * 4));
 const slope = tBuf.slice(sec('slope').offset, sec('slope').offset + n);
 const terrainOpen = tBuf.slice(sec('openness').offset, sec('openness').offset + n);
+const structH = read('structure.bin');
 const can = read('canopy.bin');
 const canopy = can.slice(0, n); const canopyEv = can.slice(n, 2 * n); const lowVeg = can.slice(2 * n, 3 * n);
 
@@ -79,6 +81,7 @@ const drift = WIND_DIRS.map((d) => {
 const parts = [
   ['cover', 'uint8', cover], ['z', 'float32', new Uint8Array(z.buffer)], ['slope', 'uint8', slope],
   ['openness', 'uint8', openness], ['canopy', 'uint8', canopy], ['canopyEv', 'uint8', canopyEv],
+  ['structH', 'uint8', structH],
   ...WIND_DIRS.map((d, k) => [`drift_${d.name}`, 'uint8', drift[k]]),
 ];
 // z first is not required, but keep Float32 sections 4-byte aligned for typed-array views

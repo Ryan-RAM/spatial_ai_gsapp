@@ -86,9 +86,9 @@
   - `npm run bake`：一条命令从 `data/raw/` 生成 `data/baked/`，而且结果可复现（同样的输入得到同样的字节）。
   - 完成标准：烘焙数据 gzip 后 < 15 MB；`data/baked/LICENSE.md` 写明 ODbL 和其他数据源的授权与署名。
 
-- [ ] **M1.7 离线预计算**
+- [x] **M1.7 离线预计算**
   - 视线表、362 条射线的 visibility fingerprint（§6.4）、每种 agent 的基础行走代价。
-  - 完成标准：`fingerprints.bin`、`los-*.bin`；页面加载时不再算这些；预计算的耗时写进 DEVLOG。
+  - 完成标准：`fingerprints.bin`（其 0° 那一圈就是视线表，见 D-021）；页面加载时不再算这些；预计算的耗时写进 DEVLOG。
 
 - [ ] **M1.8 MCP 服务器 `frostroot-data`**
   - 放在 `mcp/`，提供工具 `weather.series`、`terrain.tile`、`trees.in`、`paths.in`（§13），用的是同一套 `src/data/` 代码；烘焙脚本通过这些工具取数据。

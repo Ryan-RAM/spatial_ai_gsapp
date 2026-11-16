@@ -6,9 +6,10 @@
     "bake-terrain",
     "bake-trees",
     "bake-weather",
-    "bake-world"
+    "bake-world",
+    "bake-rays"
   ],
-  "gzipTotalMB": 1.161,
+  "gzipTotalMB": 5.631,
   "inputs": {
     "dem/georef.json": {
       "bytes": 667,
@@ -58,9 +59,19 @@
       "sha256": "c6458d914d671a1697dd524116b8b9c50327ba0c9636983e00f5aac6146d7fea"
     },
     "cover.json": {
-      "bytes": 618,
-      "gzip": 350,
-      "sha256": "34e33211b4a7ed3dbb18803c448712d2fa125d1412c016cede9a80427b1f540b"
+      "bytes": 708,
+      "gzip": 394,
+      "sha256": "a00f952faad3a13af8087d84badd16dd121d69488a56fe51d7f08f34d7199a77"
+    },
+    "fingerprints.bin": {
+      "bytes": 14542644,
+      "gzip": 4467335,
+      "sha256": "355b45193d4cdeeb016716fb8575781289fb7c56eb44f928b3234efe7ce615e6"
+    },
+    "fingerprints.json": {
+      "bytes": 9727,
+      "gzip": 1687,
+      "sha256": "773ec7bceefe091d025da4365100c79c8bbee3bb42c2e94bb08897647a93f384"
     },
     "meta.json": {
       "bytes": 505,
@@ -81,6 +92,11 @@
       "bytes": 20555,
       "gzip": 2688,
       "sha256": "c8ac979d410e2fbb6b8ea8cef65f3e1aca2430c677dde417acdadeb90e234118"
+    },
+    "structure.bin": {
+      "bytes": 52460,
+      "gzip": 556,
+      "sha256": "f4b36314677e82a562881f35afc3460c07c44f731eb840a1f9020d62b730adf3"
     },
     "terrain.bin": {
       "bytes": 734440,
@@ -103,14 +119,14 @@
       "sha256": "fc09762ada9677d8bf84848c268630c6965c9d060c788c5c9d93b537bccdc66f"
     },
     "world.bin": {
-      "bytes": 891820,
-      "gzip": 516501,
-      "sha256": "9833294208e1a7b49fc761c1c2b5604cd13492ef87d5c9420c906fcca2922875"
+      "bytes": 944280,
+      "gzip": 517280,
+      "sha256": "5339a86ad3016267072131f3d762bfa2803cdb7a2f312cabe454232f34555919"
     },
     "world.json": {
-      "bytes": 2415,
-      "gzip": 647,
-      "sha256": "e944541a99479969389ff56393b72817e9143a73233299619eeab600a4a5f0f2"
+      "bytes": 2521,
+      "gzip": 657,
+      "sha256": "89402a5bfb383dee6de997e908da67dd575055b506cfecef38c9483669d8ef87"
     }
   }
 }

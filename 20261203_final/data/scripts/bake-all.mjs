@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
-const STEPS = ['bake-meta', 'bake-osm', 'bake-terrain', 'bake-trees', 'bake-weather', 'bake-world'];
+const STEPS = ['bake-meta', 'bake-osm', 'bake-terrain', 'bake-trees', 'bake-weather', 'bake-world', 'bake-rays'];
 const here = new URL('./', import.meta.url);
 const baked = new URL('../baked/', import.meta.url);
 const raw = new URL('../raw/', import.meta.url);

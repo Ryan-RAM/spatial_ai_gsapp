@@ -34,6 +34,14 @@ const keep = (x, y) => inBbox(x, y) && inPark(x, y);
 // ------------------------------------------------------------------ cover raster
 // Painted in order of priority; later layers win, except where noted.
 
+// a height tag in metres, or in feet and inches (3'10")
+function heightOf(t) {
+  const v = t.height; if (!v) return null;
+  const ft = v.match(/^(\d+(?:\.\d+)?)'(?:\s*(\d+(?:\.\d+)?)")?$/);
+  if (ft) return (+ft[1] + (+ft[2] || 0) / 12) * 0.3048;
+  const m = parseFloat(v); return Number.isFinite(m) && m > 0 ? m : null;
+}
+
 const cover = new Uint8Array(N).fill(COVER.OUTSIDE);
 const parkMask = new Uint8Array(N);
 fillRings(grid, park, (i) => { parkMask[i] = 1; cover[i] = COVER.LAWN; });
@@ -47,9 +55,18 @@ for (const a of areas(osm, xy, (t) => t.leisure === 'playground' || t.amenity ==
 for (const a of areas(osm, xy, (t) => t.natural === 'bare_rock')) fillRings(grid, a.rings, paint(COVER.ROCK));
 for (const a of areas(osm, xy, (t) => t.natural === 'water' || t.natural === 'bay' || t.water)) fillRings(grid, a.rings, paint(COVER.WATER));
 for (const l of lines(osm, xy, (t) => t.waterway === 'stream' && !t.tunnel)) drawLine(grid, l.pts, 0.75, paint(COVER.WATER));
-for (const a of areas(osm, xy, (t) => !!t.building)) fillRings(grid, a.rings, (i) => { cover[i] = COVER.STRUCTURE; building[i] = 1; });
-for (const l of lines(osm, xy, (t) => ['city_wall', 'retaining_wall', 'wall'].includes(t.barrier) && t.area !== 'yes'))
-  drawLine(grid, l.pts, 0.5, (i) => { cover[i] = COVER.STRUCTURE; building[i] = 1; });
+// structure heights above the ground (m): surveyed building heights (NYC, in OSM's height tag),
+// walls by tag or by kind; sight and sound are blocked up to this height (M1.7, D-021)
+const structH = new Float32Array(N);
+const raise = (h) => (i) => { if (h > structH[i]) structH[i] = h; };
+for (const a of areas(osm, xy, (t) => !!t.building)) {
+  const h = heightOf(a.tags) ?? (+a.tags['building:levels'] > 0 ? 3.5 * +a.tags['building:levels'] : 6);
+  fillRings(grid, a.rings, (i) => { cover[i] = COVER.STRUCTURE; building[i] = 1; raise(h)(i); });
+}
+for (const l of lines(osm, xy, (t) => ['city_wall', 'retaining_wall', 'wall'].includes(t.barrier) && t.area !== 'yes')) {
+  const h = heightOf(l.tags) ?? { city_wall: 3, wall: 1.5, retaining_wall: 1 }[l.tags.barrier];
+  drawLine(grid, l.pts, 0.5, (i) => { cover[i] = COVER.STRUCTURE; building[i] = 1; raise(h)(i); });
+}
 for (const l of lines(osm, xy, isRoadBarrier)) drawLine(grid, l.pts, Math.max(4, (+l.tags.lanes || 2) * 1.75), (i) => { cover[i] = COVER.STRUCTURE; building[i] = 1; });
 
 // walkways: on the ground they do not cross water or buildings (a path along the shore must not
@@ -66,6 +83,7 @@ for (const bridges of [false, true]) {
   }
 }
 for (let i = 0; i < N; i++) if (!parkMask[i]) cover[i] = COVER.OUTSIDE;
+for (let i = 0; i < N; i++) if (cover[i] !== COVER.STRUCTURE) structH[i] = 0; // bridges and paths over a wall line
 
 // ------------------------------------------------------------------ path graph and exits
 
@@ -140,8 +158,11 @@ const counts = Object.fromEntries(COVER_NAMES.map((name, code) => [name, cover.r
 const ATTR = 'Data © OpenStreetMap contributors, ODbL 1.0 (https://www.openstreetmap.org/copyright)';
 
 writeFileSync(new URL('cover.bin', baked), cover);
+// structure height in 0.5 m steps (Uint8, up to 127.5 m)
+writeFileSync(new URL('structure.bin', baked), Uint8Array.from(structH, (h) => Math.min(255, Math.round(h * 2))));
 writeFileSync(new URL('cover.json', baked), JSON.stringify({
   file: 'cover.bin', type: 'uint8', W, H, layout: 'idx = j * W + i, row 0 north',
+  structureFile: 'structure.bin (Uint8, structure height above ground in 0.5 m steps)',
   legend: COVER_NAMES, counts, source: 'OpenStreetMap', attribution: ATTR,
 }, null, 2) + '\n');
 writeFileSync(new URL('paths.json', baked), JSON.stringify({

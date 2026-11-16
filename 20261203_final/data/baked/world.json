@@ -42,51 +42,57 @@
       "bytes": 52460
     },
     {
-      "name": "drift_N",
+      "name": "structH",
       "type": "uint8",
       "offset": 472140,
       "bytes": 52460
     },
     {
-      "name": "drift_NE",
+      "name": "drift_N",
       "type": "uint8",
       "offset": 524600,
       "bytes": 52460
     },
     {
-      "name": "drift_E",
+      "name": "drift_NE",
       "type": "uint8",
       "offset": 577060,
       "bytes": 52460
     },
     {
-      "name": "drift_SE",
+      "name": "drift_E",
       "type": "uint8",
       "offset": 629520,
       "bytes": 52460
     },
     {
-      "name": "drift_S",
+      "name": "drift_SE",
       "type": "uint8",
       "offset": 681980,
       "bytes": 52460
     },
     {
-      "name": "drift_SW",
+      "name": "drift_S",
       "type": "uint8",
       "offset": 734440,
       "bytes": 52460
     },
     {
-      "name": "drift_W",
+      "name": "drift_SW",
       "type": "uint8",
       "offset": 786900,
       "bytes": 52460
     },
     {
-      "name": "drift_NW",
+      "name": "drift_W",
       "type": "uint8",
       "offset": 839360,
+      "bytes": 52460
+    },
+    {
+      "name": "drift_NW",
+      "type": "uint8",
+      "offset": 891820,
       "bytes": 52460
     }
   ],

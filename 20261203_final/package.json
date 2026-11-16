@@ -19,7 +19,8 @@
     "bake:world": "node data/scripts/bake-world.mjs",
     "bake": "node data/scripts/bake-all.mjs",
     "bake:verify": "node data/scripts/bake-all.mjs --verify",
-    "fetch": "npm run fetch:osm && npm run fetch:weather"
+    "fetch": "npm run fetch:osm && npm run fetch:weather",
+    "bake:rays": "node data/scripts/bake-rays.mjs"
   },
   "devDependencies": {
     "copc": "0.0.9"

@@ -4,6 +4,7 @@
   "W": 244,
   "H": 215,
   "layout": "idx = j * W + i, row 0 north",
+  "structureFile": "structure.bin (Uint8, structure height above ground in 0.5 m steps)",
   "legend": [
     "outside",
     "path_paved",
