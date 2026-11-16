@@ -4,11 +4,12 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { CONFIG } from '../../src/sim/config.js';
-import { parseAsosCsv, calibrateSnow, visibilityFactor, asosUrl, isSnow } from '../../src/data/weather.js';
+import { calibrateSnow, visibilityFactor, asosUrl, isSnow } from '../../src/data/weather.js';
 
-const STORM = { station: 'NYC', start: '2016-01-22T12:00Z', end: '2016-01-24T12:00Z', file: 'knyc-2016-01.csv' };
-const csv = readFileSync(new URL(`../raw/weather/${STORM.file}`, import.meta.url), 'utf8');
-const parsed = parseAsosCsv(csv);
+const STORM = { station: 'NYC', start: '2016-01-22T12:00Z', end: '2016-01-24T12:00Z', file: 'knyc-2016-01.json' };
+// the records as the MCP tool weather_series returned them (npm run fetch:weather)
+const raw = JSON.parse(readFileSync(new URL(`../raw/weather/${STORM.file}`, import.meta.url), 'utf8'));
+const parsed = raw.records;
 const { records, slr, liquidIn } = calibrateSnow(parsed, CONFIG.stormTotalSnowIn);
 for (const r of records) r.vf = r.visibilityM != null ? +visibilityFactor(r.visibilityM).toFixed(3) : null;
 
@@ -20,7 +21,7 @@ for (const r of records) { if (r.visibilityMi != null && r.visibilityMi <= 0.25)
 const out = {
   name: 'January 2016 blizzard at Central Park (KNYC)',
   station: 'KNYC, Central Park (Belvedere Castle, Vista Rock)',
-  source: 'Iowa Environmental Mesonet ASOS archive (routine hourly METARs)', url: asosUrl(STORM.station, STORM.start, STORM.end),
+  source: 'Iowa Environmental Mesonet ASOS archive (routine hourly METARs)', url: asosUrl(STORM.station, STORM.start, STORM.end), via: raw.via,
   timezone: 'America/New_York (EST, UTC-5); `time` is local wall-clock time',
   units: { tempC: '°C', windFromDeg: 'degrees, direction the wind blows from', windMs: 'm/s', gustMs: 'm/s', visibilityM: 'm', precipMm: 'mm liquid in the hour', snowCm: 'cm of snow in the hour (calibrated)', cumSnowCm: 'cm since the start of the record', windChillC: '°C (NWS)', vf: 'visibility factor, §4.2' },
   calibration: {

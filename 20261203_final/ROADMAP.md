@@ -90,7 +90,7 @@
   - 视线表、362 条射线的 visibility fingerprint（§6.4）、每种 agent 的基础行走代价。
   - 完成标准：`fingerprints.bin`（其 0° 那一圈就是视线表，见 D-021）；页面加载时不再算这些；预计算的耗时写进 DEVLOG。
 
-- [ ] **M1.8 MCP 服务器 `frostroot-data`**
+- [x] **M1.8 MCP 服务器 `frostroot-data`**
   - 放在 `mcp/`，提供工具 `weather.series`、`terrain.tile`、`trees.in`、`paths.in`（§13），用的是同一套 `src/data/` 代码；烘焙脚本通过这些工具取数据。
   - 完成标准：能用 MCP inspector 或者测试客户端调用每个工具；有测试；README 写明怎么在 Claude Code 里接上它；依赖写进 DECISIONS。
 

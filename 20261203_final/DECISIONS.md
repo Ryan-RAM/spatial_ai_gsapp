@@ -152,6 +152,14 @@
 - **加载**：指纹只在幸存者认路（规则 K3）时用到，页面先加载其他数据，指纹随后再加载，不计入首屏的 3 秒（M4.3 复测）。
 - **改回**：射线参数在 `data/scripts/bake-rays.mjs`（`RINGS`、`AZIMUTHS`、`MAX_RANGE`、`STEP`）。
 
+## D-022 MCP 服务器 frostroot-data（M1.8）
+
+- **不用 SDK**：MCP 的 stdio 传输就是每行一条 JSON-RPC 2.0 消息，服务器只需要 `initialize`（协商协议版本 2025-06-18 / 2025-03-26 / 2024-11-05）、`tools/list`、`tools/call` 和 `ping`，手写 150 行左右（`mcp/server.mjs`），不加依赖。`mcp/client.mjs` 是对应的最小客户端。
+- **工具名用下划线**：`weather_series`、`terrain_tile`、`trees_in`、`paths_in`，对应语义模型 §13 的 `weather.series` 等。很多客户端只接受字母、数字、`_` 和 `-`。
+- **数据怎么走**：`npm run fetch:weather` 启动服务器、握手、调用 `weather_series`，把结果存进 `data/raw/weather/`，然后 `npm run bake` 烘焙，所以副功能的数据路径是 KNYC → IEM 档案 → MCP → 烘焙 → 页面。地形和点云是大块的二进制数据，烘焙脚本直接用同一套 `src/data/` 代码读（JSON 传不了几百 MB 的点）；MCP 的 `terrain_tile` 和 `trees_in` 提供同样的数据给别的客户端。`trees_in` 返回的是本项目烘焙好的提取结果，只覆盖研究区。
+- **测试**：离线的测试总是跑（握手、工具列表、`trees_in`、错误处理、通过 stdio 的完整调用）；需要访问外部服务的只在 `FROSTROOT_NET=1` 时跑（本次全部通过）。
+- **改回**：要换成官方 SDK，只需重写 `mcp/server.mjs` 的传输部分，`HANDLERS` 不变。
+
 ---
 
 ## 风险登记（M0.5）

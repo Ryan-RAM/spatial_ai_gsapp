@@ -13,3 +13,5 @@ The night of the record blizzard of January 2016, in Central Park's Ramble: real
 | [docs/porting.md](docs/porting.md) | what is reused from the earlier weeks |
 
 Run locally: `npm run serve`, then open http://localhost:8000. Tests: `npm test`. Benchmarks: `npm run bench`.
+
+Data: `npm run fetch` (OpenStreetMap, and the storm record through the [MCP server](mcp/README.md)), then `npm run bake` (the DEM and point-cloud steps fill their caches on the first run). The baked files are in [`data/baked/`](data/baked/) with their [licences](data/baked/LICENSE.md).

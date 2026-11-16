@@ -2,6 +2,22 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M1 done
+
+**Done**
+- M1.0–M1.8, the whole data pipeline. Real sources, all reachable (hosts in D-013): OSM via the official API (Overpass resets every connection, D-011); the 2017 NYC LiDAR DEM and point cloud from NOAA Digital Coast by HTTP range requests (COG / COPC, D-012, D-017); KNYC hourly weather from IEM through our own MCP server (D-022).
+- Baked (5.6 MB gzip): meta, paths (406 nodes, 13.7 km, exits E76/E79S/E79N), places (42), cover, structure heights, terrain (z, slope, openness, drift x 8), 2,427 trees + canopy, storm record (SLR 11.85), world.bin (composed), fingerprints (39,734 cells x 362 rays). `npm run bake` 18–20 s from caches, `bake:verify` byte-identical.
+- Started M2.1 early: `src/sim/world.js` (world from bytes) and `src/sim/los.js` (castRay port) were needed for the fingerprints.
+- 62 tests pass (+1 live MCP test with FROSTROOT_NET=1).
+
+**Next**
+- M2: finish M2.1 (loader in the browser too), M2.2 frames.js, M2.3 storm clock, M2.4 four distances (+ walk costs per kind in config), M2.5–M2.9.
+
+**Open problems / notes**
+- Evergreens: only 8 (OSM says the Ramble is broadleaved), so the "under evergreens" snow and track rules do little here (D-018). That is faithful to the place; mention it in the deck.
+- GitHub Pages may not gzip `.bin`; fingerprints are 14.5 MB raw. Load them after the first screen (D-021); measure in M4.3.
+- Building lee drift not modelled yet (D-020).
+
 ## 2026-11-16
 
 **Done**

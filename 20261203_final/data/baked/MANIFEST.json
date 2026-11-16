@@ -41,10 +41,10 @@
       "gzip": 98,
       "sha256": "1b8e7eb74a4ce0791435c9be2839856f6bb0fbb2dd693d7b90e3f3a3ea569db4"
     },
-    "weather/knyc-2016-01.csv": {
-      "bytes": 11726,
-      "gzip": 3016,
-      "sha256": "cc80813be41d0b387ed97de8e68af2351836d57a769e7cba2fa2dd83f5c58ad4"
+    "weather/knyc-2016-01.json": {
+      "bytes": 16735,
+      "gzip": 1680,
+      "sha256": "741cc28852bed3dd22760f1d50ca0fdf2194a848cce70538b1a72ff6df09b8b4"
     }
   },
   "outputs": {
@@ -89,9 +89,9 @@
       "sha256": "2f2bced3dabdfb4804e1a4879f88c64cabcec9927b438fee1fd8431f5e798a1c"
     },
     "storm-2016-01.json": {
-      "bytes": 20555,
-      "gzip": 2688,
-      "sha256": "c8ac979d410e2fbb6b8ea8cef65f3e1aca2430c677dde417acdadeb90e234118"
+      "bytes": 20612,
+      "gzip": 2728,
+      "sha256": "e15799d2e5945da2925ff140a9a67cb7300619e6068294b0165af05837075218"
     },
     "structure.bin": {
       "bytes": 52460,

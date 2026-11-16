@@ -3,6 +3,7 @@
  "station": "KNYC, Central Park (Belvedere Castle, Vista Rock)",
  "source": "Iowa Environmental Mesonet ASOS archive (routine hourly METARs)",
  "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=NYC&data=all&sts=2016-01-22T12%3A00Z&ets=2016-01-24T12%3A00Z&tz=America%2FNew_York&format=onlycomma&report_type=3",
+ "via": "MCP frostroot-data 0.1.0, tool weather_series",
  "timezone": "America/New_York (EST, UTC-5); `time` is local wall-clock time",
  "units": {
   "tempC": "°C",
