@@ -12,6 +12,7 @@ import { SURVIVOR_STATES } from '../sim/survivor.js';
 import { applyPlan, emptyPlan } from '../sim/interventions.js';
 import { makeFrames } from '../sim/frames.js';
 import { makeScene3D } from '../render/scene3d.js';
+import { makeMap2D, LAYERS } from '../render/map2d.js';
 
 const $ = (id) => document.getElementById(id);
 const status = $('status');
@@ -29,6 +30,7 @@ const m = mapTheWoods(world, CONFIG, { memory, startCell: wakeCell(world, CONFIG
 memory.lastCell = m.endCell;
 
 const view = makeScene3D($('view'), world);
+const map = makeMap2D($('map'), world, frames);
 let roundIdx = 0; let round = null;
 function startRound() {
   const r = night.rounds[roundIdx % night.rounds.length];
@@ -63,16 +65,33 @@ function frame(now) {
   }
   view.update(round.state, playing ? acc : 0, now / 1000);
   view.render();
+  if (frame.count % 3 === 0) map.draw(round.state); // the map: 20 frames a second is plenty
   if ((frame.count = (frame.count ?? 0) + 1) % 6 === 0) hud();
   if (round.state.done && playing) { $('next').hidden = false; }
   requestAnimationFrame(frame);
 }
 
-function resize() { const el = $('view'); view.resize(el.clientWidth, el.clientHeight); }
+function resize() { const el = $('view'); view.resize(el.clientWidth, el.clientHeight); const m = $('map'); map.resize(m.clientWidth * (devicePixelRatio || 1), m.clientHeight * (devicePixelRatio || 1)); map.draw(round.state); }
 $('play').addEventListener('click', () => { playing = !playing; $('play').textContent = playing ? 'Pause' : 'Play'; });
 $('speed').addEventListener('click', () => { speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]; $('speed').textContent = `${speed}×`; });
 $('camera').addEventListener('change', (e) => view.setCamera(e.target.value));
-$('followSel').addEventListener('change', (e) => view.follow(+e.target.value));
+let followId = 0;
+$('followSel').addEventListener('change', (e) => { followId = +e.target.value; view.follow(followId); map.follow(followId); });
+// map layers and picking
+for (const [name, label] of Object.entries(LAYERS)) {
+  const l = document.createElement('label'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = map.on[name];
+  cb.addEventListener('change', () => { map.setLayer(name, cb.checked); map.draw(round.state); }); l.append(cb, ` ${label}`); $('layers').append(l);
+}
+const fmt = (v, d = 1) => (v == null ? '—' : v.toFixed(d));
+$('map').addEventListener('click', (e) => {
+  const r = e.target.getBoundingClientRect(); const k = devicePixelRatio || 1;
+  const p = map.pick((e.clientX - r.left) * k, (e.clientY - r.top) * k); if (!p) return;
+  $('pick').innerHTML = `<dl><dt>W</dt><dd>${fmt(p.x)} m E, ${fmt(p.y)} m N · cell (${p.i}, ${p.j}) · z ${fmt(p.z)} m · ${p.cover} · snow ${fmt(p.snowCm, 0)} cm</dd>`
+    + `<dt>P</dt><dd>${p.P ? `edge ${p.P.edge}${p.P.name ? ` (${p.P.name})` : ''}, ${fmt(p.P.s)} m along, ${fmt(Math.abs(p.P.offset))} m to the ${p.P.offset >= 0 ? "left" : "right"}` : '—'}</dd>`
+    + `<dt>N</dt><dd>${p.N ? p.N.words : '—'}</dd>`
+    + `<dt>E</dt><dd>${p.E ? `${fmt(p.E.distance)} m, ${fmt(Math.abs(p.E.bearing), 0)}° ${p.E.bearing >= 0 ? 'right' : 'left'} of Survivor ${followId + 1}\u2019s heading` : '—'}</dd></dl>`;
+  map.draw(round.state);
+});
 $('next').addEventListener('click', () => { roundIdx++; startRound(); $('next').hidden = true; });
 addEventListener('keydown', (e) => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); $('play').click(); } });
 status.hidden = true; $('app').hidden = false;

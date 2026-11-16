@@ -70,3 +70,15 @@ h1 span { color: var(--accent); }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .controls button, .controls select { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); min-height: 36px; }
 .controls label { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+
+.mapwrap { display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); gap: 12px; margin-top: 14px; }
+#map { width: 100%; aspect-ratio: 244 / 215; border-radius: 8px; background: var(--night-0); cursor: crosshair; display: block; }
+.mapside fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 0 0 10px; }
+.mapside legend { color: var(--muted); padding: 0 4px; }
+.mapside label { display: flex; gap: 8px; align-items: center; padding: 3px 0; min-height: 28px; }
+.pick { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; background: var(--panel); font-size: 13px; }
+.pick p { margin: 0; color: var(--muted); }
+.pick dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+.pick dt { color: var(--muted); }
+.pick dd { margin: 0; }
+@media (max-width: 720px) { .mapwrap { grid-template-columns: 1fr; } }

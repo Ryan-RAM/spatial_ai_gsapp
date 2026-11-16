@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203b"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203c"
       }
     }
   </script>
@@ -39,6 +39,13 @@
         <label>Camera <select id="camera"><option value="follow">Third person</option><option value="overview">Overview</option><option value="first">First person</option></select></label>
         <label>Follow <select id="followSel"><option value="0">Survivor 1</option><option value="1">Survivor 2</option></select></label>
         <button id="next" type="button" hidden>Next round</button>
+      </div>
+      <div class="mapwrap">
+        <canvas id="map" aria-label="Map of the study area: ground cover, paths, agents, their knowledge, tracks and landmarks. Click a point to see it in every frame of reference."></canvas>
+        <div class="mapside">
+          <fieldset id="layers"><legend>Map layers</legend></fieldset>
+          <div id="pick" class="pick" aria-live="polite"><p>Click the map to see a point in every frame of reference (W, P, N, E).</p></div>
+        </div>
       </div>
     </section>
   </main>
