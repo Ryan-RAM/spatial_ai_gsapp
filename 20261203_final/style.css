@@ -59,3 +59,4 @@ h1 span { color: var(--accent); }
 .lede { max-width: 60ch; color: var(--muted); margin: 0; }
 .status { padding: 24px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
 .page-foot { color: var(--muted); font-size: 0.85rem; }
+.cover-map { display: block; width: 100%; max-width: 732px; height: auto; margin-top: 16px; image-rendering: pixelated; border-radius: 8px; }
