@@ -41,7 +41,7 @@
     7. 3D 风格：**保留 Frostroot 的味道，放在真实几何上**，按 CLAUDE.md §4 的配比（M5.1 样张定稿）
   - 完成标准：七条都在 DECISIONS 里；`config.js` 里有对应的参数，并注释了 DECISIONS 编号。
 
-- [ ] **M0.3 移植清单**
+- [x] **M0.3 移植清单**
   - 列出从前几周移植的模块和改法：`los.js`、`rays.js`、`paths.js`、`metrics.js`（20261022）；`relations.js`、`creature.js` 里的伏击（20261103）；`knowledge.js`（20261110）。写进 `docs/porting.md`：来源文件 → 新文件 → 要改的地方（typed array、真实地形、风）。
   - 完成标准：每个被移植的文件在新文件头部注明来源；不出现"平行重写"的同名功能。
 
