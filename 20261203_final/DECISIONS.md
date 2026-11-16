@@ -279,6 +279,15 @@
 - **图 9（窄桥）是摆出来的**：24 个 round 里幸存者从没在桥上等过别人（出生区离桥远）。所以在 Oak Bridge 两端各放一个幸存者，用真实的 `advance()`、M1 规则和寻路走 60 个 tick；图注里写明了。
 - **改回**：删掉 `diagrams.html`、`src/ui/diagrams.js`、`tools/`。
 
+## D-037 图集、slide deck、语义模型定稿的做法（M8.2–M8.6）
+
+- **图集**：`tools/build-gallery.mjs` 离线生成 10 个候选方案（预设、只改一项的对照、两边各自动进化 30 代），在 24 round 套件上打分，并在第一晚（6 个 round）上记录热力图和每个人的结局，写进 `data/gallery.json`（约 120 KB，固定种子，可复现，测试检查分数能复现）。说明文字是看了数字之后手写的（`data/gallery-stories.json`），页面上每张卡片可以一键载入。卡片的地图画成静态图片：九个活的 canvas 在软件渲染下会拖慢整页。
+- **三维视图滚出屏幕时不渲染**（模拟照常跑）：省电，也让截图工具在没有 GPU 的机器上能用。
+- **Slide deck**：`tools/make-deck.mjs` 从图解索引、图集和说明生成 `deck.html`（16:9，方向键翻页），`npm run deck:pdf` 打印成 `docs/frostroot-deck.pdf`。线上地址先按 GitHub Pages 的默认地址写（`LIVE_URL` 可改），部署（M9.4）之后再核对。
+- **视频**：只交付逐镜头脚本（ROADMAP 的完成标准）。录屏和旁白要真人来做，deck 里留了视频链接的位置。
+- **语义模型 v1.0**：去掉所有 [DECIDE]，按实现改了数值，加 §18 参数表和 §19 与 v0.1 的差别；`npm run model:check`（测试里也跑）检查参数表和正文里引用的 40 个数都和 `config.js` 一致。
+- **改回**：删除 `tools/build-gallery.mjs`、`data/gallery*.json`、`#gallery` 一节；模型的旧版本在 git 历史里。
+
 ---
 
 ## 风险登记（M0.5）

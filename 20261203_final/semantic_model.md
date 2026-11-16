@@ -1,9 +1,9 @@
 # Semantic Model: Frostroot — The Ramble
 
-**Spatial AI (ARCH6956-1), Columbia GSAPP, Fall 2026. Final project.**
+**Spatial AI (ARCH6956-1), Columbia GSAPP, Fall 2026. Final project. Version 1.0.**
 Group: Ryan Fu, Lu Liu, Yifan Zhao. Instructor: William Martin.
 
-> **Draft v0.1.** Items marked **[DECIDE]** are open choices for the group. All numbers marked *default* are starting values for tuning, not claims about the real world. Weather values quoted from the record are from the Central Park station (KNYC) and must be re-checked when the data is downloaded (see §16).
+> **v1.0 (final).** This is the model as built in `20261203_final/`. Every number in it that is also a parameter of the simulation is checked against `src/sim/config.js` by `npm run model:check` (§18). Choices made while building are recorded in `DECISIONS.md` (D-nnn); §19 lists what changed from the draft v0.1. Numbers marked *default* are tunable starting values, not claims about the real world. Weather values are from the Central Park station (KNYC) as downloaded and baked (`data/baked/storm-2016-01.json`).
 
 ---
 
@@ -23,7 +23,7 @@ This builds directly on our earlier weeks: the four distances (*Misty Forest Cha
 
 | Quantity | Unit | Note |
 |---|---|---|
-| Length | metre (m) | grid cell = **3 m** *default* **[DECIDE: 2 m / 3 m / 4 m]** |
+| Length | metre (m) | grid cell = **3 m** (D-001) |
 | Elevation | m, NAVD88 | from the 2017 NYC LiDAR DEM |
 | Snow depth | cm | per cell |
 | Time | storm time, local (America/New_York) | 1 tick = **2 s** of storm time *default* |
@@ -41,16 +41,16 @@ Angles: 0° = north, clockwise. "East" in the story means Fifth Avenue.
 
 ### 3.1 Study area
 
-The Ramble plus the strip east of it to Fifth Avenue: bounded by the 79th Street Transverse to the north, the Lake to the south and west, and Fifth Avenue to the east. Roughly 700 m × 450 m, about 35,000 cells at 3 m. **[DECIDE]** final bounding box, taken from OpenStreetMap.
+The Ramble plus the strip east of it to Fifth Avenue: bounded by the 79th Street Transverse to the north, the Lake to the south and west, and Fifth Avenue to the east. In frame W the bounding box is x −270 … 460 m, y −540 … 105 m: 730 m × 645 m, **244 × 215 = 52,460 cells** at 3 m; cells outside the park are masked (D-014).
 
-Real features the model uses (all to be confirmed against the data):
+Real features the model uses (confirmed against the data in M1):
 
 - **Paths**: the Ramble's winding footpaths, rustic bridges, East Drive, the paths toward Fifth Avenue.
 - **Water**: the Lake, the Gill (the stream), Azalea Pond. Impassable.
 - **Rock outcrops**: Vista Rock and smaller outcrops. Solid, high.
 - **Trees**: individual trees with position, height and crown radius.
 - **Structures**: Belvedere Castle on Vista Rock, the Rustic Shelter, the Ramble Arch, bridges.
-- **Exits**: park entrances on Fifth Avenue between about 72nd and 79th Streets **[DECIDE]** which ones count.
+- **Exits**: the three park entrances on Fifth Avenue where the footpaths leave the park in OSM, named by street: **E76, E79S, E79N** (D-015).
 
 ### 3.2 How a cell gets its contents
 
@@ -88,11 +88,11 @@ Total: about 2.3 in of liquid precipitation in the hourly record, against the of
 
 Hourly values are interpolated linearly to each tick.
 
-- **Snowfall**: hourly liquid precipitation × snow-to-liquid ratio `SLR`. `SLR` is calibrated so that the storm total matches 27.5 in (about **11.9 : 1** from the hourly record). Hourly gauge readings in heavy snow tend to under-catch; the calibration absorbs this.
+- **Snowfall**: hourly liquid precipitation × snow-to-liquid ratio `SLR`. `SLR` is calibrated so that the storm total matches 27.5 in (**11.85 : 1** from the hourly record; D-019). Hourly gauge readings in heavy snow tend to under-catch; the calibration absorbs this.
 - **Snow depth per cell**: `depth(c, t) = S(t) × drift(c) × (1 − 0.6 × canopyEvergreen(c))`, where `S(t)` is the cumulative snowfall and `drift(c)` is 0.5–2.0 from openness and wind direction (lee sides of rocks and path edges collect more). Plowed path cells are reset to 0–5 cm by the plowing rule (Rule S3).
 - **Visibility factor** `vf(t) = clamp(0.35 + 0.65 × log(vis/400 m) / log(40), 0.35, 1)`: 0.35 at 0.25 mi, 1 at 10 mi.
 - **Wind**: direction and speed drive sound carry (§6.2), track filling (Rule T2) and exposure (Rule E1).
-- **Night**: the evaluation window is **Sat 23 Jan 17:00 → Sun 24 Jan 05:00** (after sunset). It contains the heaviest hours, the turn of the wind, and the clearing. **[DECIDE]** window.
+- **Night**: the evaluation window is **Sat 23 Jan 17:00 → Sun 24 Jan 05:00** (after sunset). It contains the heaviest hours, the turn of the wind, and the clearing (D-005).
 
 ---
 
@@ -126,16 +126,16 @@ Conversion: W ↔ P by snapping to the nearest path edge; W ↔ N by nearest nam
 As in our earlier weeks, now over real terrain: an agent sees a target if `d_E ≤ sightRange × vf(t)`, the target is inside the forward cone, and the 3D segment between the eye points passes through no solid. Lamps extend the survivor's sight and also make anyone standing in their light visible from farther away (Rule P3).
 
 ### 6.2 Acoustic (hearing), now with wind
-`m_k` are the muffling costs of the solids crossed (trunk, rock, structure), as before. `m_snow = 0.5 × snowRate(cm/h) × d_E / 10`: falling snow absorbs sound. The wind term: `θ` is the angle between the direction the wind blows **toward** and the vector a→b; `w = 0.3 × min(windSpeed / 10 m/s, 1)`. Sound carries farther downwind.
+`m_k` are the muffling costs of the solids crossed: +4 m per trunk, +3 m per evergreen crown, +6 m per metre of wall, building or ground (a hill or rock) between (D-023). `m_snow = 0.5 × snowRate(cm/h) × d_E / 10`: falling snow absorbs sound. The wind term: `θ` is the angle between the direction the wind blows **toward** and the vector a→b; `w = 0.3 × min(windSpeed / 10 m/s, 1)`. Sound carries farther downwind.
 
 So `d_A(a→b) ≠ d_A(b→a)` when the wind blows: in a NE wind, the creature to the NE of a survivor hears the survivor less well than the survivor hears it. Our axiom checker (from *Misty Forest Chase*) will report the symmetry violations alongside the existing triangle-inequality ones. Gusts mask sound: the hearing threshold drops to `H × max(0.4, 1 − 0.02 × gust_kt)`.
 
 ### 6.3 Travel time (walking)
-Dijkstra/A* over the agent's walk graph. The time to cross a cell is `length / (v0 × f_cover × f_snow × f_slope)`:
+Dijkstra/A* over the agent's walk graph. The time to cross a cell is `length / (v0 × f_cover × f_snow × f_slope)`, with `v0` = 1.3 m/s for a walking survivor (running doubles it, M3) and 1.4 m/s for the creature (D-023):
 
 - `f_slope`: Tobler's hiking function, normalised to 1 on flat ground. Asymmetric: going down a gentle slope is fastest.
 - `f_snow = 1 / (1 + depth_cm / 25)` for the survivor (knee-deep snow ≈ ¼ speed); `(…)^0.3` for the creature, which moves through snow as roots.
-- `f_cover`: paved path 1.0, dirt path 0.9, lawn 0.8, woodland floor 0.6, thicket 0.25 (survivor) / 1.0 (creature), rock and water impassable.
+- `f_cover`: paved path 1.0, dirt path 0.9, lawn 0.8, woodland floor 0.6; thicket 0 for survivors (they cannot enter it, M2) and 1.0 for the creature; rock, water and structures impassable.
 
 Each agent kind has **its own** walk graph and its own `d_T`. Two cells can be near for the creature (straight through a thicket) and far for a survivor (around it).
 
@@ -191,7 +191,7 @@ Common attributes: `id`, `kind`, `position (W, P, N)`, `heading`, `speed`, `stat
 - Senses: flashlight cone 110°, 20 m × `vf` *default*; hearing `d_A ≤ 40 m`; sees tracks, lamps, signs, named places.
 - Prior knowledge: "the way out is east"; a coarse mental map of named places with approximate bearings (as a visitor would have).
 - Heading drift: without a fix, its sense of east drifts (random walk on heading). Fixes: a sign, a recognised named place, or the glow of the city to the east when standing in the open with visibility ≥ 1 mi.
-- Warmth 100 → 0 (Rule E1). At 0 the survivor collapses: the round fails for it ("taken by the cold").
+- Warmth 0–100; a round starts with 55–85, seeded per survivor (they have been out in the storm already; D-029), and falls by Rule E1. At 0 the survivor collapses: the round fails for it ("taken by the cold").
 - States: `exploring` | `heading_out` | `hiding` | `fleeing` | `sheltering` | `following_sign` | `escaped` | `caught` | `collapsed`.
 
 ### 7.7 KnowledgeMap (per agent)
@@ -256,10 +256,10 @@ Common attributes: `id`, `kind`, `position (W, P, N)`, `heading`, `speed`, `stat
 - **S2.** Snow above 40 cm counts as a hindrance cell for survivors (also louder steps: +5 m loudness).
 - **S3.** Plowed segments hold ≤ 5 cm.
 - **T1.** Every step leaves a Track with readability 1.
-- **T2.** Readability falls as new snow fills it: `readability = 1 − fill / 10 cm`, where `fill` is the snow since the step × (1 + 2 × openness × windFactor). Tracks under evergreen canopy and on rock last longest; tracks in the open in a strong wind vanish fastest.
+- **T2.** Readability falls as new snow fills it: `readability = 1 − fill / 3 cm`, where `fill` is the snow since the step × (1 + 6 × openness × windFactor) (constants recalibrated to the behaviour of §15, D-024). Tracks under evergreen canopy and on rock last longest; tracks in the open in a strong wind vanish fastest.
 
 ### Exposure (E)
-- **E1.** Survivor warmth falls each second by `k × max(0, (10 °C − T_wc) / 10 °C) × (0.3 + 0.7 × openness)`, where `T_wc` is the wind chill (NWS formula from temperature and wind speed) and `openness` is the cell's exposure. Canopy and rocks shelter. **[DECIDE]** `k` by tuning; target ≈ 25 min of full exposure at the storm's worst.
+- **E1.** Survivor warmth falls each second by `k × max(0, (10 °C − T_wc) / 10 °C) × (0.3 + 0.7 × openness)`, where `T_wc` is the wind chill (NWS formula from temperature and wind speed) and `openness` is the cell's exposure. Canopy and rocks shelter. `k = 0.02973` per second: full exposure at the storm's worst wind chill (−12.4 °C, 20:51) empties 100 in 25 min (D-025).
 - **E2.** In a warming shelter, warmth rises by 1 per second. The creature can still enter a shelter.
 
 ### Catching and ending (C)
@@ -329,12 +329,12 @@ The genome is the intervention layer over the fixed real place:
 - `shelters`: junctions
 - `signs`: positions on paths, each pointing to its nearest exit
 
-Mutation operators (one per mutation, picked at random): plow / unplow an edge; close / reopen an edge; move a lamp one edge along the path; add / remove a lamp; move a shelter to a neighbouring junction; add / move / remove a sign. A mutation that breaks I1–I3 is redrawn.
+Mutation operators (one per mutation, picked at random): plow / unplow an edge; **plow a route** (extend the plowing 2–5 edges along the shortest path toward the nearest exit, D-034); close / reopen an edge; move a lamp one edge along the path; add / remove a lamp; move a shelter to a neighbouring junction; add / move / remove a sign. A mutation that breaks I1–I3 is redrawn. Presets (Plan B of §15, a lamp corridor, a route from the Stone Arch) give starting points off the flat region around the empty plan.
 
 Interventions have **two sides**: a lamp lets survivors see but makes them visible; a plowed path is fast and quiet for survivors but still holds tracks; a closure keeps survivors out of a dead end but funnels them. This is what makes generated environments differ in interesting ways.
 
 ### 11.4 Fair comparison
-Every variant is scored on the **same EvaluationSuite**: 6 start times (17:00, 19:00, 21:00, 23:00, 01:00, 03:00) × 2 spawn zones × 2 seeds = 24 rounds *default*, with the same random seeds (common random numbers). Differences in score then come from the environment, not from luck. The creature's mapping phase is re-run for each variant (it maps that variant).
+Every variant is scored on the **same EvaluationSuite**: 6 start times (17:00, 19:00, 21:00, 23:00, 01:00, 03:00) × 2 spawn zones × 2 seeds = 24 rounds *default*, with the same random seeds (common random numbers). The 24 rounds are grouped into 4 **nights** (spawn zone × seed); in each night the creature maps the woods once at dusk (from 16:30, 900 ticks), re-run for each variant (it maps that variant), and keeps its memory across the night's 6 rounds. Differences in score then come from the environment, not from luck.
 
 ### 11.5 Manual mode: choose your own adventure
 1. Start from the parent plan (empty plan, or a preset).
@@ -350,7 +350,7 @@ A (1+1) evolution strategy, matching the brief one-for-one:
 3. Keep it if it scores at least as well as the current best; otherwise discard it.
 4. Repeat for the number of **epochs** the user sets. Epochs = iterations = environments generated and evaluated.
 
-Display: fitness curve per epoch, the current best plan on the map, and the lineage. **[DECIDE]** offer λ = 2–4 children per epoch as an advanced option.
+Display: fitness curve per epoch, the current best plan on the map, and the lineage. λ = 2–4 children per epoch is offered as an advanced option (a (1+λ) strategy). Each environment's 24 rounds run in parallel in a pool of Web Workers.
 
 ---
 
@@ -370,7 +370,7 @@ Display: fitness curve per epoch, the current best plan on the map, and the line
    - `trees.in(bbox)` → individual trees with height and crown
    - `paths.in(bbox)` → the OSM footpath graph
 
-   A build script calls the server and bakes JSON into the site, so the deployed page works on static hosting. **[DECIDE]** a "tonight" mode that pulls the current KNYC conditions instead of 2016 (real-time data).
+   A build script calls the server and bakes JSON into the site, so the deployed page works on static hosting. **Tonight mode** (real-time data, D-035): the page pulls the last 30 observations at KNYC from api.weather.gov and replays them instead of 2016 (snow at 10 : 1, from 0 cm); geometry unchanged; on any failure it stays with 2016 and says why.
 2. **A real place in 3D + time**: real terrain (`z`), real trees and rocks as 3D solids that block sight and sound, real paths, and a time-varying snow surface.
 
 ---
@@ -418,22 +418,104 @@ Expected behaviour to check:
 
 | Data | Source | Notes |
 |---|---|---|
-| Hourly weather, Central Park (KNYC) | Iowa Environmental Mesonet ASOS archive, `https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py` | query used for §4: `station=NYC&data=all&sts=2016-01-22T12:00Z&ets=2016-01-24T12:00Z&tz=America/New_York&format=onlycomma&report_type=3` |
+| Hourly weather, Central Park (KNYC) | via the `frostroot-data` MCP server from the Iowa Environmental Mesonet ASOS archive, `https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py` | query used for §4: `station=NYC&data=all&sts=2016-01-22T12:00Z&ets=2016-01-24T12:00Z&tz=America/New_York&format=onlycomma&report_type=3` |
 | Storm total 27.5 in | NOAA review of the January 2016 blizzard | official city record |
 | Station location | the NWS has recorded temperature and wind at Vista Rock / Belvedere Castle since 1919 (Central Park Conservancy) | origin of frame W |
-| Terrain and land cover | NYC Topobathymetric LiDAR (2017), NYC Open Data; 6-inch land cover derived from it | topographic capture in May 2017, about 50% leaf-off |
-| Individual trees (position, height, crown) | "Individual structure mapping over six million trees for New York City, USA" (remote sensing dataset) | the NYC Parks Tree Map does not cover Central Park's trees, which are managed by the Conservancy |
+| Terrain | 2017 NYC LiDAR bare-earth DEM (NOAA Digital Coast, Cloud-Optimised GeoTIFF, read by range for the Ramble only) | D-012, D-016; land cover from OSM (D-015) |
+| Individual trees (position, height, crown) | extracted by us from the 2017 NYC LiDAR point cloud (NOAA, COPC): 2,427 trees in the study area; evergreen from OSM leaf tags | D-017, D-018. The six-million-trees dataset planned in v0.1 was not available; the NYC Parks Tree Map does not cover Central Park |
 | Paths, water, structures, named places | OpenStreetMap | ODbL licence: attribution required |
 | Ramble character | Central Park Conservancy: twisting paths designed for wandering and hard to navigate | the reason this place was chosen |
 
 ---
 
-## 17. Open decisions for the group
+## 17. Decisions (open in v0.1)
 
-1. Cell size (2 / 3 / 4 m): realism vs. speed of the automated mode.
-2. Final bounding box and which Fifth Avenue entrances count as exits.
-3. Survivors per round (1–4) and creatures per night (1–2).
-4. Default perspective for fitness: survivors' side or creature's side.
-5. The night window, and whether to add other recorded storms (e.g. February 2006) as scenarios.
-6. "Tonight" real-time mode: in scope for the final or a stretch goal.
-7. 3D view style: keep the Frostroot look on real geometry, or a more map-like look.
+1. Cell size: **3 m** (D-001); the benchmarks met their targets, so no fallback to 4 m was needed.
+2. Bounding box: the box of §3.1 (D-014); exits: E76, E79S, E79N (D-015).
+3. **2 survivors** per round, **1 creature** per night (2 on hard) (D-003).
+4. Default perspective: the **survivors'** side (F); the creature's side (F′) is a switch (D-004).
+5. Night window: 23 Jan 17:00 → 24 Jan 05:00; other storms left for later (D-005).
+6. Tonight mode: **in scope**, weather only (D-006, D-035).
+7. 3D style: the Frostroot look on the real geometry, made darker and harsher after the style frame; third person by default (D-007, D-031); the creature's roots move in a vertex shader, no physics (D-032).
+
+---
+
+## 18. Parameters (checked against `config.js`)
+
+The table between the markers is written by `node tools/check-model.mjs --write` and verified by `npm run model:check`, which also checks the numbers quoted in the text above.
+
+<!-- params:begin -->
+| Parameter (`config.js`) | Value | Meaning | Where |
+|---|---|---|---|
+| `cellSize` | 3 | grid cell, m | §2 |
+| `studyArea.bboxM` | {"minX":-270,"minY":-540,"maxX":460,"maxY":105} | study area in frame W, m | §3.1 |
+| `exits` | E76 / E79S / E79N | exits | §3.1 |
+| `tickSeconds` | 2 | storm seconds per tick | §2 |
+| `window.start` | 2016-01-23T17:00 | evaluation window start (local) | §4.2 |
+| `window.end` | 2016-01-24T05:00 | evaluation window end (local) | §4.2 |
+| `stormTotalSnowIn` | 27.5 | official storm total, in | §4.1 |
+| `survivorsPerRound` | 2 | survivors per round | §7.6 |
+| `creaturesPerNight` | 1 | creatures per night | §7.6 |
+| `creature.sightRange` | 30 | creature sight, m × vf | §7.6 |
+| `creature.coneDeg` | 100 | creature cone, ° | §7.6 |
+| `creature.hearing` | 45 | creature hearing threshold, m of d_A | §7.6 |
+| `creature.plowedSpeedFactor` | 0.7 | creature on plowed paths, × speed | §7.6 |
+| `creature.litCostFactor` | 3 | creature cost of lit cells, × | §7.6 |
+| `creature.speed` | 1.4 | creature v0, m/s | §6.3 |
+| `creature.mappingTicks` | 900 | dusk mapping, ticks | §11.4 |
+| `creature.mappingStart` | 2016-01-23T16:30 | dusk mapping start | §11.4 |
+| `creature.snowExponent` | 0.3 | creature f_snow exponent | §6.3 |
+| `survivor.sightRange` | 20 | survivor flashlight, m × vf | §7.6 |
+| `survivor.coneDeg` | 110 | survivor cone, ° | §7.6 |
+| `survivor.hearing` | 40 | survivor hearing threshold, m of d_A | §7.6 |
+| `survivor.startWarmth` | 55 / 85 | starting warmth | §7.6 |
+| `survivor.warmthK` | 0.02973 | E1 k, per s | §9 E1 |
+| `survivor.shelterGain` | 1 | E2 warmth per s in a shelter | §9 E2 |
+| `survivor.speed` | 1.3 | survivor v0, m/s | §6.3 |
+| `coverSpeed.survivor` | 0 / 1 / 0.9 / 0.8 / 0.6 / 0 / 0 / 0 / 0 | f_cover survivor (outside, paved, dirt, lawn, woodland, thicket, rock, water, structure) | §6.3 |
+| `coverSpeed.creature` | 0 / 1 / 0.9 / 0.8 / 0.6 / 1 / 0 / 0 / 0 | f_cover creature (same order) | §6.3 |
+| `snowHalfDepthCm` | 25 | f_snow half depth, cm | §6.3 |
+| `muffling.trunk` | 4 | muffling per trunk, m | §6.2 |
+| `muffling.crown` | 3 | muffling per evergreen crown, m | §6.2 |
+| `muffling.structurePerM` | 6 | muffling per m of wall, m | §6.2 |
+| `muffling.groundPerM` | 6 | muffling per m of ground, m | §6.2 |
+| `muffling.snowFactor` | 0.5 | m_snow factor | §6.2 |
+| `muffling.windMax` | 0.3 | wind term w max | §6.2 |
+| `walkQuietM` | 18 | walking quieter by, m | §9 M3 |
+| `hindranceCm` | 40 | hindrance depth, cm | §9 S2 |
+| `plowedCm` | 5 | plowed depth, cm | §9 S3 |
+| `trackFillCm` | 3 | T2 fill depth, cm | §9 T2 |
+| `trackWindCoef` | 6 | T2 wind coefficient | §9 T2 |
+| `gustMask` | 0.02 | gust masking per kt | §6.2 |
+| `roundTicks` | 900 | ticks per round | §7.9 |
+| `suite.startTimes` | 17:00 / 19:00 / 21:00 / 23:00 / 01:00 / 03:00 | suite start times | §11.4 |
+| `suite.spawnZones` | 2 | suite spawn zones | §11.4 |
+| `suite.seeds` | 2 | suite seeds | §11.4 |
+| `replanEveryTicks` | 5 | replanning at most every, ticks | §12 |
+| `perspective` | survivors | default fitness perspective | §11.2 |
+| `lambdaCost` | 0.1 | λ_cost | §11.2 |
+| `budget.plowedM` | 1200 | budget: plowed m | §9 I1 |
+| `budget.lamps` | 12 | budget: lamps | §9 I1 |
+| `budget.shelters` | 2 | budget: shelters | §9 I1 |
+| `budget.signs` | 6 | budget: signs | §9 I1 |
+| `cost` | {"plowPerM":1,"lamp":150,"shelter":1000,"sign":50} | costs | §9 I1 |
+| `lampRadius` | 12 | lamp radius, m | §7.4 |
+| `shelterCapacity` | 2 | shelter capacity | §7.4 |
+| `epochs` | 50 | default epochs | §11.6 |
+| `childrenPerEpoch` | 1 | default children per epoch | §11.6 |
+<!-- params:end -->
+
+---
+
+## 19. Changes from v0.1
+
+- Study area measured: 52,460 cells, not about 35,000 (§3.1).
+- `f_cover` of thickets for survivors: impassable (0), not 0.25, so rule M2 and §6.3 agree (D-023).
+- Track filling constants: 3 cm and ×6 wind, not 10 cm and ×2, to give the behaviour §15 asks for (D-024).
+- Warmth: `k` fixed (D-025); survivors start at 55–85, not 100 (D-029).
+- Absolute speeds and muffling costs added (D-023); SLR 11.85 : 1 (D-019).
+- Trees from our own LiDAR extraction (D-017); terrain from the NOAA COG (D-012); OSM through the official API (D-011).
+- Mutation: the "plow a route" operator and presets (D-034); (1+λ) option; parallel evaluation in Web Workers.
+- Evaluation: the 24 rounds grouped into 4 nights with one dusk mapping each (§11.4, D-029).
+- Survivors recognise places (Rule K3) with the eye-level ring of the fingerprint (D-030); vision uses a baked occlusion horizon (D-028).
+- Tonight mode (D-035).

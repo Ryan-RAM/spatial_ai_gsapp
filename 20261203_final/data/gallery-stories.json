@@ -1,0 +1,15 @@
+{
+  "about": "Hand-written notes for the gallery (ROADMAP M8.4), from the numbers printed by tools/build-gallery.mjs. Order = order shown.",
+  "order": ["plan-b", "plan-b-dark", "plan-b-bright", "lamp-corridor", "shelters", "funnel", "evolved-survivors", "evolved-creature", "empty"],
+  "stories": {
+    "empty": "The baseline. Nobody gets out: the snow is too deep off the paths and too deep on them. A third are caught, a third are taken by the cold, a quarter are still wandering at the end.",
+    "plan-b": "One plowed route from Azalea Pond to the nearest exit, three lamps, a sign. A quarter now escape. But the creature catches more than before (48 %): it learns where the route runs, and the lamps show it who is on it.",
+    "plan-b-dark": "The same route without its lamps, and it is better: catches fall from 48 % to 31 % and more get out. The lamps were helping the creature more than the people. The price is the cold: without light, more stop and freeze (27 %).",
+    "plan-b-bright": "The same route with all 12 lamps. Fewer catches than three lamps: the creature avoids light (lit cells cost it three times as much), so a fully lit corridor keeps it away, while a few lamps only mark the targets. It costs twice as much and scores lower than the dark route.",
+    "lamp-corridor": "Light without plowing is worse than nothing. The lamps and signs draw people onto the route, but the route is under 60 cm of snow: slow, loud and cold. The lowest warmth of any plan, and still nobody escapes.",
+    "shelters": "Two warming shelters where people start, nothing else. Fewest catches and the least cold of all: people get warm and stay. That is the problem: more than half are still sheltering when the round ends. Safe, and going nowhere.",
+    "funnel": "Plan B, plus every side path along its route closed, meant to keep people on the plowed way. It shuts them in instead: the closures also cut the ways from where people start to the route. Nobody escapes, and the creature waits at the few junctions left open.",
+    "evolved-survivors": "Thirty generations of the automatic mode from Plan B, scoring for the survivors. It kept the plowed route, dropped a lamp and the sign, added a shelter and closed three paths. The best score in the gallery: fewer seen, fewer cold.",
+    "evolved-creature": "The same search scoring for the creature. It also plows and lights a route, then adds signs and shelters along it: everything that tells people where to go, and so tells the creature where they will be. It spends the most and catches the most."
+  }
+}

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Frostroot: The Ramble</title>
   <meta name="description" content="Design Central Park's Ramble for the night of the January 2016 blizzard: plow paths, place lamps, shelters and signs, and watch who gets out before the creature of roots or the cold finds them.">
-  <link rel="stylesheet" href="style.css?v=20261203g">
+  <link rel="stylesheet" href="style.css?v=20261203h">
   <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
   <script type="importmap">
     {
@@ -15,7 +15,7 @@
         "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
         "./src/sim/load.js": "./src/sim/load.js?v=20261203a",
         "./src/sim/world.js": "./src/sim/world.js?v=20261203a",
-        "./src/ui/main.js": "./src/ui/main.js?v=20261203g"
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203h"
       }
     }
   </script>
@@ -112,6 +112,11 @@
       </div>
       <h3>Lineage</h3>
       <div id="lineage" class="lineage" aria-label="Every plan tried, linked to its parent; click one to go back to it"></div>
+    </section>
+    <section id="gallery" class="gallery" aria-labelledby="galleryTitle">
+      <h2 id="galleryTitle">Gallery: environments worth a look</h2>
+      <p class="muted">Each was scored on the same 24 rounds. The maps show the first night (6 rounds): where survivors walked (pale), where the creature went (green), and how each night ended: <span class="key">▲ escaped</span> <span class="key">✕ caught</span> <span class="key">○ taken by the cold</span> <span class="key">• still lost</span>. Plowed paths are white, closed ones red, lamps and shelters orange, signs pale triangles.</p>
+      <div id="galleryList" class="gallery-list"></div>
     </section>
   </main>
   <footer class="page-foot">

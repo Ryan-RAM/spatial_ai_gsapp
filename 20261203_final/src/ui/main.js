@@ -17,6 +17,8 @@ import { makePool } from './pool.js';
 import { makeDesigner } from './designer.js';
 import { fetchTonight } from '../sim/tonight.js';
 import { drawWeather, describeObservation } from '../render/weatherPanel.js';
+import { drawHeat } from '../render/heatmap.js';
+import { decodePlan } from '../sim/presets.js';
 
 const $ = (id) => document.getElementById(id);
 const status = $('status');
@@ -67,14 +69,16 @@ function hud() {
   $('agents').textContent = lines.join('\n');
 }
 
+// the 3D view is drawn only while it is on screen (the simulation keeps running)
+let viewOnScreen = true;
+new IntersectionObserver(([e]) => { viewOnScreen = e.isIntersecting; }).observe($('view'));
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (playing && !round.state.done) {
     acc += (dt * speed) / CONFIG.tickSeconds;
     const n = Math.floor(acc); acc -= n; if (n) stepSim(n);
   }
-  view.update(round.state, playing ? acc : 0, now / 1000);
-  view.render();
+  if (viewOnScreen) { view.update(round.state, playing ? acc : 0, now / 1000); view.render(); } // no GPU work while scrolled away
   if (frame.count % 3 === 0) map.draw(round.state); // the map: 20 frames a second is plenty
   if ((frame.count = (frame.count ?? 0) + 1) % 6 === 0) hud();
   if (round.state.done && !round.counted) { round.counted = true; results.push(round.result()); $('next').hidden = false; metrics(); }
@@ -208,3 +212,24 @@ $('weatherSel').addEventListener('change', async (e) => {
 });
 const dataNote2016 = 'The hourly record of Central Park (KNYC) for 23–24 January 2016, from the Iowa Environmental Mesonet archive, through our MCP server, baked into the page. Snow from precipitation at 11.85:1, calibrated so the storm totals the official 27.5 in (70 cm).';
 $('dataNote').textContent = dataNote2016;
+
+// ---------------------------------------------------------------- the gallery (M8.4)
+{
+  const [g, st] = await Promise.all([fetch(new URL('../gallery.json', base)).then((r) => r.json()), fetch(new URL('../gallery-stories.json', base)).then((r) => r.json())]);
+  const byId = Object.fromEntries(g.environments.map((e) => [e.id, e])); const pct = (v) => `${Math.round(100 * v)} %`;
+  const cards = [];
+  for (const id of st.order) {
+    const env = byId[id]; if (!env) continue; const m = env.metrics;
+    const card = document.createElement('article'); card.className = 'gallery-card'; card.id = `g-${id}`;
+    card.innerHTML = `<img alt="Map of ${env.title}: interventions, where survivors and the creature went, and how each night ended" width="488" height="430"><h3></h3><p class="nums"></p><p class="story"></p><button type="button">Load this environment</button>`;
+    card.querySelector('h3').textContent = env.title;
+    card.querySelector('.nums').textContent = `F ${m.F.toFixed(3)} · escaped ${pct(m.escapeRate)} · caught ${pct(m.catchRate)} · cold ${pct(m.collapseRate)} · lost ${pct(m.lostRate)} · cost ${Math.round(m.cost)} — ${env.how}`;
+    card.querySelector('.story').textContent = st.stories[id];
+    card.querySelector('button').addEventListener('click', () => { const p = decodePlan(env.plan); watchPlan(p); designer.adopt(p, env.title); $('view').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('status').textContent = `Watching "${env.title}".`; });
+    $('galleryList').append(card); cards.push([card, env]);
+  }
+  // drawn once into an image (static images are far cheaper to keep on screen than live canvases)
+  const off = document.createElement('canvas'); off.style.cssText = 'position:absolute;left:-9999px;width:488px;height:430px'; document.body.append(off);
+  for (const [card, env] of cards) { drawHeat(off, world, env); card.querySelector('img').src = off.toDataURL('image/png'); }
+  off.remove();
+}

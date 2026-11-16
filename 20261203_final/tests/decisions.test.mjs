@@ -21,3 +21,10 @@ test('the seven §17 questions are decided and wired into config.js', () => {
     assert.ok(config.includes(id), `${id} not referenced in config.js`);
   }
 });
+
+// M8.6: the semantic model and config.js agree (tools/check-model.mjs)
+import { execFileSync } from 'node:child_process';
+test('semantic_model.md v1.0 agrees with config.js', () => {
+  const out = execFileSync(process.execPath, [new URL('../tools/check-model.mjs', import.meta.url).pathname], { encoding: 'utf8' });
+  assert.match(out, /agrees with config\.js/);
+});

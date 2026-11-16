@@ -21,7 +21,10 @@
     "bake:verify": "node data/scripts/bake-all.mjs --verify",
     "fetch": "npm run fetch:osm && npm run fetch:weather",
     "bake:rays": "node data/scripts/bake-rays.mjs",
-    "diagrams": "node tools/export-diagrams.cjs"
+    "diagrams": "node tools/export-diagrams.cjs",
+    "deck": "node tools/make-deck.mjs",
+    "model:check": "node tools/check-model.mjs",
+    "deck:pdf": "node tools/export-deck.cjs"
   },
   "devDependencies": {
     "copc": "0.0.9"

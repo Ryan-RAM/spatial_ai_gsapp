@@ -131,5 +131,10 @@ export function makeDesigner({ world, storm, frames, night, pool, nightFor, watc
   $('perspective').addEventListener('change', (e) => { perspective = e.target.value; for (const n of nodes) n.score = score(n); for (const h of history) { const n = nodes.find((x) => x.id === h.id); if (n) h.metrics = { ...h.metrics, fitness: n.score }; } redraw(); });
   for (const t of document.querySelectorAll('[role=tab]')) t.addEventListener('click', () => { for (const u of document.querySelectorAll('[role=tab]')) { const sel = u === t; u.setAttribute('aria-selected', String(sel)); $(u.getAttribute('aria-controls')).hidden = !sel; } });
   redraw();
-  return { nodes, history, get current() { return current; }, makeVariations, pick, runAuto, stop: () => { stopReq = true; }, exportJson, cost: (p) => planCost(world, CONFIG, p).total };
+  // a plan from elsewhere (the gallery) becomes the parent, a new root of the lineage
+  async function adopt(plan, label) {
+    const n = addNode(plan, null, 'gallery', label); n.kept = true; current = n; status(`Scoring "${label}"…`); redraw();
+    await evaluate(n); status(`"${label}" is the parent now. Make two variations, or start the automatic mode from it.`); redraw();
+  }
+  return { adopt, nodes, history, get current() { return current; }, makeVariations, pick, runAuto, stop: () => { stopReq = true; }, exportJson, cost: (p) => planCost(world, CONFIG, p).total };
 }
