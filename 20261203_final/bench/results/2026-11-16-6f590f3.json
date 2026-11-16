@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-16",
+  "commit": "6f590f3",
+  "node": "v22.23.4",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "targets": {
+    "roundMs": 150,
+    "suiteMs": 3000,
+    "fps": 60,
+    "firstLoadMs": 3000,
+    "bakedGzipMB": 15
+  },
+  "rows": [
+    {
+      "name": "rng: 1e6 draws",
+      "medianMs": 7.98,
+      "minMs": 7.27,
+      "targetMs": null,
+      "ok": "—"
+    },
+    {
+      "name": "load: world from data/baked",
+      "medianMs": 10.46,
+      "minMs": 6.26,
+      "targetMs": 300,
+      "ok": "ok"
+    },
+    {
+      "name": "los: 10,000 rays of 30 m",
+      "medianMs": 11.5,
+      "minMs": 10.03,
+      "targetMs": null,
+      "ok": "—"
+    },
+    {
+      "name": "d_T: A* across the area (survivor)",
+      "medianMs": 11.82,
+      "minMs": 11.26,
+      "targetMs": null,
+      "ok": "—"
+    },
+    {
+      "name": "d_T: Dijkstra field, all cells",
+      "medianMs": 12.17,
+      "minMs": 11.84,
+      "targetMs": null,
+      "ok": "—"
+    },
+    {
+      "name": "round: 900 ticks headless (baseline brains)",
+      "medianMs": 174.68,
+      "minMs": 163.19,
+      "targetMs": 150,
+      "ok": "SLOW"
+    }
+  ]
+}

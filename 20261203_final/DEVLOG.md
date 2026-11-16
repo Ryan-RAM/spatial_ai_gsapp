@@ -2,6 +2,19 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M2 done
+
+**Done**
+- M2.1 loader (Node + browser, ~40 ms in Chromium), M2.2 frames (W/P/N/E + landmark chain), M2.3 storm clock, M2.4 four distances with axiom checks (§15 item 1 holds: in the north wind the creature to the south hears the survivors first), M2.5 snow and tracks, M2.6 warmth (k from the record, D-025), M2.7 movement and catching, M2.8 interventions (I1-I3, local light updates), M2.9 rounds, suite, reproducibility and common random numbers.
+- Two model contradictions resolved: track fill constants (D-024: §15 needs 3 cm and a wind coefficient of 6, not 10 cm and 2).
+- 113 tests pass (+1 live MCP test).
+- One slip: commit e2c0e3e was pushed with a failing test (my grep let the chain continue); fixed in 5540f91. Commits are now gated on `npm test`'s exit status.
+
+**Bench baseline** (before any optimisation, 4-core container): world load 10 ms; 10,000 LOS rays 10 ms; A* across the area 12 ms; Dijkstra field 12 ms; **a 900-tick round with the stand-in brains 175 ms (target 150)**. The stand-in survivors route to the exits on the true map with full A* searches; M3 brains plan on their own (smaller) maps, and M4 optimises from these numbers.
+
+**Next**
+- M3: port knowledge.js (KnowledgeMap on typed arrays, 3D vision with vf(t) and the occlusion horizon), landmarks, creature and survivor brains, planning, group behaviour, replan cap, metrics.
+
 ## 2026-11-16 (continued): M1 done
 
 **Done**

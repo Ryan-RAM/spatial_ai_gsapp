@@ -11,6 +11,11 @@ import { makeRng } from '../src/sim/rng.js';
 import { loadWorld } from '../src/data/load-node.js';
 import { castRay, EYE } from '../src/sim/los.js';
 import { makeWalker } from '../src/sim/paths.js';
+import { readFileSync } from 'node:fs';
+import { makeStorm } from '../src/sim/storm.js';
+import { makeRound, baselineBrains } from '../src/sim/round.js';
+
+const storm = makeStorm(JSON.parse(readFileSync(new URL('../data/baked/storm-2016-01.json', import.meta.url), 'utf8')));
 
 const world = loadWorld();
 
@@ -42,7 +47,11 @@ const benches = [
     const w = makeWalker(world, 'creature', CONFIG);
     return { name: 'd_T: Dijkstra field, all cells', target: null, run: () => w.field(world.cellOf(0, -200)) };
   })(),
-  // M2.9 adds: 'round: 900 ticks headless' (target CONFIG.targets.roundMs)
+  {
+    name: 'round: 900 ticks headless (baseline brains)',
+    target: CONFIG.targets.roundMs,
+    run: () => makeRound(world, storm, { start: '2016-01-24T01:00', zone: 'azalea-west', seed: 11, brains: baselineBrains, config: { ...CONFIG, survivor: { ...CONFIG.survivor, warmthK: 0 } } }).run(),
+  },
   // M6.2 adds: 'suite: 24 rounds parallel' (target CONFIG.targets.suiteMs)
 ];
 
