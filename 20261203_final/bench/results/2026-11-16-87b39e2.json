@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-16",
+  "commit": "87b39e2",
+  "node": "v22.23.4",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "cores": 4,
+  "targets": {
+    "roundMs": 150,
+    "suiteMs": 3000,
+    "fps": 60,
+    "firstLoadMs": 3000,
+    "bakedGzipMB": 15
+  },
+  "rows": [
+    {
+      "name": "rng: 1e6 draws",
+      "medianMs": 8.06,
+      "minMs": 7.85,
+      "targetMs": null,
+      "ok": "—"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# raw downloads are large and re-fetchable: never committed (CLAUDE.md §5)
+data/raw/
+node_modules/
+.DS_Store
+*.log

@@ -26,7 +26,7 @@
 
 ## M0 — 架构与默认决定
 
-- [ ] **M0.1 项目骨架**
+- [x] **M0.1 项目骨架**
   - 建好 `index.html`、`style.css`、`package.json`、`config.js`、`src/{sim,render,ui,data}/`、`tests/`、`bench/`、`data/{scripts,raw,baked}/`、`mcp/`、`docs/`；`.gitignore` 排除 `data/raw/` 和 `node_modules/`。
   - 完成标准：`npm test` 能跑（至少一个占位测试通过）；`npm run bench` 能跑；页面在 `python3 -m http.server` 下打开，控制台无报错；文件夹名统一为 `20261203_final` 写进 DECISIONS D-000。
 

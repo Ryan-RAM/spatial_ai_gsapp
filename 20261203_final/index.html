@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frostroot: The Ramble</title>
+  <meta name="description" content="Design Central Park's Ramble for the night of the January 2016 blizzard: plow paths, place lamps, shelters and signs, and watch who gets out before the creature of roots or the cold finds them.">
+  <link rel="stylesheet" href="style.css?v=20261203a">
+  <!-- ?v= is a version stamp: change it on every release so browsers fetch the new files. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "./src/sim/config.js": "./src/sim/config.js?v=20261203a",
+        "./src/sim/rng.js": "./src/sim/rng.js?v=20261203a",
+        "./src/ui/main.js": "./src/ui/main.js?v=20261203a"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="page-head">
+    <p class="eyebrow">Spatial AI &middot; Columbia GSAPP &middot; Final project</p>
+    <h1>Frostroot<span>:</span> The Ramble</h1>
+    <p class="lede">23 January 2016, the night of the record blizzard. Something made of roots wakes up in the Ramble. You design the park for the storm night: who gets out?</p>
+  </header>
+  <main id="app" class="app">
+    <p class="status" id="status" role="status">Loading…</p>
+  </main>
+  <footer class="page-foot">
+    <p>Ryan Fu, Lu Liu, Yifan Zhao &middot; ARCH6956-1, William Martin</p>
+  </footer>
+  <script type="module" src="./src/ui/main.js"></script>
+</body>
+</html>
