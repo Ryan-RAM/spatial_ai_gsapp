@@ -136,7 +136,7 @@
   - 改动：用 typed array 的二叉堆替换数组堆；把视野换成 M2.4 的三维视线加 `vf(t)`；加上 `seenAt` 加"当时看到了什么"、`threatMemory`、`believedPosition`（§7.7）。
   - 完成标准：原来的 5 个测试的场景改写后通过；plan 的速度比原版快（基准数字写进 DEVLOG）。
 
-- [ ] **M3.2 地标扩展**（§7.8）
+- [x] **M3.2 地标扩展**（§7.8）
   - 在原来的 dead_end、clearing、exit、heard、sighting、catch 之外，加上 junction、bridge、named_place、lamp、shelter、sign；`confidence` 会衰减。
   - 完成标准：测试：地标都以链式相对位置存储，可以还原成绝对位置；heard 和 sighting 的置信度随时间下降。
 

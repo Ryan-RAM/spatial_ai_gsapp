@@ -67,6 +67,7 @@ test('lamps light the cells they can see; moving one recomputes only its neighbo
   moveLamp(world, CONFIG, layers, 0, to);
   const fresh = applyPlan(world, CONFIG, { ...emptyPlan(), lamps: [to, lamps[1], lamps[2]] });
   assert.deepEqual(layers.light, fresh.light);
+  assert.deepEqual([...layers.lamp].filter((v) => v >= 0).sort(), [...fresh.lamp].filter((v) => v >= 0).sort());
 });
 
 test('applying a plan marks plowed, closed, shelter and sign cells', () => {

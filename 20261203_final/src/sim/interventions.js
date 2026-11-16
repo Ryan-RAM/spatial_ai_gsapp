@@ -77,10 +77,10 @@ export const exitCells = (world) => new Set(world.paths.exits.map((e) => world.c
 // apply a plan: cell layers
 export function applyPlan(world, config, plan) {
   const n = world.n; const ec = edgeCells(world);
-  const layers = { plan: clonePlan(plan), plowed: new Uint8Array(n), closed: new Uint8Array(n), light: new Uint8Array(n), shelter: new Int16Array(n).fill(-1), sign: new Int16Array(n).fill(-1) };
+  const layers = { plan: clonePlan(plan), plowed: new Uint8Array(n), closed: new Uint8Array(n), light: new Uint8Array(n), lamp: new Int16Array(n).fill(-1), shelter: new Int16Array(n).fill(-1), sign: new Int16Array(n).fill(-1) };
   for (const e of plan.plowed) for (const k of ec[e]) layers.plowed[k] = 1;
   for (const e of plan.closed) for (const k of ec[e]) layers.closed[k] = 1;
-  for (const l of plan.lamps) addLamp(world, config, layers, l, +1);
+  plan.lamps.forEach((l, q) => { addLamp(world, config, layers, l, +1); const k = world.cellOf(...pointOnEdge(world, l.edge, l.s)); if (k >= 0) layers.lamp[k] = q; });
   plan.shelters.forEach((nd, q) => { const k = world.cellOf(world.paths.nodes[nd].x, world.paths.nodes[nd].y); if (k >= 0) layers.shelter[k] = q; });
   plan.signs.forEach((sg, q) => { const k = world.cellOf(...pointOnEdge(world, sg.edge, sg.s)); if (k >= 0) layers.sign[k] = q; });
   return layers;
@@ -102,9 +102,12 @@ export function addLamp(world, config, layers, lamp, sign = 1) {
 }
 // move lamp q of the plan to a new place, recomputing only the two neighbourhoods
 export function moveLamp(world, config, layers, q, to) {
-  addLamp(world, config, layers, layers.plan.lamps[q], -1);
+  const old = layers.plan.lamps[q];
+  addLamp(world, config, layers, old, -1);
+  const oc = world.cellOf(...pointOnEdge(world, old.edge, old.s)); if (oc >= 0 && layers.lamp[oc] === q) layers.lamp[oc] = -1;
   layers.plan.lamps[q] = { ...to };
   addLamp(world, config, layers, layers.plan.lamps[q], +1);
+  const nc = world.cellOf(...pointOnEdge(world, to.edge, to.s)); if (nc >= 0) layers.lamp[nc] = q;
 }
 
 // I2: on the true map, with the plan's closures, does every spawn zone reach an exit?
