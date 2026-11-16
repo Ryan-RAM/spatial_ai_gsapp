@@ -165,17 +165,17 @@
 
 ## M4 — 基准与性能优化
 
-- [ ] **M4.1 `bench/`**：round、EvaluationSuite、A*、视线、积雪更新、加载这几项分别计时，输出 JSON 和表格。
+- [x] **M4.1 `bench/`**：round、EvaluationSuite、A*、视线、积雪更新、加载这几项分别计时，输出 JSON 和表格。
   - 完成标准：`npm run bench` 输出这些数字并和目标比较；结果存到 `bench/results/`，带日期和提交号。
 
-- [ ] **M4.2 先测量，再优化**
+- [x] **M4.2 先测量，再优化**
   - 记下基线，找出最慢的地方，逐项优化（typed array、预计算、局部重算、少分配内存），每一项都记下前后的数字。
   - 完成标准：无头跑一个 900 tick 的 round < 150 ms；24 round 的 EvaluationSuite 并行 < 3 s（用 Node worker_threads 模拟 Web Worker）。
 
 - [ ] **M4.3 渲染与加载**（在 M5 之后复测）
   - 完成标准：1080p 稳定 60 fps（Playwright 加 `requestAnimationFrame` 计时，记下所用机器）；首屏 < 3 s；烘焙数据 gzip 后 < 15 MB。
 
-- [ ] **M4.4 防止性能回退**：测试里加一个宽松的时间上限（比如目标的 3 倍），防止以后变慢太多。
+- [x] **M4.4 防止性能回退**：测试里加一个宽松的时间上限（比如目标的 3 倍），防止以后变慢太多。
 
 ---
 

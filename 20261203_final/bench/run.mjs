@@ -13,7 +13,10 @@ import { castRay, EYE } from '../src/sim/los.js';
 import { makeWalker } from '../src/sim/paths.js';
 import { readFileSync } from 'node:fs';
 import { makeStorm } from '../src/sim/storm.js';
-import { makeRound, baselineBrains } from '../src/sim/round.js';
+import { makeRound, baselineBrains, agentBrains, runSuite, evaluationSuite, nightsOf } from '../src/sim/round.js';
+import { newMemory } from '../src/sim/creature.js';
+import { makeSnow } from '../src/sim/snow.js';
+import { Worker } from 'node:worker_threads';
 import { makeKnowledge, look, plan as kPlan } from '../src/sim/knowledge.js';
 
 const storm = makeStorm(JSON.parse(readFileSync(new URL('../data/baked/storm-2016-01.json', import.meta.url), 'utf8')));
@@ -73,6 +76,16 @@ const benches = [
       { name: 'knowledge plan: ported, whole own map', target: null, run: () => walker.field(from, { speedOf: (c) => (k.seen[c] ? CONFIG.coverSpeed.creature[k.seen[c] - 1] : 0) }) },
     ];
   })(),
+  (() => {
+    const snow = makeSnow(world); const s = storm.at(storm.start + 30 * 3600);
+    return { name: 'snow: one update of the whole layer', target: null, run: () => snow.update(s) };
+  })(),
+  {
+    name: 'round: 900 ticks headless (M3 agents)',
+    target: CONFIG.targets.roundMs,
+    run: () => makeRound(world, storm, { start: '2016-01-23T19:00', zone: 'azalea-west', seed: 11, brains: agentBrains, creatureMemory: newMemory(world, CONFIG) }).run(),
+  },
+  { name: 'suite: 24 rounds + 4 dusk mappings, serial', target: null, reps: 2, run: () => runSuite(world, storm) },
   {
     name: 'round: 900 ticks headless (baseline brains)',
     target: CONFIG.targets.roundMs,
@@ -91,11 +104,22 @@ function time(fn, reps = 5) {
 
 const commit = (() => { try { return execSync('git rev-parse --short HEAD').toString().trim(); } catch { return 'nogit'; } })();
 const rows = benches.map((b) => {
-  const { median, min } = time(b.run);
+  const { median, min } = time(b.run, b.reps ?? 5);
   const ok = b.target == null ? '—' : median <= b.target ? 'ok' : 'SLOW';
   return { name: b.name, medianMs: +median.toFixed(2), minMs: +min.toFixed(2), targetMs: b.target, ok };
 });
 
+// the suite in parallel: one worker thread per night (4 nights), as the Web Workers will do (M6.2)
+async function parallelSuite() {
+  const nights = nightsOf(evaluationSuite(CONFIG));
+  const workers = await Promise.all(nights.map(() => new Promise((res) => { const w = new Worker(new URL('./night-worker.mjs', import.meta.url)); w.once('message', () => res(w)); })));
+  const once = () => Promise.all(nights.map((night, q) => new Promise((res) => { workers[q].once('message', res); workers[q].postMessage({ night }); })));
+  await once(); // warm
+  const ms = []; for (let r = 0; r < 3; r++) { const t = performance.now(); await once(); ms.push(performance.now() - t); }
+  workers.forEach((w) => w.terminate()); ms.sort((a, b) => a - b);
+  return { name: `suite: parallel, ${nights.length} worker threads`, medianMs: +ms[1].toFixed(2), minMs: +ms[0].toFixed(2), targetMs: CONFIG.targets.suiteMs, ok: ms[1] <= CONFIG.targets.suiteMs ? 'ok' : 'SLOW' };
+}
+rows.push(await parallelSuite());
 console.table(rows);
 const date = new Date().toISOString().slice(0, 10);
 const out = { date, commit, node: process.version, cpu: cpus()[0]?.model, cores: cpus().length, targets: CONFIG.targets, rows };

@@ -11,6 +11,8 @@ Newest entry first. Each session ends with a few lines: what was done, what is n
 
 **Balance and speed** (empty plan, 48 survivor rounds): escaped 0 %, caught 35 %, collapsed 38 %, lost 27 %; F = -0.19, F' = 0.50. One plowed route to E79S gives escapes (D-029). Whole suite **2.0 s serial, 85 ms per round** incl. mapping: both targets of CLAUDE.md §3 are met before parallelising.
 
+**M4 bench** (4-core container, Node 22): round with M3 agents 62 ms (target 150); suite of 24 rounds + 4 dusk mappings 1.87 s serial, **0.72 s on 4 worker threads (target 3 s)**; snow layer update 0.24 ms; A* across the area 5.9 ms; LOS 10,000 rays 9.5 ms; world load 12 ms. Before any optimisation (M2.9) the stand-in round was 175 ms; the cached slope factors and the octile heuristic (M3.1) and bounded plans on the agents' own maps did the rest. Rendering (M4.3) is measured after M5.
+
 **Next**
 - M4: bench completeness and regression guards (most targets already met), then M5.1 style frame (checkpoint: stop and show Ryan).
 
