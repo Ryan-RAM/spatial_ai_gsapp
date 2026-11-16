@@ -8,8 +8,9 @@
 // No DOM.
 
 import { checkPlan, clonePlan, routesExist, planCost } from './interventions.js';
+import { routeToExit, nearestNode } from './presets.js';
 
-export const OPERATORS = ['plow', 'unplow', 'close', 'reopen', 'lampMove', 'lampAdd', 'lampRemove', 'shelterMove', 'shelterAdd', 'shelterRemove', 'signAdd', 'signMove', 'signRemove'];
+export const OPERATORS = ['plow', 'plowRoute', 'unplow', 'close', 'reopen', 'lampMove', 'lampAdd', 'lampRemove', 'shelterMove', 'shelterAdd', 'shelterRemove', 'signAdd', 'signMove', 'signRemove'];
 
 const graphCache = new WeakMap();
 function graphOf(world) {
@@ -31,6 +32,16 @@ function applyOp(world, config, plan, op, rng) {
     case 'plow': {
       const near = p.plowed.length && rng.chance(0.7) ? G.edgesNear(rng.pick(p.plowed)).filter((e) => !p.plowed.includes(e)) : [];
       const e = near.length ? rng.pick(near) : pickEdge(); if (p.plowed.includes(e)) return null; p.plowed.push(e); break;
+    }
+    case 'plowRoute': {
+      // extend the plowing 2-5 edges along the shortest path toward the nearest exit (D-034): from
+      // the end of a plowed edge, or from a spawn zone when nothing is plowed yet
+      let from;
+      if (p.plowed.length) { const e = P.edges[rng.pick(p.plowed)]; from = rng.chance(0.5) ? e.a : e.b; }
+      else { const z = rng.pick(config.spawnZones); from = nearestNode(world, z.x, z.y); }
+      const fresh = routeToExit(world, from).edges.filter((e) => !p.plowed.includes(e) && !p.closed.includes(e));
+      if (!fresh.length) return null;
+      p.plowed.push(...fresh.slice(0, rng.int(2, 5))); break;
     }
     case 'unplow': if (!p.plowed.length) return null; p.plowed.splice(rng.int(0, p.plowed.length - 1), 1); break;
     case 'close': { const e = pickEdge(); if (p.closed.includes(e)) return null; p.closed.push(e); break; }
@@ -77,6 +88,7 @@ export function describeDiff(world, config, parent, child, op) {
   const removed = (k) => parent[k].filter((x) => !child[k].some((y) => JSON.stringify(y) === JSON.stringify(x)));
   const words = {
     plow: () => `plowed ${name(added('plowed')[0])} (${Math.round(world.paths.edges[added('plowed')[0]].len)} m)`,
+    plowRoute: () => `plowed ${added('plowed').length} more path segments toward an exit (${Math.round(added('plowed').reduce((a, e) => a + world.paths.edges[e].len, 0))} m)`,
     unplow: () => `stopped plowing ${name(removed('plowed')[0])}`,
     close: () => `closed ${name(added('closed')[0])}`, reopen: () => `reopened ${name(removed('closed')[0])}`,
     lampAdd: () => 'added a lamp', lampRemove: () => 'removed a lamp', lampMove: () => 'moved a lamp along the path',

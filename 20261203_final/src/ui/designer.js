@@ -15,6 +15,7 @@ import { aggregate } from '../sim/score.js';
 import { makeMap2D } from '../render/map2d.js';
 import { renderLineage } from '../render/lineage.js';
 import { drawCurve } from '../render/curve.js';
+import { presets, encodePlan, decodePlan } from '../sim/presets.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -105,8 +106,23 @@ export function makeDesigner({ world, storm, frames, night, pool, nightFor, watc
   }
 
   // ---------------------------------------------------------------- wiring
-  const root = addNode(emptyPlan(), null, 'start', 'the empty plan'); root.kept = true; current = root;
-  evaluate(root).then(() => { status('The empty plan is scored. Make two variations, or start the automatic mode.'); redraw(); });
+  // a plan in the link (#plan=...) starts the lineage; otherwise the empty plan
+  let shared = null; try { if (location.hash.startsWith('#plan=')) shared = decodePlan(location.hash.slice(6)); } catch { shared = null; }
+  const root = addNode(shared ?? emptyPlan(), null, 'start', shared ? 'the shared plan' : 'the empty plan'); root.kept = true; current = root;
+  if (shared) watchPlan(shared);
+  evaluate(root).then(() => { status(`${shared ? 'The shared plan' : 'The empty plan'} is scored. Make two variations, start the automatic mode, or begin from a preset.`); redraw(); });
+  const PRESETS = presets(world, CONFIG);
+  for (const pr of PRESETS) { const o = document.createElement('option'); o.value = pr.id; o.textContent = pr.name; $('preset').append(o); }
+  $('preset').addEventListener('change', async (e) => {
+    const pr = PRESETS.find((x) => x.id === e.target.value); if (!pr) return;
+    const n = addNode(pr.plan, null, 'preset', pr.name); n.kept = true; current = n; status(`Scoring the preset "${pr.name}"…`); redraw();
+    await evaluate(n); status(`Preset "${pr.name}" scored. It is the parent now.`); redraw(); e.target.value = '';
+  });
+  $('share').addEventListener('click', async () => {
+    if (!current) return; const url = `${location.origin}${location.pathname}#plan=${encodePlan(current.plan)}`;
+    window.history.replaceState(null, '', url); // (window.: 'history' here is the fitness history)
+    try { await navigator.clipboard.writeText(url); status(`Link to plan #${current.id} copied.`); } catch { status(`Link to plan #${current.id}: ${url}`); }
+  });
   $('vary').addEventListener('click', makeVariations);
   $('pickA').addEventListener('click', () => pick('A')); $('pickB').addEventListener('click', () => pick('B'));
   $('autoStart').addEventListener('click', runAuto); $('autoStop').addEventListener('click', () => { stopReq = true; paused = false; });

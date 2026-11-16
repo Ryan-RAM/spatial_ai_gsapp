@@ -2,6 +2,15 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M5.3-M6.7
+
+**Done**
+- M5.3 2D map (layers, W/P/N/E picking), M5.4 interface (storm timeline, metrics, guide, themes, keys).
+- M6.1 mutation (10,000-step property test), M6.2 evaluator + Web Worker pool (1.2-1.5 s per plan in Chromium with 3 workers; parallel == serial), M6.3-M6.6 designer (manual side by side, automatic epochs, lineage, curve), M6.7 presets, URL sharing, `plowRoute` operator (D-034).
+- Numbers: empty plan F = -0.19 (escaped 0 %); Plan B F = 0.023 (escaped 27 %, caught 48 %, cold 19 %); 8 epochs from Plan B reach F = 0.064.
+
+**Next**: M7 secondary functions (historic data panel, tonight mode), M8 deliverables, M9 polish and deploy (deploy needs Ryan's OK).
+
 ## 2026-11-16 (continued): M5.2 3D view
 
 **Done**
