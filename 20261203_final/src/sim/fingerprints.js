@@ -50,3 +50,24 @@ export function horizonReach(world, k, bearingDeg) {
   const base = r * A;
   return (u < 1e-9 ? h.rows[base + a0] : Math.min(h.rows[base + a0], h.rows[base + a1])) * h.step;
 }
+
+// d_V on the eye-level ring alone (72 rays of the horizon): the survivor's sense of "I have been
+// here" (rule K3, D-030). RMS difference in metres; Infinity where a cell has no row.
+export function horizonDistance(world, a, b) {
+  const h = world.horizon; const ra = h.rowOf[a]; const rb = h.rowOf[b];
+  if (ra < 0 || rb < 0) return Infinity;
+  const A = h.azimuths; let s = 0;
+  for (let q = 0; q < A; q++) { const d = h.rows[ra * A + q] - h.rows[rb * A + q]; s += d * d; }
+  return Math.sqrt(s / A) * h.step;
+}
+
+// the typical d_V between neighbouring cells (median over a sample), cached per world: the scale
+// against which two far places "look alike"
+const neighbourScale = new WeakMap();
+export function neighbourDistance(world) {
+  if (neighbourScale.has(world)) return neighbourScale.get(world);
+  const v = [];
+  for (let k = 0; k < world.n - 1 && v.length < 4000; k += 7) if (world.horizon.rowOf[k] >= 0 && world.horizon.rowOf[k + 1] >= 0) v.push(horizonDistance(world, k, k + 1));
+  v.sort((a, b) => a - b); const m = v[v.length >> 1] ?? 10;
+  neighbourScale.set(world, m); return m;
+}

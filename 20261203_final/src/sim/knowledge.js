@@ -85,14 +85,15 @@ export function look(world, k, cell, headingDeg, range, coneDeg, tick) {
 
 // What the agent believes about a cell's speed factor (0 = blocked): from what it saw, or, for a
 // cell it never saw, `unknown(cell)` (undefined -> blocked).
-export function beliefSpeed(k, unknown = null) {
+export function beliefSpeed(k, unknown = null, closed = null) {
   const cs = k.config.coverSpeed[k.kind];
-  return (cell) => { const c = k.seen[cell]; return c ? cs[c - 1] : unknown ? unknown(cell) : 0; };
+  // a closure it has seen (a fence across the path) is blocked in its beliefs
+  return (cell) => { const c = k.seen[cell]; return c ? (closed && closed[cell] ? 0 : cs[c - 1]) : unknown ? unknown(cell) : 0; };
 }
 
-// Plan on the agent's own map with the shared walker. opts: { to, goal, unknown, snow, extra }.
-export function plan(walker, k, from, { to = -1, goal = null, unknown = null, snow = null, extra = null } = {}) {
-  const speedOf = beliefSpeed(k, unknown);
+// Plan on the agent's own map with the shared walker. opts: { to, goal, unknown, snow, extra, closed }.
+export function plan(walker, k, from, { to = -1, goal = null, unknown = null, snow = null, extra = null, closed = null } = {}) {
+  const speedOf = beliefSpeed(k, unknown, closed);
   return to >= 0 ? walker.route(from, to, { snow, extra, speedOf }) : walker.routeToGoal(from, { snow, extra, speedOf, goal });
 }
 

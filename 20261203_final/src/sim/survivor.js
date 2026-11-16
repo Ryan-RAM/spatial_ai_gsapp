@@ -15,6 +15,7 @@
 import { look, plan, visit, remember, lastThreat } from './knowledge.js';
 import { recognise, addLandmark, landmarksOf } from './landmarks.js';
 import { sees, hears, guessCell } from './perception.js';
+import { horizonDistance, neighbourDistance } from './fingerprints.js';
 import { secondsLeft } from './warmth.js';
 import { bearingOf, unitOf, wrap180 } from './frames.js';
 
@@ -25,6 +26,7 @@ export const SURVIVOR_STATES = {
 export const DRIFT_SD_DEG = 1.2;    // per tick: about 25 degrees of drift in 10 minutes without a fix
 export const PLAN_HORIZON_S = 150;  // a bounded search: what it can plan in its head
 const FLEE_M = 20; const HIDE_TICKS = 20; const CALL_M = 30; const DANGER_M = 40;
+export const K3_EVERY = 10; export const K3_LIKE = 0.85; export const K3_MIN_APART_M = 30; // D-030
 
 // the survivor's believed east: true east turned by its drift
 const believedEast = (s) => unitOf(90 + s.drift);
@@ -54,6 +56,19 @@ export function survivorBrain(s, ctx) {
     if (l.type === 'shelter') s.knownShelter = l.cell;
   }
   if (weather.visibilityM >= 1609 && world.openness[s.cell] > 180 && world.canopy[s.cell] < 30) s.drift = 0; // the city's glow to the east
+  // K3: does this look like a place it remembers? In the Ramble far places can look alike: then it
+  // believes it is back there, and its sense of direction is thrown (§6.4, D-030)
+  if (tick % K3_EVERY === 0) {
+    const like = K3_LIKE * neighbourDistance(world); const [x, y] = world.center(s.cell);
+    for (const l of k.landmarks) {
+      if (!['junction', 'clearing', 'named_place'].includes(l.type)) continue;
+      if (Math.hypot(l.x - x, l.y - y) < K3_MIN_APART_M) continue;
+      if (horizonDistance(world, s.cell, l.cell) < like) {
+        s.confusions = (s.confusions ?? 0) + 1; s.drift += s.rng.normal(0, 45);
+        s.thinksAt = l.id; break;
+      }
+    }
+  }
   // ---- danger
   let threat = null;
   for (const c of state.creatures) {
@@ -99,7 +114,9 @@ export function survivorBrain(s, ctx) {
   if (s.knownShelter != null && left < toExit * 1.2 && s.state !== 'fleeing') s.state = 'sheltering';
   if (s.knownExit != null && ['exploring', 'following_sign'].includes(s.state)) s.state = 'heading_out';
   // ---- plan
-  const due = !s.route || s.routeIdx + 1 >= s.route.length || s.needsPlan || tick - (s.plannedAt ?? -99) >= config.replanEveryTicks * 4 || (threat && tick - (s.plannedAt ?? -99) >= config.replanEveryTicks);
+  // M3.7: at most one plan every replanEveryTicks while it has a route to follow; at once when idle
+  const since = tick - (s.plannedAt ?? -99); const idle = !s.route || s.routeIdx + 1 >= s.route.length;
+  const due = idle ? since >= 1 : since >= config.replanEveryTicks && (s.needsPlan || threat || since >= config.replanEveryTicks * 4);
   if (!due) return;
   const extra = dangerCost(world, config, k, tick);
   const [ex, ey] = believedEast(s);
@@ -109,18 +126,25 @@ export function survivorBrain(s, ctx) {
   if (s.state === 'fleeing') {
     const last = lastThreat(k, tick, 30);
     const [tx, ty] = last ? world.center(last.cell) : [x0 - ex, y0 - ey];
-    r = bestCell(ctx.walker, k, s.cell, { snow: snow.depth, extra, unknown }, (c) => { const [x, y] = world.center(c); return Math.hypot(x - tx, y - ty); });
+    r = bestCell(ctx.walker, k, s.cell, { snow: snow.depth, extra, unknown, closed: layers.closed }, (c) => { const [x, y] = world.center(c); return Math.hypot(x - tx, y - ty); });
   } else if (s.state === 'sheltering') {
-    r = plan(ctx.walker, k, s.cell, { to: s.knownShelter, snow: snow.depth, extra, unknown });
+    r = plan(ctx.walker, k, s.cell, { to: s.knownShelter, snow: snow.depth, extra, unknown, closed: layers.closed });
   } else if (s.knownExit != null) {
-    r = plan(ctx.walker, k, s.cell, { to: s.knownExit, snow: snow.depth, extra, unknown });
+    r = plan(ctx.walker, k, s.cell, { to: s.knownExit, snow: snow.depth, extra, unknown, closed: layers.closed });
   }
   if (!r) {
     // explore east (in its believed east): within its planning horizon, the cell that gains the most
-    r = bestCell(ctx.walker, k, s.cell, { snow: snow.depth, extra, unknown, maxTime: PLAN_HORIZON_S },
+    r = bestCell(ctx.walker, k, s.cell, { snow: snow.depth, extra, unknown, closed: layers.closed, maxTime: PLAN_HORIZON_S },
       (c, t) => { const [x, y] = world.center(c); return (x - x0) * ex + (y - y0) * ey - 0.05 * t; });
   }
   s.route = r ? r.cells : null; s.routeIdx = 0; s.plannedAt = tick; s.needsPlan = false;
+  logPlan(s, tick);
+}
+
+// the routes it planned (the last 30), for the planned-vs-walked diagram (M8.1)
+export function logPlan(a, tick) {
+  if (!a.route) return; a.plans = a.plans ?? [];
+  a.plans.push({ tick, cells: a.route.slice() }); if (a.plans.length > 30) a.plans.shift();
 }
 
 const dist = (world, a, b) => { const [x0, y0] = world.center(a); const [x1, y1] = world.center(b); return Math.hypot(x1 - x0, y1 - y0); };
@@ -151,7 +175,7 @@ function dangerCost(world, config, k, tick) {
 
 // a bounded Dijkstra on its own map, then the reachable cell with the best score(cell, time)
 function bestCell(walker, k, from, opts, score) {
-  const speedOf = (c) => { const v = k.seen[c]; return v ? k.config.coverSpeed.survivor[v - 1] : opts.unknown ? opts.unknown(c) : 0; };
+  const speedOf = (c) => { const v = k.seen[c]; return v ? (opts.closed && opts.closed[c] ? 0 : k.config.coverSpeed.survivor[v - 1]) : opts.unknown ? opts.unknown(c) : 0; };
   const field = walker.field(from, { snow: opts.snow, extra: opts.extra, speedOf, maxTime: opts.maxTime ?? 60 });
   let best = -1; let bs = -Infinity;
   for (let c = 0; c < field.length; c++) { const t = field[c]; if (!Number.isFinite(t) || c === from) continue; const v = score(c, t); if (v > bs) { bs = v; best = c; } }
