@@ -31,3 +31,22 @@ export function horizonAt(world, k, bearingDeg) {
   // the shorter of the two neighbouring rays: conservative between them
   return Math.min(rows[base + a0], u > 0 ? rows[base + a1] : rows[base + a0]) * step;
 }
+
+// The occlusion horizon on its own (data/baked/horizon.bin): what vision needs, without the rest of
+// the fingerprint.
+export function attachHorizon(world, json, bin) {
+  const bytes = bin instanceof Uint8Array ? bin : new Uint8Array(bin);
+  const idx = new Int32Array(bytes.slice(0, json.count * 4).buffer);
+  const rowOf = new Int32Array(world.n).fill(-1); idx.forEach((k, r) => { rowOf[k] = r; });
+  world.horizon = { rows: bytes.subarray(json.count * 4), rowOf, azimuths: json.azimuths, step: json.step };
+  return world.horizon;
+}
+
+// distance (m) the eye-level view from cell k reaches toward a bearing; Infinity-safe fallback 0
+export function horizonReach(world, k, bearingDeg) {
+  const h = world.horizon; const r = h.rowOf[k]; if (r < 0) return 0;
+  const A = h.azimuths; const f = (((bearingDeg % 360) + 360) % 360) / (360 / A);
+  const a0 = Math.floor(f) % A; const a1 = (a0 + 1) % A; const u = f - Math.floor(f);
+  const base = r * A;
+  return (u < 1e-9 ? h.rows[base + a0] : Math.min(h.rows[base + a0], h.rows[base + a1])) * h.step;
+}

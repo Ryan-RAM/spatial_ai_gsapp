@@ -9,7 +9,7 @@
     "bake-world",
     "bake-rays"
   ],
-  "gzipTotalMB": 5.631,
+  "gzipTotalMB": 7.35,
   "inputs": {
     "dem/georef.json": {
       "bytes": 667,
@@ -72,6 +72,16 @@
       "bytes": 9727,
       "gzip": 1687,
       "sha256": "773ec7bceefe091d025da4365100c79c8bbee3bb42c2e94bb08897647a93f384"
+    },
+    "horizon.bin": {
+      "bytes": 3019784,
+      "gzip": 1718905,
+      "sha256": "d62f07fcc00008b3c6f687698a6b77101fc13cf51593fb73a907fdefd1890c36"
+    },
+    "horizon.json": {
+      "bytes": 291,
+      "gzip": 225,
+      "sha256": "183352be0c81720b02e19f3937bdab0d1cf5ccabf68f167b79f52e77914051e7"
     },
     "meta.json": {
       "bytes": 505,

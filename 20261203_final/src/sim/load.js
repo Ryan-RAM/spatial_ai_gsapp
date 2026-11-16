@@ -2,9 +2,9 @@
 // share one code path: readJson(name) -> object, readBytes(name) -> Uint8Array. No DOM.
 
 import { makeWorld } from './world.js';
-import { attachFingerprints } from './fingerprints.js';
+import { attachFingerprints, attachHorizon } from './fingerprints.js';
 
-export const WORLD_FILES = ['meta.json', 'world.json', 'world.bin', 'trees.json', 'trees.bin', 'paths.json', 'places.json'];
+export const WORLD_FILES = ['meta.json', 'world.json', 'world.bin', 'trees.json', 'trees.bin', 'paths.json', 'places.json', 'horizon.json', 'horizon.bin'];
 
 export async function loadWorldWith(readJson, readBytes, { withTrees = true, withPaths = true } = {}) {
   const [meta, worldJson, worldBin, treesJson, treesBin, paths, places] = await Promise.all([
@@ -12,7 +12,10 @@ export async function loadWorldWith(readJson, readBytes, { withTrees = true, wit
     withTrees ? readJson('trees.json') : null, withTrees ? readBytes('trees.bin') : null,
     withPaths ? readJson('paths.json') : null, withPaths ? readJson('places.json') : null,
   ]);
-  return makeWorld({ meta, worldJson, worldBin, treesJson, treesBin, paths, places: places?.places ?? null });
+  const world = makeWorld({ meta, worldJson, worldBin, treesJson, treesBin, paths, places: places?.places ?? null });
+  const [hj, hb] = await Promise.all([readJson('horizon.json'), readBytes('horizon.bin')]);
+  attachHorizon(world, hj, hb);
+  return world;
 }
 
 // In the browser: fetch from a base URL (the page's data/baked/).

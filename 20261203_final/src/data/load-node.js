@@ -3,19 +3,20 @@
 
 import { readFileSync } from 'node:fs';
 import { makeWorld } from '../sim/world.js';
-import { attachFingerprints } from '../sim/fingerprints.js';
+import { attachFingerprints, attachHorizon } from '../sim/fingerprints.js';
 
 const dir = new URL('../../data/baked/', import.meta.url);
 const json = (f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
 const bytes = (f) => new Uint8Array(readFileSync(new URL(f, dir)));
 
 // synchronous, for scripts and workers
-export function loadWorld({ withTrees = true, withPaths = true, withFingerprints = false } = {}) {
+export function loadWorld({ withTrees = true, withPaths = true, withFingerprints = false, withHorizon = true } = {}) {
   const world = makeWorld({
     meta: json('meta.json'), worldJson: json('world.json'), worldBin: bytes('world.bin'),
     treesJson: withTrees ? json('trees.json') : null, treesBin: withTrees ? bytes('trees.bin') : null,
     paths: withPaths ? json('paths.json') : null, places: withPaths ? json('places.json').places : null,
   });
+  if (withHorizon) attachHorizon(world, json('horizon.json'), bytes('horizon.bin'));
   if (withFingerprints) attachFingerprints(world, json('fingerprints.json'), bytes('fingerprints.bin'));
   return world;
 }

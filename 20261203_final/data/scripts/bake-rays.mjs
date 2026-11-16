@@ -32,7 +32,7 @@ const STANDABLE = [COVER.PATH_PAVED, COVER.PATH_DIRT, COVER.LAWN, COVER.WOODLAND
 
 if (isMainThread) {
   const t0 = performance.now();
-  const world = loadWorld();
+  const world = loadWorld({ withHorizon: false }); // the horizon is what this step makes
   const cells = []; for (let k = 0; k < world.n; k++) if (STANDABLE.includes(world.cover[k])) cells.push(k);
   const R = rayDirections().length;
   const workers = Math.max(1, cpus().length);
@@ -56,9 +56,18 @@ if (isMainThread) {
     horizonRing: RINGS.indexOf(0), standable: STANDABLE,
     directions: rayDirections().map((d) => d.map((v) => +v.toFixed(6))),
   }) + '\n');
-  console.log(`fingerprints.bin: ${cells.length} cells x ${R} rays, ${(out.length / 1e6).toFixed(1)} MB, ${workers} workers, ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+  // the occlusion horizon alone (the 0-degree ring), small enough for every worker and the first screen
+  const ring = RINGS.indexOf(0);
+  const hz = new Uint8Array(idx.byteLength + cells.length * AZIMUTHS); hz.set(new Uint8Array(idx.buffer), 0);
+  for (let r = 0; r < cells.length; r++) hz.set(rows.subarray(r * R + ring * AZIMUTHS, r * R + (ring + 1) * AZIMUTHS), idx.byteLength + r * AZIMUTHS);
+  writeFileSync(new URL('../baked/horizon.bin', import.meta.url), hz);
+  writeFileSync(new URL('../baked/horizon.json', import.meta.url), JSON.stringify({
+    file: 'horizon.bin', count: cells.length, azimuths: AZIMUTHS, eye: EYE, step: STEP, maxRange: MAX_RANGE,
+    layout: 'Int32 cell index per row, then count rows of 72 Uint8: the distance to the first solid at eye height, every 5 degrees clockwise from north (value x step metres)',
+  }, null, 2) + '\n');
+  console.log(`fingerprints.bin: ${cells.length} cells x ${R} rays, ${(out.length / 1e6).toFixed(1)} MB; horizon.bin ${(hz.length / 1e6).toFixed(1)} MB; ${workers} workers, ${((performance.now() - t0) / 1000).toFixed(1)} s`);
 } else {
-  const world = loadWorld();
+  const world = loadWorld({ withHorizon: false });
   const dirs = rayDirections();
   const { cells } = workerData;
   const out = new Uint8Array(cells.length * dirs.length);

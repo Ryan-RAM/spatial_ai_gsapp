@@ -25,11 +25,22 @@ export function makeWalker(world, kind, config) {
   const half = config.snowHalfDepthCm; const ex = config[kind].snowExponent;
   const snowF = (cm) => (1 / (1 + cm / half)) ** ex;
   const maxCover = Math.max(...coverSpeed);
+  // the slope factor for each cell's 8 directions, once: the terrain is fixed (CLAUDE.md §3)
+  const slopeF = new Float32Array(n * 8);
+  for (let k = 0; k < n; k++) {
+    const i = k % W; const j = (k - i) / W;
+    for (let d = 0; d < 8; d++) {
+      const ni = i + N8[d][0]; const nj = j + N8[d][1]; if (ni < 0 || nj < 0 || ni >= W || nj >= H) continue;
+      const L = N8[d][0] && N8[d][1] ? s * Math.SQRT2 : s;
+      slopeF[k * 8 + d] = toblerFactor((world.z[nj * W + ni] - world.z[k]) / L);
+    }
+  }
+  const dirOf = (a, b) => { const da = (b % W) - (a % W); const db = Math.round((b - a - da) / W); for (let d = 0; d < 8; d++) if (N8[d][0] === da && N8[d][1] === db) return d; return -1; };
   const vmax = v0 * maxCover * TOBLER_MAX;
 
   // reusable search buffers; `stamp` marks which entries belong to the current search
   const g = new Float64Array(n); const prev = new Int32Array(n); const stamp = new Uint32Array(n); const closed = new Uint32Array(n);
-  let run = 0;
+  let run = 0; let lastGoal = -1;
   const heapK = new Int32Array(n * 2); const heapF = new Float64Array(n * 2); let size = 0;
   const push = (k, f) => { let c = size++; heapK[c] = k; heapF[c] = f; while (c > 0) { const p = (c - 1) >> 1; if (heapF[p] <= heapF[c]) break; const tk = heapK[p]; heapK[p] = heapK[c]; heapK[c] = tk; const tf = heapF[p]; heapF[p] = heapF[c]; heapF[c] = tf; c = p; } };
   const pop = () => {
@@ -38,36 +49,41 @@ export function makeWalker(world, kind, config) {
     return k;
   };
 
-  // seconds to step from cell a to its neighbour b, or Infinity
-  function stepTime(a, b, diag, snow, extra) {
-    const fa = base[a]; const fb = base[b]; if (!fb || !fa) return Infinity;
+  // seconds to step from cell a to its neighbour b, or Infinity. `speedOf(k)` replaces the true
+  // f_cover (an agent planning on its own map must not read the true map, P4).
+  function stepTime(a, b, diag, snow, extra, speedOf = null, dir = -1) {
+    const fa = speedOf ? speedOf(a) : base[a]; const fb = speedOf ? speedOf(b) : base[b]; if (!fb || !fa) return Infinity;
     let f = (fa + fb) / 2;
     if (snow) f *= (snowF(snow[a]) + snowF(snow[b])) / 2;
     const L = diag ? s * Math.SQRT2 : s;
-    const t = L / (v0 * f * toblerFactor((world.z[b] - world.z[a]) / L));
+    const t = L / (v0 * f * slopeF[a * 8 + (dir >= 0 ? dir : dirOf(a, b))]);
     return extra ? t + extra[b] : t;
   }
 
   // Single-source shortest times (to a target if given: A*, else the whole field: Dijkstra).
-  // opts: { snow: Float32Array cm, extra: Float32Array seconds per entered cell, maxTime }
+  // opts: { snow: Float32Array cm, extra: Float32Array seconds per entered cell, maxTime,
+  //         speedOf: (k) -> f_cover the planner believes (0 = blocked), goal: (k) -> true to stop }
   function search(from, to = -1, opts = {}) {
-    const { snow = null, extra = null, maxTime = Infinity } = opts;
-    run++; size = 0;
+    const { snow = null, extra = null, maxTime = Infinity, speedOf = null, goal = null } = opts;
+    const ok = speedOf ? (k) => speedOf(k) > 0 : (k) => base[k] > 0;
+    run++; size = 0; lastGoal = -1;
     const tx = to >= 0 ? to % W : 0; const ty = to >= 0 ? (to - tx) / W : 0;
-    const hfun = to >= 0 ? (k) => { const i = k % W; const j = (k - i) / W; return Math.hypot(i - tx, j - ty) * s / vmax; } : () => 0;
+    // octile distance at the fastest possible speed: admissible, and no square root per push
+    const hs = s / vmax; const hd = (Math.SQRT2 - 1) * hs;
+    const hfun = to >= 0 ? (k) => { const i = k % W; const di = i > tx ? i - tx : tx - i; const dj0 = (k - i) / W - ty; const dj = dj0 < 0 ? -dj0 : dj0; return di > dj ? di * hs + dj * hd : dj * hs + di * hd; } : () => 0;
     g[from] = 0; prev[from] = -1; stamp[from] = run; push(from, hfun(from));
     while (size) {
       const k = pop(); if (closed[k] === run) continue; closed[k] = run;
-      if (k === to) break;
+      if (k === to || (goal && goal(k))) { lastGoal = k; break; }
       if (g[k] > maxTime) break;
       const i = k % W; const j = (k - i) / W;
       for (let d = 0; d < 8; d++) {
         const di = N8[d][0]; const dj = N8[d][1]; const ni = i + di; const nj = j + dj;
         if (ni < 0 || nj < 0 || ni >= W || nj >= H) continue;
-        const m = nj * W + ni; if (closed[m] === run || !base[m]) continue;
+        const m = nj * W + ni; if (closed[m] === run || !ok(m)) continue;
         const diag = di !== 0 && dj !== 0;
-        if (diag && (!base[j * W + ni] || !base[nj * W + i])) continue; // no cutting a blocked corner
-        const t = g[k] + stepTime(k, m, diag, snow, extra);
+        if (diag && (!ok(j * W + ni) || !ok(nj * W + i))) continue; // no cutting a blocked corner
+        const t = g[k] + stepTime(k, m, diag, snow, extra, speedOf, d);
         if (stamp[m] !== run || t < g[m]) { g[m] = t; prev[m] = k; stamp[m] = run; push(m, t + hfun(m)); }
       }
     }
@@ -82,13 +98,15 @@ export function makeWalker(world, kind, config) {
   // d_T(a -> b) in seconds
   function travelTime(a, b, opts) { const r = search(a, b, opts); return closed[b] === r ? g[b] : Infinity; }
   function route(a, b, opts) { const r = search(a, b, opts); return closed[b] === r ? { time: g[b], cells: path(b, r) } : null; }
+  // the quickest route to any cell for which opts.goal(k) is true (e.g. the nearest frontier)
+  function routeToGoal(a, opts) { const r = search(a, -1, opts); return lastGoal >= 0 ? { time: g[lastGoal], cells: path(lastGoal, r), goal: lastGoal } : null; }
   // the whole field from a source (Dijkstra): a Float32Array of seconds
   function field(a, opts) {
     const r = search(a, -1, opts); const out = new Float32Array(n).fill(Infinity);
     for (let k = 0; k < n; k++) if (closed[k] === r) out[k] = g[k];
     return out;
   }
-  return { kind, base, passable: (k) => base[k] > 0, stepTime, travelTime, route, field, timeTo, v0, vmax };
+  return { kind, base, passable: (k) => base[k] > 0, stepTime, travelTime, route, routeToGoal, field, timeTo, v0, vmax };
 }
 
 // one walker per agent kind and world, cached

@@ -132,7 +132,7 @@
 
 ## M3 — Agent（移植并扩展 `knowledge.js`，加上新的规划逻辑）
 
-- [ ] **M3.1 移植 KnowledgeMap**（来自 20261110 的 `knowledge.js`）
+- [x] **M3.1 移植 KnowledgeMap**（来自 20261110 的 `knowledge.js`）
   - 改动：用 typed array 的二叉堆替换数组堆；把视野换成 M2.4 的三维视线加 `vf(t)`；加上 `seenAt` 加"当时看到了什么"、`threatMemory`、`believedPosition`（§7.7）。
   - 完成标准：原来的 5 个测试的场景改写后通过；plan 的速度比原版快（基准数字写进 DEVLOG）。
 

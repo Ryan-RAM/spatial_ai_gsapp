@@ -12,6 +12,8 @@ Newest entry first. Each session ends with a few lines: what was done, what is n
 
 **Bench baseline** (before any optimisation, 4-core container): world load 10 ms; 10,000 LOS rays 10 ms; A* across the area 12 ms; Dijkstra field 12 ms; **a 900-tick round with the stand-in brains 175 ms (target 150)**. The stand-in survivors route to the exits on the true map with full A* searches; M3 brains plan on their own (smaller) maps, and M4 optimises from these numbers.
 
+**M3.1 bench** (same container): knowledge plan to the nearest frontier 0.46 ms (the original 20261110 planner, which always built the whole field, 2.8 ms on the same map); whole own map 3.4 ms with real travel times; Dijkstra field 12 -> 5 ms (cached slope factors); A* across the area 11.5 -> 7 ms (octile heuristic); round with stand-in brains 179 -> 156 ms.
+
 **Next**
 - M3: port knowledge.js (KnowledgeMap on typed arrays, 3D vision with vf(t) and the occlusion horizon), landmarks, creature and survivor brains, planning, group behaviour, replan cap, metrics.
 
