@@ -34,6 +34,9 @@ export function windChillC(tC, windMs) {
 export function makeStorm(record) {
   const obs = record.records.filter((r) => r.tempC != null).map((r) => ({ ...r, t: localSeconds(r.time) }));
   const N = obs.length;
+  // our own running sum of the hourly snowfall: the stored cumulative values are rounded, and
+  // mixing them with the hourly ones would make S(t) step back by a few hundredths at an hour
+  let run = 0; for (const o of obs) { run += o.snowCm ?? 0; o.cum = run; }
   const t0 = obs[0].t; const t1 = obs[N - 1].t;
   const fill = (k, f) => { for (let q = k; q >= 0; q--) if (obs[q][f] != null) return obs[q][f]; for (let q = k; q < N; q++) if (obs[q][f] != null) return obs[q][f]; return 0; };
 
@@ -52,7 +55,7 @@ export function makeStorm(record) {
     const windFromDeg = ((Math.atan2(vx, vy) / DEG) + 360) % 360;
     // snow: the hour ending at observation b falls evenly between a and b
     const rateCmH = b.t > a.t ? (b.snowCm ?? 0) * 3600 / (b.t - a.t) : 0;
-    const cumSnowCm = (a.cumSnowCm ?? 0) + (b.t > a.t ? (b.snowCm ?? 0) * u : 0);
+    const cumSnowCm = a.cum + (b.t > a.t ? (b.snowCm ?? 0) * u : 0);
     return {
       t: tc, label: localLabel(tc), tempC, windMs, gustMs, gustKt: gustMs / MPS_PER_KT,
       windFromDeg, windToDeg: (windFromDeg + 180) % 360,
