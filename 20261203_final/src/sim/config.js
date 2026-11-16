@@ -98,8 +98,15 @@ export const CONFIG = {
 
   // ---------------------------------------------------------------- interventions (§9 I1)
   budget: { plowedM: 1200, lamps: 12, shelters: 2, signs: 6 },
+  cost: { plowPerM: 1, lamp: 150, shelter: 1000, sign: 50 },   // D-027; the full budget costs 5,300
   lampRadius: 12,                  // m
+  lampHeight: 4,                   // m: light reaches the cells it can see from here
   shelterCapacity: 2,
+  // §11.4: two spawn zones in the Ramble (D-027): just west of Azalea Pond (§15), and by the Ramble Stone Arch
+  spawnZones: [
+    { id: 'azalea-west', x: -58, y: -214, r: 15 },
+    { id: 'stone-arch', x: -170, y: -75, r: 15 },
+  ],
 
   // ---------------------------------------------------------------- automated mode (§11.6)
   epochs: 50,
