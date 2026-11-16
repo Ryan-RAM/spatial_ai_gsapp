@@ -2,6 +2,21 @@
 
 Newest entry first. Each session ends with a few lines: what was done, what is next, open problems.
 
+## 2026-11-16 (continued): M3 done
+
+**Done**
+- M3.1 knowledge.js ported (own map, vision cut at the baked horizon, incremental frontiers, planning on beliefs only), M3.2 landmarks (chain of offsets; recognised from the path graph, places, plan, cover), M3.3 creature (mapping at dusk, patrol, investigate, track, chase, search, ambush; light-averse; night-long memory), M3.4-M3.6 survivor (drift and fixes, K3 by d_V, warmth look-ahead to shelters, flee, hide, call out), M3.7 replan cap, M3.8 metrics and F / F'.
+- Nights are (zone, seed): mapping at dusk then 6 rounds; 4 independent nights per suite (D-029).
+- 138 tests pass (+1 live).
+
+**Balance and speed** (empty plan, 48 survivor rounds): escaped 0 %, caught 35 %, collapsed 38 %, lost 27 %; F = -0.19, F' = 0.50. One plowed route to E79S gives escapes (D-029). Whole suite **2.0 s serial, 85 ms per round** incl. mapping: both targets of CLAUDE.md §3 are met before parallelising.
+
+**Next**
+- M4: bench completeness and regression guards (most targets already met), then M5.1 style frame (checkpoint: stop and show Ryan).
+
+**Notes**
+- Nobody escapes on the empty plan: in 66 cm of snow survivors manage ~250 m east in 30 min against ~490 m to the nearest exit. This is the model's premise (plowing is ~3x faster) and gives the generator work to do, but the fitness landscape is flat near the empty plan; watch this in M6 (seeded presets may help).
+
 ## 2026-11-16 (continued): M2 done
 
 **Done**
