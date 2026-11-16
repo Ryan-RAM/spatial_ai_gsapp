@@ -8,7 +8,7 @@ import { PALETTE } from './palette.js';
 
 // a 3-step toon ramp, soft
 export function toonGradient() {
-  const data = new Uint8Array([70, 150, 255]);
+  const data = new Uint8Array([28, 110, 230]); // deep shadows, a hard step to the light (D-031)
   const tex = new THREE.DataTexture(data, data.length, 1, THREE.RedFormat);
   tex.minFilter = THREE.NearestFilter; tex.magFilter = THREE.NearestFilter; tex.needsUpdate = true;
   return tex;
@@ -112,15 +112,15 @@ export function tree({ x, y, z, h, crown, trunk, evergreen }, rnd) {
 // A survivor: a rounded figure in a winter coat, a scarf, a flashlight with a warm beam, breath.
 export function survivor({ coat = PALETTE.coat1, heading = 0 } = {}) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.55, 4, 10), toon(coat)); body.position.y = 1.12; g.add(outlined(body, 0.05));
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.7, 4, 10), toon(coat)); body.position.y = 1.2; g.add(outlined(body, 0.05));
   const dark = toon(0x2b2f45);
   for (const side of [-1, 1]) {
     const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.5, 3, 8), dark); leg.position.set(side * 0.13, 0.42, side * 0.08); leg.rotation.x = side * 0.25; g.add(outlined(leg, 0.08));
     const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.45, 3, 8), toon(coat)); arm.position.set(side * 0.34, 1.15, side === 1 ? -0.18 : 0.05); arm.rotation.x = side === 1 ? -1.0 : 0.3; arm.rotation.z = side * 0.15; g.add(arm);
   }
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 12, 10), toon(PALETTE.skin)); head.position.y = 1.66; g.add(outlined(head, 0.08));
-  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), toon(coat)); hood.position.y = 1.7; g.add(hood);
-  const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 6, 14), toon(PALETTE.scarf)); scarf.rotation.x = Math.PI / 2; scarf.position.y = 1.47; g.add(scarf);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), toon(PALETTE.skin)); head.position.y = 1.78; g.add(outlined(head, 0.08));
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), toon(coat)); hood.position.y = 1.81; hood.scale.setScalar(0.78); g.add(hood);
+  const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 6, 14), toon(PALETTE.scarf)); scarf.rotation.x = Math.PI / 2; scarf.position.y = 1.6; scarf.scale.setScalar(0.8); g.add(scarf);
   // the flashlight: a warm spot light and a soft visible cone
   const lamp = new THREE.SpotLight(PALETTE.warmHot, 14, 18, Math.PI / 7, 0.6, 1.6); lamp.position.set(0.25, 1.25, -0.2);
   const target = new THREE.Object3D(); target.position.set(0, 0, -9); g.add(target); lamp.target = target; g.add(lamp);
@@ -134,43 +134,61 @@ export function survivor({ coat = PALETTE.coat1, heading = 0 } = {}) {
   const torch = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ color: PALETTE.warmHot })); torch.position.copy(lamp.position); g.add(torch);
   // breath: the white plume (warmth is shown in the world, not on a panel)
   const breath = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35, depthWrite: false }));
-  breath.position.set(0, 1.62, -0.38); breath.scale.set(1.2, 0.8, 1.6); g.add(breath);
+  breath.position.set(0, 1.74, -0.36); breath.scale.set(1.2, 0.8, 1.6); g.add(breath);
   g.rotation.y = -heading * Math.PI / 180;
   return g;
 }
 
-// The creature: an original tangle of roots, hunched, taller than a person, with glowing eyes.
+// The creature: original. Too tall and too thin: a trunk of twisted roots 3.6 m high, bent forward,
+// two long arms of roots reaching ahead with root-fingers dragging in the snow, a small knot of a
+// head thrust forward, two small uneven eyes. Roots run ahead of it over the snow toward its prey.
+// The horror is in proportion and in what cannot quite be seen, not in detail (D-031).
 export function creature(rnd, { heading = 0 } = {}) {
   const g = new THREE.Group();
-  const rootM = toon(PALETTE.root); const rootL = toon(PALETTE.rootLight);
-  const strands = 44;
-  for (let s = 0; s < strands; s++) {
-    const pts = []; const a0 = rnd() * Math.PI * 2; const r0 = 0.9 + rnd() * 0.9;
-    // from the ground, spiralling up into a hunched back, some curling forward as arms
-    const arm = s % 6 === 0;
-    for (let t = 0; t <= 8; t++) {
-      const u = t / 8; const a = a0 + u * (1.5 + rnd() * 0.5);
-      const rr = r0 * (1 - u * 0.75) + (arm ? u * 1.2 : 0);
-      pts.push(new THREE.Vector3(Math.cos(a) * rr * 0.8, u * (arm ? 2.2 : 2.9) + Math.sin(u * 9 + s) * 0.08, Math.sin(a) * rr * 0.6 - (arm ? u * 1.1 : u * 0.5)));
+  const rootM = new THREE.MeshToonMaterial({ color: PALETTE.root, gradientMap: GRAD });
+  const tube = (pts, r, m = rootM) => new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 28, r, 5), m);
+  // the trunk: strands twisting up, leaning forward at the top
+  for (let s = 0; s < 30; s++) {
+    const a0 = rnd() * Math.PI * 2; const r0 = 0.35 + rnd() * 0.3; const pts = [];
+    for (let t = 0; t <= 10; t++) {
+      const u = t / 10; const a = a0 + u * 2.4;
+      const lean = u * u * 1.1; // bends forward near the top
+      pts.push(new THREE.Vector3(Math.cos(a) * r0 * (1 - 0.5 * u), u * 3.4, Math.sin(a) * r0 * (1 - 0.5 * u) - lean));
     }
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.05 + rnd() * 0.07, 5), s % 3 ? rootM : rootL);
-    g.add(tube);
+    g.add(tube(pts, 0.03 + rnd() * 0.04));
   }
-  // a knot of roots for a head, and roots spreading over the snow around its feet
-  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 1), rootM); core.position.set(0, 2.65, -0.7); core.scale.set(1.1, 0.9, 1.2); g.add(outlined(core, 0.06));
-  for (let s = 0; s < 14; s++) {
-    const a = rnd() * Math.PI * 2; const L = 1.2 + rnd() * 1.6; const pts = [];
-    for (let t = 0; t <= 6; t++) { const u = t / 6; pts.push(new THREE.Vector3(Math.cos(a + u * 0.6) * (0.5 + u * L), 0.15 * (1 - u) + 0.05 * Math.sin(u * 7 + s), Math.sin(a + u * 0.6) * (0.5 + u * L))); }
-    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.07 * (1 - 0.3 * rnd()), 5), rootM));
+  // the arms: long, reaching forward and down, splitting into root-fingers that drag in the snow
+  for (const side of [-1, 1]) {
+    const len = 2.6 + rnd() * 0.4;
+    const shoulder = new THREE.Vector3(side * 0.35, 3.0, -0.9);
+    for (let s = 0; s < 6; s++) {
+      const pts = [shoulder.clone()];
+      for (let t = 1; t <= 8; t++) {
+        const u = t / 8;
+        pts.push(new THREE.Vector3(side * (0.35 + u * 0.7 + 0.15 * Math.sin(u * 5 + s)), 3.0 - u * 2.9 + 0.2 * Math.sin(u * 3), -0.9 - u * len - 0.08 * s * u));
+      }
+      // fingers spread at the end, along the snow
+      const end = pts[pts.length - 1];
+      pts.push(new THREE.Vector3(end.x + side * 0.15 * (s - 2.5), 0.05, end.z - 0.5 - 0.15 * rnd()));
+      g.add(tube(pts, 0.025 + 0.02 * rnd()));
+    }
   }
-  const rim = new THREE.PointLight(0x8fa8ff, 2.5, 7, 2); rim.position.set(0, 3.2, 1.6); g.add(rim);
-  for (const dx of [-0.24, 0.24]) {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), new THREE.MeshBasicMaterial({ color: PALETTE.eye }));
-    eye.position.set(dx * 0.8, 2.68, -1.2); g.add(eye);
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: PALETTE.eye, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }));
-    glow.position.copy(eye.position); glow.scale.setScalar(0.9); g.add(glow);
+  // the head: a small knot of roots thrust forward, below the line of the shoulders
+  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), rootM); head.position.set(0.05, 3.15, -1.55); head.scale.set(0.9, 1.15, 1.1);
+  g.add(outlined(head, 0.08));
+  for (const [dx, dy, sz] of [[-0.1, 0.03, 0.035], [0.11, -0.02, 0.028]]) { // small, uneven
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(sz, 8, 6), new THREE.MeshBasicMaterial({ color: PALETTE.eye }));
+    eye.position.set(0.05 + dx, 3.15 + dy, -1.83); g.add(eye);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: PALETTE.eye, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glow.position.copy(eye.position); glow.scale.setScalar(0.35); g.add(glow);
   }
-  const eyeLight = new THREE.PointLight(PALETTE.eye, 1.2, 6, 2); eyeLight.position.set(0, 2.6, -1.4); g.add(eyeLight);
+  const eyeLight = new THREE.PointLight(PALETTE.eye, 0.8, 4, 2); eyeLight.position.set(0.05, 3.1, -2.0); g.add(eyeLight);
+  // roots running ahead over the snow, toward its prey
+  for (let s = 0; s < 18; s++) {
+    const a = (rnd() - 0.5) * 1.6; const L = 2 + rnd() * 5; const pts = [];
+    for (let t = 0; t <= 8; t++) { const u = t / 8; pts.push(new THREE.Vector3(Math.sin(a + 0.3 * Math.sin(u * 4 + s)) * u * L, 0.04 + 0.12 * (1 - u), -Math.cos(a) * u * L)); }
+    g.add(tube(pts, 0.05 * (1 - 0.5 * rnd())));
+  }
   g.rotation.y = -heading * Math.PI / 180;
   return g;
 }

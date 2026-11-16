@@ -11,6 +11,8 @@
     #frame { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
     .cap { position: absolute; left: 16px; bottom: 12px; font-size: 13px; color: var(--muted); text-shadow: 0 1px 2px #000; max-width: calc(100% - 32px); }
     .wrap { position: relative; }
+    .wrap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(3, 4, 10, 0.78) 100%); }
+    .grain { position: absolute; inset: 0; pointer-events: none; opacity: 0.09; mix-blend-mode: overlay; }
   </style>
   <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
@@ -19,6 +21,7 @@
 <body>
   <div class="wrap">
     <canvas id="frame" width="1600" height="900" aria-label="The Ramble at 19:00 in the blizzard: two survivors with flashlights on a path west of Azalea Pond, a lamp, and a creature of roots among the trees"></canvas>
+    <canvas class="grain" id="grain" width="400" height="225" aria-hidden="true"></canvas>
     <p class="cap" id="cap">Loading the Ramble…</p>
   </div>
   <script type="module">
@@ -42,13 +45,13 @@
     const canvas = document.getElementById('frame');
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(1); renderer.setSize(1600, 900, false);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.72; // darker: the night is the threat (D-031)
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(PALETTE.sky);
     // fog from the recorded visibility: extinction sigma = 3.912 / V (contrast 2 % at V)
     scene.fog = new THREE.FogExp2(PALETTE.fog, 3.912 / s.visibilityM);
-    scene.add(new THREE.HemisphereLight(0x6f7fb0, 0x1a1f33, 0.9));
+    scene.add(new THREE.HemisphereLight(0x55628a, 0x0d1020, 0.55));
     const moon = new THREE.DirectionalLight(0x9fb3e6, 0.55); moon.position.set(-40, 60, 30); scene.add(moon);
 
     const depthAt = (x, y) => { const k = world.cellOf(x, y); return k >= 0 ? snow.depth[k] / 100 : 0; };
@@ -80,14 +83,20 @@
     const steps = []; for (let d = 1; d < 16; d += 0.7) { const [fx, fy] = F.fromP({ edge: P.edge, s: Math.max(0, P.s - d), offset: 0 }); steps.push([fx, fy, -heading * Math.PI / 180]); }
     scene.add(footprints(world, depthAt, steps));
     // the creature: among the trees 14 m off to the side, in profile toward them, its eyes to the camera
-    const cxr = px + 10, cyr = py - 9; const ch = (Math.atan2(px - cxr, py - cyr) * 180 / Math.PI + 360) % 360 - 35;
+    const cxr = px - 2, cyr = py - 9.5; const ch = (Math.atan2(px - cxr, py - cyr) * 180 / Math.PI + 360) % 360 - 30; // half turned to us: its eyes just visible
     place(creature(makeRng(7).next, { heading: ch }), cxr, cyr, -0.3);
     // falling snow from the snowfall rate
     const cam = new THREE.PerspectiveCamera(42, 16 / 9, 0.3, 400);
-    const eye = toScene(camXY[0], camXY[1], world.groundAt(px, py) + 6.5); cam.position.copy(eye);
-    cam.lookAt(toScene(px + 3, py + 1, world.groundAt(px, py) + 1.2));
+    const eye = toScene(camXY[0], camXY[1], world.groundAt(px, py) + 4.2); cam.position.copy(eye);
+    cam.lookAt(toScene(px + 1, py - 1, world.groundAt(px, py) + 1.6));
     scene.add(snowfall(cam.position, 70, s.snowRateCmH, rnd));
+    // ground fog: low, flat sheets of mist that hide the feet of the trees (and of the creature)
+    for (let q = 0; q < 6; q++) {
+      const sheet = new THREE.Mesh(new THREE.PlaneGeometry(140, 110), new THREE.MeshBasicMaterial({ color: PALETTE.fog, transparent: true, opacity: 0.07, depthWrite: false }));
+      sheet.rotation.x = -Math.PI / 2; sheet.position.copy(toScene(px, py, world.groundAt(px, py) + 0.4 + q * 0.35)); scene.add(sheet);
+    }
     renderer.render(scene, cam);
+    { const gc = document.getElementById('grain').getContext('2d'); const im = gc.createImageData(400, 225); const r2 = makeRng(5).next; for (let q = 0; q < im.data.length; q += 4) { const v = r2() * 255; im.data[q] = im.data[q + 1] = im.data[q + 2] = v; im.data[q + 3] = 255; } gc.putImageData(im, 0, 0); }
     document.getElementById('cap').textContent = `The Ramble, west of Azalea Pond · 23 Jan 2016, 19:00 · ${s.tempC.toFixed(0)} °C, wind ${s.windFromDeg.toFixed(0)}° ${s.windMs.toFixed(1)} m/s, visibility ${Math.round(s.visibilityM)} m, ${s.cumSnowCm.toFixed(0)} cm of snow · ${nTrees} real trees (${nLeft} on the sightline left out)`;
     window.__styleFrameReady = true;
   </script>
